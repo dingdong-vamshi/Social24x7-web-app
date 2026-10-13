@@ -38,8 +38,8 @@ h1, h2, h3, .brand strong { font-family: 'Manrope', sans-serif; }
 .preview-toast { position: fixed; right: 24px; bottom: 24px; z-index: 100; max-width: min(420px, calc(100vw - 32px)); padding: 14px 18px; border-radius: 12px; background: var(--green-950); color: white; box-shadow: 0 16px 42px rgba(9,45,33,.28); font-size: 13px; font-weight: 700; line-height: 1.45; }
 
 .brand { display: inline-flex; gap: 11px; align-items: center; color: var(--ink); }
-.brand-mark { width: 39px; height: 39px; border-radius: 13px; background: linear-gradient(145deg, #36bb79, #17774e); box-shadow: 0 7px 18px rgba(28,142,87,.25); position: relative; display: grid; place-items: center; }
-.brand-mark::before { content: ''; width: 18px; height: 15px; background: white; border-radius: 8px; display: block; }
+.brand-mark { width: 39px; height: 39px; border-radius: 12px; background: #07c160; position: relative; display: grid; place-items: center; flex-shrink: 0; }
+.brand-mark::before { display: none; }
 .brand-mark i { position: absolute; background: white; width: 6px; height: 6px; transform: rotate(45deg); left: 10px; bottom: 9px; }
 .brand > span:last-child { display: grid; line-height: 1.05; }
 .brand strong { font-size: 18px; letter-spacing: -.5px; }

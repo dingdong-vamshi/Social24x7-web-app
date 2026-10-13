@@ -1,5 +1,7 @@
 # Chat and web architecture gaps
 
+> Historical pre-integration audit. As of 13 October 2026, consumer chat and permission-limited Partner Business Chat are implemented against the shared backend. See [CHAT_SYNC_IMPLEMENTATION.md](CHAT_SYNC_IMPLEMENTATION.md) for current evidence. E2EE and durable encrypted message caching remain unimplemented; their security distinctions below still apply. Historical branding is retained here, while the latest web-facing name is SOCIAL 24-7.
+
 This report separates evidence from recommendations. The legacy Social 24x7 mobile repository was inspected read-only at commit `e207f7526f140976630b92c09782a87998f6a8c6`. No chat, Supabase, or encryption implementation was added to Partner Web.
 
 ## Confirmed Requirements

@@ -1,5 +1,7 @@
 # Phase 2 Supabase integration map
 
+> Historical Phase 1 planning document, superseded on 13 October 2026. The new web client now uses the existing production project, email/password authentication, canonical commerce records and chat Realtime. Phone OTP is disabled in the actual Auth configuration. See [current integration](SHARED_SUPABASE_INTEGRATION.md), [architecture](WEB_PLATFORM_ARCHITECTURE.md) and [verified QA](REAL_BACKEND_QA_MATRIX.md). The proposals below are not current implementation claims or authorization to add backend features.
+
 Target project (later): `kcuxyxqtfkxrbtmugjsn`.
 
 This document is planning-only. No connection, migration, RPC, Storage policy, or production record was changed in Phase 1. Table and RPC names must be verified against the live schema before implementation.

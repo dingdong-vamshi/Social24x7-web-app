@@ -1,67 +1,70 @@
 import { useState, type ReactNode } from 'react'
-import { BarChart3, Boxes, ChevronDown, CircleDollarSign, CircleUserRound, ClipboardCheck, Handshake, HeartPulse, LayoutDashboard, Menu, PackageCheck, PanelLeftClose, RefreshCcw, RotateCcw, Search, Settings2, ShieldCheck, ShoppingBag, Store, Truck, Users, WalletCards, X } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { BarChart3, Boxes, CircleDollarSign, CircleUserRound, ClipboardCheck, Handshake, HeartPulse, LayoutDashboard, LogOut, Menu, MessageCircle, PackageCheck, PanelLeftClose, RotateCcw, Search, Settings2, ShieldCheck, ShoppingBag, Store, Truck, Users, WalletCards, X } from 'lucide-react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import type { PartnerRole } from '../domain/models'
-import { announcePreviewAction } from '../utils/preview'
+import { useAuth } from '../auth/AuthContext'
 import { Brand } from './Brand'
+import '../commerce.css'
 
 export interface NavItem { label: string; path: string; icon: ReactNode }
-
 const sellerNav: NavItem[] = [
-  { label: 'Overview', path: '/seller', icon: <LayoutDashboard size={19} /> },
-  { label: 'Orders', path: '/seller/orders', icon: <ShoppingBag size={19} /> },
-  { label: 'Returns', path: '/seller/returns', icon: <RotateCcw size={19} /> },
-  { label: 'Products', path: '/seller/products', icon: <Boxes size={19} /> },
-  { label: 'Logistics', path: '/seller/logistics', icon: <Truck size={19} /> },
-  { label: 'Finance', path: '/seller/finance', icon: <WalletCards size={19} /> },
-  { label: 'Team & verification', path: '/seller/team', icon: <Users size={19} /> },
-  { label: 'Affiliate & creators', path: '/seller/affiliate', icon: <Handshake size={19} /> },
-  { label: 'Analytics', path: '/seller/analytics', icon: <BarChart3 size={19} /> },
-  { label: 'Account health', path: '/seller/account-health', icon: <HeartPulse size={19} /> },
-  { label: 'Storefront', path: '/seller/storefront', icon: <Store size={19} /> },
-  { label: 'SEO & AI', path: '/seller/discoverability', icon: <Settings2 size={19} /> },
+  { label: 'Overview', path: '/partner/seller', icon: <LayoutDashboard size={19} /> },
+  { label: 'Orders', path: '/partner/seller/orders', icon: <ShoppingBag size={19} /> },
+  { label: 'Returns', path: '/partner/seller/returns', icon: <RotateCcw size={19} /> },
+  { label: 'Products', path: '/partner/seller/products', icon: <Boxes size={19} /> },
+  { label: 'Logistics', path: '/partner/seller/logistics', icon: <Truck size={19} /> },
+  { label: 'Finance', path: '/partner/seller/finance', icon: <WalletCards size={19} /> },
+  { label: 'Business Chat', path: '/partner/seller/chat', icon: <MessageCircle size={19} /> },
+  { label: 'Team & verification', path: '/partner/seller/team', icon: <Users size={19} /> },
+  { label: 'Affiliate & creators', path: '/partner/seller/affiliate', icon: <Handshake size={19} /> },
+  { label: 'Analytics', path: '/partner/seller/analytics', icon: <BarChart3 size={19} /> },
+  { label: 'Account health', path: '/partner/seller/account-health', icon: <HeartPulse size={19} /> },
+  { label: 'Storefront', path: '/partner/seller/storefront', icon: <Store size={19} /> },
+  { label: 'SEO & AI', path: '/partner/seller/discoverability', icon: <Settings2 size={19} /> },
 ]
-
 const creatorNav: NavItem[] = [
-  { label: 'Overview', path: '/creator', icon: <LayoutDashboard size={19} /> },
-  { label: 'Discover products', path: '/creator/discover', icon: <Search size={19} /> },
-  { label: 'Promotions', path: '/creator/promotions', icon: <PackageCheck size={19} /> },
-  { label: 'Affiliate links', path: '/creator/links', icon: <Handshake size={19} /> },
-  { label: 'Earnings', path: '/creator/earnings', icon: <CircleDollarSign size={19} /> },
-  { label: 'Analytics', path: '/creator/analytics', icon: <BarChart3 size={19} /> },
-  { label: 'Profile', path: '/creator/profile', icon: <CircleUserRound size={19} /> },
+  { label: 'Overview', path: '/partner/creator', icon: <LayoutDashboard size={19} /> },
+  { label: 'Discover products', path: '/partner/creator/discover', icon: <Search size={19} /> },
+  { label: 'Promotions', path: '/partner/creator/promotions', icon: <PackageCheck size={19} /> },
+  { label: 'Affiliate links', path: '/partner/creator/links', icon: <Handshake size={19} /> },
+  { label: 'Seller conversations', path: '/partner/creator/chat', icon: <MessageCircle size={19} /> },
+  { label: 'Earnings', path: '/partner/creator/earnings', icon: <CircleDollarSign size={19} /> },
+  { label: 'Analytics', path: '/partner/creator/analytics', icon: <BarChart3 size={19} /> },
+  { label: 'Profile', path: '/partner/creator/profile', icon: <CircleUserRound size={19} /> },
 ]
 
 export function WorkspaceShell({ role, children }: { role: PartnerRole; children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
+  const [leaving, setLeaving] = useState(false)
+  const { profile, access, signOut } = useAuth()
+  const navigate = useNavigate()
+  const name = profile?.display_name || profile?.username || 'Your account'
   const nav = role === 'seller' ? sellerNav : creatorNav
-  const name = role === 'seller' ? 'Arjun QA Store' : 'Maya Kapoor'
-  return <div className={`workspace ${collapsed ? 'nav-collapsed' : ''}`}>
-    <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
+  async function logout() {
+    setLeaving(true); setLogoutError('')
+    try { await signOut(); navigate('/partner/login', { replace: true }) }
+    catch (cause) { setLogoutError(cause instanceof Error ? cause.message : 'Unable to sign out. Please try again.') }
+    finally { setLeaving(false) }
+  }
+  return <div className={`workspace commerce-workspace ${collapsed ? 'nav-collapsed' : ''}`}>
+    <aside className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Workspace navigation">
       <div className="sidebar-brand"><Brand compact={collapsed} /><button aria-label="Close navigation" className="icon-button mobile-only" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>
-      <button className="workspace-switcher" type="button" aria-label="Switch workspace" onClick={() => announcePreviewAction('Workspace switching is not connected in this Phase 1 preview.')}><span className="avatar">{role === 'seller' ? 'A' : 'M'}</span>{!collapsed && <span className="workspace-switcher-copy"><strong>{name}</strong><span>{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span></span>}{!collapsed && <ChevronDown size={16} />}</button>
+      <div className="workspace-switcher"><span className="avatar">{name.slice(0, 1).toUpperCase()}</span>{!collapsed && <span className="workspace-switcher-copy"><strong>{name}</strong><span>{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span></span>}</div>
       <nav aria-label={`${role} workspace`}>
         {!collapsed && <span className="nav-label">Workspace</span>}
-        {nav.map((item) => <NavLink key={item.path} to={item.path} end={item.path === `/${role}`} onClick={() => setMobileOpen(false)} title={collapsed ? item.label : undefined}>{item.icon}{!collapsed && <span>{item.label}</span>}</NavLink>)}
+        {nav.map((item) => <NavLink key={item.path} to={item.path} end={item.path === `/partner/${role}`} onClick={() => setMobileOpen(false)} title={collapsed ? item.label : undefined}>{item.icon}{!collapsed && <span>{item.label}</span>}</NavLink>)}
       </nav>
-      <div className="sidebar-foot">
-        <div className="secure-note"><ShieldCheck size={17} />{!collapsed && <span>Mock workspace<br /><small>No production data</small></span>}</div>
-        <button className="collapse-button" onClick={() => setCollapsed(!collapsed)}><PanelLeftClose size={18} />{!collapsed && 'Collapse'}</button>
-      </div>
+      <div className="sidebar-foot"><div className="secure-note"><ShieldCheck size={17} />{!collapsed && <span>Your connected account<br /><small>Authorized business records</small></span>}</div><button className="collapse-button" aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} onClick={() => setCollapsed(!collapsed)}><PanelLeftClose size={18} />{!collapsed && 'Collapse'}</button></div>
     </aside>
     {mobileOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />}
-    <div className="workspace-main">
-      <header className="topbar">
-        <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
-        <button className="command-search" type="button" onClick={() => announcePreviewAction(`Global ${role} workspace search is not connected in this Phase 1 preview.`)}><Search size={18} /><span>Search {role === 'seller' ? 'orders, products, customers' : 'products, links, campaigns'}</span><kbd>⌘ K</kbd></button>
-        <div className="top-actions"><button className="icon-button" aria-label="Refresh preview data" onClick={() => announcePreviewAction('Preview data is already up to date. No production request was made.')}><RefreshCcw size={18} /></button><button className="profile-chip" onClick={() => announcePreviewAction('Account settings are not connected in this Phase 1 preview.')}><span>{role === 'seller' ? 'AR' : 'MK'}</span><span className="profile-copy"><strong>{role === 'seller' ? 'Arjun Rao' : 'Maya Kapoor'}</strong><small>{role === 'seller' ? 'Owner' : 'Creator'}</small></span><ChevronDown size={15} /></button></div>
-      </header>
-      <main className="workspace-content">{children}</main>
-    </div>
+    <div className="workspace-main"><header className="topbar">
+      <button className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
+      <span className="commerce-topbar-title">{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span>
+      <div className="top-actions"><label className="commerce-workspace-select"><span className="sr-only">Switch workspace</span><select value={role} onChange={(event) => navigate(event.target.value === 'consumer' ? '/web/chats' : `/partner/${event.target.value}`)}>{access?.seller_status === 'approved' && <option value="seller">Seller Studio</option>}{access?.creator_status === 'approved' && <option value="creator">Creator Center</option>}<option value="consumer">Consumer web</option></select></label><button className="icon-button" onClick={() => void logout()} disabled={leaving} aria-label={leaving ? 'Signing out' : 'Sign out'} title="Sign out"><LogOut size={19} /></button></div>
+    </header><main className="workspace-content">{logoutError && <p className="form-error" role="alert">{logoutError}</p>}{children}<footer className="commerce-footer"><Link to="/">SOCIAL 24-7</Link><span>One account. Your authorized workspaces.</span></footer></main></div>
   </div>
 }
 
-export function RoleBadge({ role }: { role: PartnerRole }) {
-  return <span className="role-badge"><ClipboardCheck size={15} />{role === 'seller' ? 'Seller workspace' : 'Creator workspace'}</span>
-}
+export function RoleBadge({ role }: { role: PartnerRole }) { return <span className="role-badge"><ClipboardCheck size={15} />{role === 'seller' ? 'Seller workspace' : 'Creator workspace'}</span> }

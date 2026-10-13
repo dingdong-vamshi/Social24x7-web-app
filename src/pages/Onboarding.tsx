@@ -1,128 +1,117 @@
-import { useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, CircleUserRound, FileCheck2, Landmark, LoaderCircle, Megaphone, ShieldCheck, Sparkles, Store, UploadCloud } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { ArrowLeft, ArrowRight, Check, CircleUserRound, Megaphone, ShieldCheck, Store } from 'lucide-react'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Brand } from '../components/Brand'
-import { Button } from '../components/Ui'
-import { creatorCategories, requiresProfessionalVerification } from '../domain/creator-policy'
-import type { PartnerRole } from '../domain/models'
-import { repositories } from '../repositories/mock'
-import { announcePreviewAction } from '../utils/preview'
+import { Button, ErrorState, LoadingState } from '../components/Ui'
+import { useAuth } from '../auth/AuthContext'
+import { requireSupabase } from '../lib/supabase'
+import { creatorCategories, creatorSpecializationsFor, creatorRequiresProfessionalVerification, credentialRuleFor, selectCreatorSpecialization, sellerOnboardingSteps } from '../auth/onboardingRules'
+import { getMyCreatorApplication, getMySellerApplication, getMyProfessionalRequest, saveCommerceOnboardingDraft, submitSellerApplication, submitCreatorApplication, submitProfessionalVerification, uploadCommerceEvidence, type ApplicationKind } from '../auth/onboardingRepository'
+import { selectedSpecializations, validateOnboardingStep, valueOf, type OnboardingData } from '../auth/onboardingValidation'
+import './auth.css'
 
 export function RoleSelection() {
-  return <div className="selection-page"><header><Brand /><Link to="/login">Sign in</Link></header><main><div className="selection-intro"><div className="eyebrow">Set up your workspace</div><h1>How will you use Social 24x7?</h1><p>Choose a path now. Both roles belong to the same Social 24x7 account architecture.</p></div><div className="role-options"><Link to="/onboarding/seller" className="role-option seller"><span className="role-number">01</span><div className="role-icon"><Store /></div><h2>Seller</h2><p>List and manage products, orders, fulfillment, finance, teams, and daily business operations.</p><span className="role-link">Start seller onboarding <ArrowRight /></span></Link><Link to="/onboarding/creator" className="role-option creator"><span className="role-number">02</span><div className="role-icon"><Megaphone /></div><h2>Creator</h2><p>Discover products, promote brands, create affiliate links, and track attributed earnings.</p><span className="role-link">Start creator onboarding <ArrowRight /></span></Link></div><div className="selection-foot"><ShieldCheck size={18} /><span>Your information is saved through a repository interface ready for future secure backend integration.</span></div></main></div>
-}
-
-type Field = { name: string; label: string; placeholder?: string; type?: string; options?: string[]; wide?: boolean; required?: boolean }
-type Step = { title: string; description: string; icon: React.ReactNode; fields?: Field[]; upload?: string; review?: boolean }
-
-const sellerSteps: Step[] = [
-  { title: 'Representative', description: 'Tell us who is responsible for this application.', icon: <CircleUserRound />, fields: [
-    { name: 'representativeName', label: 'Representative name', placeholder: 'Arjun Rao', required: true }, { name: 'businessEmail', label: 'Business email', placeholder: 'arjun@store.com', type: 'email', required: true }, { name: 'phone', label: 'Phone number', placeholder: '+91 98765 43210', required: true }, { name: 'designation', label: 'Designation', placeholder: 'Founder / Owner' },
-  ] },
-  { title: 'Business information', description: 'Legal and public details for your business.', icon: <Building2 />, fields: [
-    { name: 'legalName', label: 'Legal business name', placeholder: 'Arjun Retail Private Limited', required: true }, { name: 'storeName', label: 'Store / brand name', placeholder: 'Arjun QA Store', required: true }, { name: 'businessType', label: 'Business type', options: ['Private limited company', 'Sole proprietorship', 'Partnership', 'LLP'] }, { name: 'category', label: 'Primary category', options: ['Fashion', 'Beauty', 'Home & living', 'Electronics', 'Food & beverage'] }, { name: 'address', label: 'Registered address', placeholder: 'Street, locality, city, state, PIN', wide: true, required: true },
-  ] },
-  { title: 'Tax & KYC', description: 'Provide the identifiers used for business verification.', icon: <FileCheck2 />, fields: [
-    { name: 'gstin', label: 'GSTIN (where applicable)', placeholder: '29ABCDE1234F1Z5' }, { name: 'pan', label: 'Business PAN', placeholder: 'ABCDE1234F', required: true }, { name: 'registrationNumber', label: 'Registration number', placeholder: 'CIN / UDYAM / other' },
-  ], upload: 'Business registration and identity documents' },
-  { title: 'Bank & payout', description: 'Add the account that will receive settlements.', icon: <Landmark />, fields: [
-    { name: 'accountHolder', label: 'Account holder', placeholder: 'Arjun Retail Pvt Ltd', required: true }, { name: 'accountNumber', label: 'Account number', placeholder: 'Enter account number', required: true }, { name: 'ifsc', label: 'IFSC', placeholder: 'HDFC0000123', required: true }, { name: 'accountType', label: 'Account type', options: ['Current', 'Savings'] },
-  ], upload: 'Cancelled cheque or bank proof' },
-  { title: 'Store setup', description: 'Shape how customers and creators see your store.', icon: <Store />, fields: [
-    { name: 'displayName', label: 'Display name', placeholder: 'Arjun Everyday', required: true }, { name: 'supportEmail', label: 'Support email', placeholder: 'care@arjuneveryday.com', type: 'email' }, { name: 'storeCategory', label: 'Store category', options: ['Fashion', 'Beauty', 'Home & living', 'Fitness'] }, { name: 'supportPhone', label: 'Support phone', placeholder: '+91 98765 00000' }, { name: 'description', label: 'Store description', placeholder: 'Tell customers what makes your store different.', wide: true },
-    { name: 'pickupAddress', label: 'Pickup address', placeholder: 'Warehouse, street, city, state, PIN', wide: true },
-  ], upload: 'Store logo or brand mark' },
-  { title: 'Verification', description: 'Confirm the evidence Social 24x7 will review.', icon: <ShieldCheck />, fields: [
-    { name: 'verificationContact', label: 'Verification contact', placeholder: 'Representative name' }, { name: 'availability', label: 'Preferred verification window', options: ['10 AM–1 PM', '2 PM–5 PM', '5 PM–7 PM'] },
-  ], upload: 'Business verification evidence (video placeholder)' },
-  { title: 'Review', description: 'Check your information before submission.', icon: <CheckCircle2 />, review: true },
-]
-
-function creatorSteps(professional: boolean): Step[] {
-  const steps: Step[] = [
-    { title: 'Creator identity', description: 'Start with the person behind the creator profile.', icon: <CircleUserRound />, fields: [
-      { name: 'creatorName', label: 'Legal name', placeholder: 'Maya Kapoor', required: true }, { name: 'displayName', label: 'Creator display name', placeholder: 'Maya Makes', required: true }, { name: 'email', label: 'Email', placeholder: 'maya@example.com', type: 'email', required: true }, { name: 'city', label: 'City', placeholder: 'Bengaluru' },
-    ] },
-    { title: 'Creator category', description: 'Choose the primary category and specialization.', icon: <Sparkles />, fields: [
-      { name: 'category', label: 'Category', options: creatorCategories.map((item) => item.name), required: true }, { name: 'specialization', label: 'Specialization', options: creatorCategories.flatMap((item) => item.specializations.map((specialization) => specialization.name)), required: true }, { name: 'niche', label: 'Your niche', placeholder: 'Slow fashion, mindful lifestyle', wide: true },
-    ] },
-    { title: 'Social presence', description: 'Add the channels you use for brand partnerships.', icon: <Megaphone />, fields: [
-      { name: 'primaryPlatform', label: 'Primary platform', options: ['Instagram', 'YouTube', 'Facebook', 'X', 'LinkedIn'] }, { name: 'handle', label: 'Primary handle', placeholder: '@mayamakes', required: true }, { name: 'followers', label: 'Audience size', placeholder: '48,200', required: true }, { name: 'secondaryPlatform', label: 'Secondary platform', options: ['None', 'Instagram', 'YouTube', 'Facebook'] },
-    ] },
-    { title: 'KYC', description: 'Identity details used for partner verification.', icon: <FileCheck2 />, fields: [
-      { name: 'pan', label: 'PAN', placeholder: 'ABCDE1234F', required: true }, { name: 'idType', label: 'Identity document', options: ['Aadhaar', 'Passport', 'Driving licence'] }, { name: 'idNumber', label: 'Document number', placeholder: 'Masked ID number', required: true },
-    ], upload: 'Identity document' },
-    { title: 'Payment & tax', description: 'Details for future creator commission payouts.', icon: <Landmark />, fields: [
-      { name: 'payoutUpi', label: 'Payout UPI (optional)', placeholder: 'creator@upi' }, { name: 'accountHolder', label: 'Account holder', placeholder: 'Maya Kapoor', required: true }, { name: 'accountNumber', label: 'Account number', placeholder: 'Enter account number', required: true }, { name: 'ifsc', label: 'IFSC', placeholder: 'ICIC0000123', required: true }, { name: 'gstRegistered', label: 'GST registered?', options: ['No', 'Yes'] },
-    ] },
-  ]
-  if (professional) steps.push({ title: 'Professional verification', description: 'This specialization requires evidence of professional credentials.', icon: <ShieldCheck />, fields: [
-    { name: 'professionalTitle', label: 'Professional title', placeholder: 'Doctor, dentist, advocate…', required: true }, { name: 'degree', label: 'Degree / qualification', placeholder: 'Professional qualification', required: true }, { name: 'licence', label: 'Registration / licence number', placeholder: 'Professional registration number', required: true }, { name: 'institution', label: 'Issuing institution', placeholder: 'Council or institution', required: true },
-  ], upload: 'Professional credential and workplace verification video' })
-  steps.push({ title: 'Review', description: 'Check your information before submission.', icon: <CheckCircle2 />, review: true })
-  return steps
-}
-
-export function OnboardingWizard() {
-  const { role: roleParam } = useParams()
-  const role: PartnerRole = roleParam === 'creator' ? 'creator' : 'seller'
-  const [step, setStep] = useState(0)
-  const [form, setForm] = useState<Record<string, string>>({ category: 'Content & Digital Media', specialization: 'Content Creator' })
-  const [busy, setBusy] = useState(false)
+  const { profile, access, signOut } = useAuth()
   const [error, setError] = useState('')
-  const navigate = useNavigate()
-  const professional = role === 'creator' && requiresProfessionalVerification(form.specialization || '')
-  const steps = useMemo(() => role === 'seller' ? sellerSteps : creatorSteps(professional), [role, professional])
-  const current = steps[step]
-  const progress = Math.round(((step + 1) / steps.length) * 100)
-  function update(name: string, value: string) {
-    setForm((previous) => {
-      if (role === 'creator' && name === 'category') {
-        const firstSpecialization = creatorCategories.find((category) => category.name === value)?.specializations[0]?.name ?? ''
-        return { ...previous, category: value, specialization: firstSpecialization }
-      }
-      return { ...previous, [name]: value }
-    })
-  }
-  function optionsFor(field: Field) {
-    if (role === 'creator' && field.name === 'specialization') {
-      return creatorCategories.find((category) => category.name === form.category)?.specializations.map((item) => item.name) ?? []
-    }
-    return field.options ?? []
-  }
-  async function next() {
-    const completedForm = { ...form }
-    current.fields?.forEach((field) => {
-      if (!completedForm[field.name] && field.options) completedForm[field.name] = optionsFor(field)[0] ?? ''
-    })
-    const missing = current.fields?.filter((field) => field.required && !(completedForm[field.name] ?? '').trim()).map((field) => field.label) ?? []
-    if (missing.length) { setError(`Complete: ${missing.join(', ')}`); return }
-    setForm(completedForm); setError(''); setBusy(true)
-    try {
-      const repository = role === 'seller' ? repositories.sellerOnboarding : repositories.creatorOnboarding
-      await repository.save(step, completedForm)
-      if (step === steps.length - 1) { await repository.submit(); navigate(`/application?role=${role}`) }
-      else setStep((value) => value + 1)
-    } finally { setBusy(false) }
-  }
-  return <div className="onboarding-page">
-    <header><Brand /><div><span>Need help?</span><button onClick={() => announcePreviewAction('Partner support is not connected in this Phase 1 preview.')}>Partner support</button></div></header>
-    <div className="onboarding-layout">
-      <aside><Link to="/onboarding"><ArrowLeft size={16} /> Change role</Link><div className="onboarding-role"><span>{role === 'seller' ? <Store /> : <Megaphone />}</span><div><small>{role === 'seller' ? 'Seller onboarding' : 'Creator onboarding'}</small><strong>{role === 'seller' ? 'Build your business profile' : 'Build your creator profile'}</strong></div></div><ol>{steps.map((item, index) => <li key={item.title} className={index === step ? 'active' : index < step ? 'complete' : ''}><span>{index < step ? <Check size={15} /> : index + 1}</span><div><strong>{item.title}</strong><small>{index < step ? 'Completed' : index === step ? 'In progress' : 'Not started'}</small></div></li>)}</ol></aside>
-      <main>
-        <div className="mobile-progress"><span>Step {step + 1} of {steps.length}</span><b>{progress}%</b><div><i style={{ width: `${progress}%` }} /></div></div>
-        <div className="form-card"><div className="form-heading"><span className="form-icon">{current.icon}</span><div><div className="eyebrow">Step {step + 1} of {steps.length}</div><h1>{current.title}</h1><p>{current.description}</p></div></div>
-          {current.review ? <ReviewSummary role={role} form={form} professional={professional} /> : <div className="field-grid">{current.fields?.map((field) => <label key={field.name} className={field.wide ? 'wide' : ''}>{field.label}{field.options ? <select value={form[field.name] ?? optionsFor(field)[0]} onChange={(event) => update(field.name, event.target.value)}>{optionsFor(field).map((option) => <option key={option}>{option}</option>)}</select> : <input type={field.type ?? 'text'} value={form[field.name] ?? ''} onChange={(event) => update(field.name, event.target.value)} placeholder={field.placeholder} />}{field.required && <small>Required</small>}</label>)}{current.upload && <button className="upload-zone wide" type="button" onClick={() => announcePreviewAction('File upload is represented visually in Phase 1; no document was transmitted.')}><UploadCloud /><strong>{current.upload}</strong><span>Choose files or drag them here · PDF, JPG, PNG</span></button>}</div>}
-          {error && <div className="form-error" role="alert">{error}</div>}
-          <div className="form-actions"><Button variant="ghost" onClick={() => step === 0 ? navigate('/onboarding') : setStep((value) => value - 1)}><ArrowLeft size={17} /> Back</Button><Button onClick={next} disabled={busy}>{busy ? <><LoaderCircle className="spin" size={17} /> Saving…</> : step === steps.length - 1 ? <>Submit application <Check size={17} /></> : <>Save & continue <ArrowRight size={17} /></>}</Button></div>
-        </div>
-        <div className="integration-note"><ShieldCheck size={18} /><span><strong>Local mock application</strong> Your progress is stored in this browser. Production identity, document storage, and verification connect through repository interfaces in Phase 2.</span></div>
-      </main>
-    </div>
-  </div>
+  return <div className="selection-page workspace-selection"><header><Brand /><button className="text-button" onClick={() => void signOut().catch(cause => setError(cause.message))}>Sign out</button></header><main><div className="selection-intro"><div className="eyebrow">Your account, your workspaces</div><h1>Welcome{profile?.display_name ? `, ${profile.display_name}` : ' to SOCIAL 24-7'}.</h1><p>Continue to your conversations, open an approved workspace, or start an application.</p></div>{error && <div role="alert" className="form-error">{error}</div>}<div className="role-options"><Link to="/web/chats" className="role-option"><div className="role-icon"><CircleUserRound /></div><h2>Personal account</h2><p>Continue your conversations and follow your orders with the account you use in the app.</p><span className="role-link">Open consumer web <ArrowRight /></span></Link>{(['seller','creator'] as const).map(role => { const status = access?.[`${role}_status`] ?? 'not_applied'; const approved = status === 'approved'; const started = status !== 'not_applied'; return <Link key={role} to={approved ? `/partner/${role}` : started ? `/application?role=${role}` : `/partner/onboarding/${role}`} className={`role-option ${role}`}><div className="role-icon">{role === 'seller' ? <Store /> : <Megaphone />}</div><h2>{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</h2><p>{role === 'seller' ? 'Manage your store, products and customer orders.' : 'Discover seller products, create promotions and track attributed earnings.'}</p><span className="role-link">{approved ? 'Open workspace' : started ? `Application: ${status.replaceAll('_',' ')}` : 'Start application'} <ArrowRight /></span></Link> })}</div><div className="selection-foot"><ShieldCheck size={18} /><span>Business access follows your current approval status. A normal account does not require Seller or Creator onboarding.</span></div></main></div>
 }
 
-function ReviewSummary({ role, form, professional }: { role: PartnerRole; form: Record<string, string>; professional: boolean }) {
-  const entries = Object.entries(form).filter(([, value]) => value)
-  return <div className="review-summary"><div className="review-banner"><CheckCircle2 /><div><strong>Ready for your review</strong><p>Submitting places this mock {role} application into Under Review. No real payment or verification action occurs.</p></div></div><dl>{entries.map(([key, value]) => <div key={key}><dt>{key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())}</dt><dd>{value}</dd></div>)}</dl>{role === 'creator' && <div className="conditional-note"><ShieldCheck /><span><strong>Professional verification</strong><small>{professional ? 'Required for the selected specialization and included in this application.' : 'Not required for the selected creator specialization.'}</small></span></div>}<div className="subscription-placeholder"><Landmark /><span><strong>Subscription activation</strong><small>Future web-gateway integration boundary only. No payment is collected in Phase 1.</small></span></div></div>
+type Field = { key: string; label: string; type?: string; required?: boolean; options?: string[] }
+const sellerFields: Record<number, Field[]> = {
+  0: [{key:'sellerType',label:'Seller type',options:['gst','non_gst']}],
+  1: [{key:'legalName',label:'Legal identity / business name',required:true},{key:'businessName',label:'Trade / business name',required:true},{key:'storefrontName',label:'Store name',required:true},{key:'registeredState',label:'Registered / home state code',required:true},{key:'city',label:'City',required:true},{key:'phone',label:'Phone number',type:'tel',required:true},{key:'email',label:'Business email',type:'email',required:true}],
+  2: [{key:'addressLine',label:'Store address',required:true},{key:'pickupAddress',label:'Pickup address',required:true},{key:'returnAddress',label:'Return address',required:true},{key:'postalCode',label:'PIN / postal code',required:true}],
+  3: [{key:'bankAccountHolder',label:'Bank account holder',required:true},{key:'bankAccountNumber',label:'Bank account number',type:'password',required:true},{key:'bankIfsc',label:'IFSC',required:true}],
+}
+const creatorFields: Record<number, Field[]> = {
+  0:[{key:'macroCategory',label:'Main category',options:creatorCategories.map(item=>item.name)},{key:'about',label:'About your work'}],
+  1:[{key:'audienceTier',label:'Audience tier (self-declared)',options:['Nano','Micro','Macro','Mega']},...['instagram','youtube','facebook','tiktok','website'].map(key=>({key,label:key === 'website' ? 'Website / other channel' : key[0].toUpperCase()+key.slice(1)}))],
+  2:[{key:'identityName',label:'Legal identity name',required:true},{key:'panNumber',label:'PAN',required:true},{key:'payoutUpi',label:'Payout UPI (or provide bank details below)'},{key:'bankAccountHolder',label:'Bank account holder'},{key:'bankAccountNumber',label:'Bank account number',type:'password'},{key:'bankIfsc',label:'IFSC'}],
+  3:[{key:'professionalTitle',label:'Professional title',required:true},{key:'degree',label:'Degree / qualification',required:true},{key:'institution',label:'Qualification institution',required:true},{key:'registrationNumber',label:'Registration / licence number',required:true}],
+}
+const sellerEvidence: Record<number, Array<[string,string,string]>> = {2:[['documentPath','Business / identity document','business-document'],['exteriorEvidencePath','Business exterior photo','exterior-evidence'],['interiorEvidencePath','Business interior photo','interior-evidence']],4:[['businessVerificationVideoPath','Business Verification video','verification-video']]}
+const creatorEvidence: Record<number, Array<[string,string,string]>> = {2:[['identityDocumentPath','Government identity evidence','identity-document']],3:[['credentialDocumentPath','Professional credential document','credential-document'],['verificationVideoPath','Professional Verification video','verification-video']]}
+const lockedStatuses = ['submitted','under_review','approved','suspended']
+
+export function OnboardingFlow() {
+  const { role: param } = useParams()
+  if (param !== 'seller' && param !== 'creator') return <Navigate to="/onboarding" replace />
+  return <ConnectedOnboarding key={param} role={param} />
+}
+function ConnectedOnboarding({role}:{role:'seller'|'creator'}) {
+  const auth = useAuth()
+  const userId = auth.user?.id
+  const navigate = useNavigate()
+  const [form,setForm] = useState<OnboardingData>({sellerType:'gst',macroCategory:'Content & Digital Media',specializations:[],audienceTier:'Nano'})
+  const [step,setStep] = useState(0)
+  const [loading,setLoading] = useState(true)
+  const [loadFailed,setLoadFailed] = useState(false)
+  const [busy,setBusy] = useState(false)
+  const [error,setError] = useState('')
+  const [notice,setNotice] = useState('')
+  const specializations = selectedSpecializations(form)
+  const professional = role === 'creator' && creatorRequiresProfessionalVerification(specializations)
+  const professionalRule = credentialRuleFor(specializations)
+  const steps = role === 'seller' ? [...sellerOnboardingSteps] : ['Category','Social presence','Identity & payout',...(professional ? ['Professional verification'] : []),'Review']
+  const review = step === steps.length-1
+  const load = useCallback(async () => {
+    if (!userId) return
+    setLoading(true);setError('');setLoadFailed(false)
+    try {
+      const client=requireSupabase()
+      const application=role==='seller' ? await getMySellerApplication(client,userId) : await getMyCreatorApplication(client,userId)
+      if(application && lockedStatuses.includes(application.status)){navigate(`/application?role=${role}`,{replace:true});return}
+      let data:OnboardingData={sellerType:'gst',macroCategory:'Content & Digital Media',specializations:[],audienceTier:'Nano'}
+      if(application){
+        data={...data,...application,...application.applicationPayload}
+        if('legalName' in application && application.legalName==='Seller applicant') data.legalName=''
+        if('storefrontName' in application && application.storefrontName==='Draft store') data.storefrontName=''
+        if('socialHandles' in application) data={...data,...application.socialHandles}
+      }
+      if(role==='creator'){
+        const request=await getMyProfessionalRequest(client,userId)
+        if(request) data={...data,professionalTitle:request.professionalTitle,degree:request.degree,institution:request.institution,registrationNumber:request.registrationNumber,credentialDocumentPath:request.credentialDocumentPath,verificationVideoPath:request.verificationVideoPath}
+      }
+      setForm(data)
+      const count=role==='seller'?6:creatorRequiresProfessionalVerification(selectedSpecializations(data))?5:4
+      setStep(Math.max(0,Math.min(count-1,typeof data.currentStep==='number'?data.currentStep:0)))
+      if(application?.requestedInformation)setNotice(application.requestedInformation)
+    }catch(cause){setLoadFailed(true);setError(cause instanceof Error?cause.message:'Unable to load your saved application.')}
+    finally{setLoading(false)}
+  },[userId,role,navigate])
+  useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer)},[load])
+  function update(key:string,value:unknown){setNotice('');setForm(previous=>({...previous,[key]:value,...(key==='macroCategory'?{specializations:[]}: {})}))}
+  function payload(targetStep=step){return {...form,onboardingVersion:2,currentStep:targetStep,completedStep:Math.max(step,targetStep),professionalRequired:professional,taxVerificationStatus:'manual_review',identityVerificationStatus:'manual_review',bankVerificationStatus:'manual_review',audienceMetricsStatus:'self_declared',socialHandles:Object.fromEntries(['instagram','youtube','facebook','tiktok','website'].map(key=>[key,valueOf(form,key)]))}}
+  async function save(targetStep:number){setBusy(true);setError('');try{await saveCommerceOnboardingDraft(requireSupabase(),role,payload(targetStep));setStep(targetStep);setNotice('Progress saved to your account.')}catch(cause){setError(cause instanceof Error?cause.message:'Unable to save. Your entries are still on this page.')}finally{setBusy(false)}}
+  async function next(event:FormEvent){event.preventDefault();const validation=validateOnboardingStep(role,step,form,professional);if(validation){setError(validation);return}if(!review){await save(step+1);return}for(let index=0;index<steps.length-1;index++){const issue=validateOnboardingStep(role,index,form,professional);if(issue){setStep(index);setError(issue);return}}
+    if(!auth.user)return
+    setBusy(true);setError('')
+    try{
+      const client=requireSupabase();const data=payload();const v=(key:string)=>valueOf(form,key)
+      await saveCommerceOnboardingDraft(client,role,data)
+      if(role==='seller')await submitSellerApplication(client,auth.user.id,{sellerType:form.sellerType==='non_gst'?'non_gst':'gst',legalName:v('legalName'),businessName:v('businessName'),storefrontName:v('storefrontName'),registeredState:v('registeredState'),city:v('city'),phone:v('phone'),email:v('email'),addressLine:v('addressLine'),pickupAddress:v('pickupAddress'),returnAddress:v('returnAddress'),gstin:v('gstin'),panNumber:v('panNumber'),documentPath:v('documentPath'),exteriorEvidencePath:v('exteriorEvidencePath'),interiorEvidencePath:v('interiorEvidencePath'),businessVerificationVideoPath:v('businessVerificationVideoPath'),locationLatitude:form.locationLatitude as number,locationLongitude:form.locationLongitude as number,applicationPayload:data})
+      else{
+        const draft=await getMyCreatorApplication(client,auth.user.id)
+        if(!draft)throw new Error('Your Creator draft could not be prepared. Please retry.')
+        if(professional && professionalRule){const existing=await getMyProfessionalRequest(client,auth.user.id);if(!existing||['draft','more_information_required','rejected'].includes(existing.status))await submitProfessionalVerification(client,auth.user.id,{creatorApplicationId:draft.id,professionalCategory:professionalRule.specialization,professionalTitle:v('professionalTitle'),degree:v('degree'),institution:v('institution'),registrationNumber:v('registrationNumber'),credentialDocumentPath:v('credentialDocumentPath'),verificationVideoPath:v('verificationVideoPath'),socialHandles:data.socialHandles,applicationPayload:{onboardingVersion:2,macroCategory:v('macroCategory'),specializations}});else if(existing.professionalCategory!==professionalRule.specialization)throw new Error('Your selected specialization differs from the current professional review. Ask Admin to request corrections before changing it.')}
+        await submitCreatorApplication(client,auth.user.id,{creatorType:professional?'professional':'general',category:v('macroCategory'),macroCategory:v('macroCategory'),specializations,about:v('about'),socialHandles:data.socialHandles,identityName:v('identityName'),identityDocumentPath:v('identityDocumentPath'),applicationPayload:data})
+      }
+      await auth.refreshProfile();navigate(`/application?role=${role}`)
+    }catch(cause){setError(cause instanceof Error?cause.message:'Submission failed. Your saved draft is available to retry.')}finally{setBusy(false)}
+  }
+  async function upload(key:string,documentKind:string,file:File|undefined){if(!file||!auth.user)return;setBusy(true);setError('');const uri=URL.createObjectURL(file);try{const kind:ApplicationKind=role==='creator'&&step===3?'professional':role;const path=await uploadCommerceEvidence(requireSupabase(),auth.user.id,kind,documentKind,{uri,fileName:file.name,mimeType:file.type,fileSize:file.size});setForm(previous=>({...previous,[key]:path}));setNotice(`${file.name} uploaded. Save this step to attach it to your draft.`)}catch(cause){setError(cause instanceof Error?cause.message:'Upload failed. Please retry.')}finally{URL.revokeObjectURL(uri);setBusy(false)}}
+  function locate(){if(!navigator.geolocation){setError('Location is not available in this browser.');return}setBusy(true);setError('');navigator.geolocation.getCurrentPosition(position=>{setForm(previous=>({...previous,locationLatitude:position.coords.latitude,locationLongitude:position.coords.longitude}));setBusy(false);setNotice('Business location captured.')},()=>{setError('Allow location access while at your business premises, then retry.');setBusy(false)},{enableHighAccuracy:true,timeout:15000})}
+  if(loading)return <LoadingState />
+  if(loadFailed)return <><ErrorState message={error}/><Button onClick={()=>void load()}>Retry loading application</Button></>
+  const fields=review?[]:[...(role==='seller'?sellerFields[step]??[]:creatorFields[step]??[]),...(role==='seller'&&step===1?(form.sellerType==='gst'?[{key:'gstin',label:'GSTIN',required:true}]:[{key:'panNumber',label:'PAN',required:true},{key:'localSellerId',label:'Enrolment ID / UIN / local Seller ID',required:true}]):[])]
+  const evidence=review?[]:role==='seller'?sellerEvidence[step]??[]:creatorEvidence[step]??[]
+  return <div className="onboarding-page connected-onboarding"><header><Brand /><Link to="/onboarding">Your workspaces</Link></header><div className="onboarding-layout"><aside><Link to="/onboarding"><ArrowLeft size={16}/> Back to workspaces</Link><div className="onboarding-role"><span>{role==='seller'?<Store/>:<Megaphone/>}</span><div><small>{role==='seller'?'Seller':'Creator'} onboarding</small><strong>Build your {role==='seller'?'business':'creator'} profile</strong></div></div><ol>{steps.map((item,index)=><li key={item} className={index===step?'active':index<step?'complete':''}><span>{index<step?<Check size={15}/>:index+1}</span><div><strong>{item}</strong><small>{index===step?'In progress':index<step?'Completed':'Next step'}</small></div></li>)}</ol></aside><main><div className="mobile-progress"><span>Step {step+1} of {steps.length}</span><b>{Math.round((step+1)/steps.length*100)}%</b></div><form className="form-card" onSubmit={next}><div className="form-heading"><div><div className="eyebrow">Step {step+1} of {steps.length}</div><h1>{steps[step]}</h1><p>{review?'Review your information before submitting it for Admin review.':role==='seller'&&step===4?'Appear and speak in a short walkthrough of your business premises.':'Your information is saved securely to your existing account when you continue.'}</p></div></div>
+    {review?<div className="review-summary"><div className="review-banner"><ShieldCheck/><div><strong>Verification requires Admin review</strong><p>Submitting does not activate a store, verify payout details or grant professional status.</p></div></div><dl>{(role==='seller'?[['Store',valueOf(form,'storefrontName')],['Business',valueOf(form,'businessName')],['Seller type',form.sellerType==='gst'?'GST registered':'Non-GST'],['Registered state',valueOf(form,'registeredState')],['Verification video',valueOf(form,'businessVerificationVideoPath')?'Uploaded':'Missing']]:[['Identity',valueOf(form,'identityName')],['Category',valueOf(form,'macroCategory')],['Specializations',specializations.join(', ')],['Professional credentials',professional?'Required · uploaded':'Not required']]).map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}<div><dt>Payout details</dt><dd>Provided for manual review</dd></div></dl><p>Bank details and identity evidence are not stored in browser drafts.</p></div>:<div className="field-grid">{fields.map(field=><label key={field.key}>{field.label}{field.options?<select value={valueOf(form,field.key)} onChange={event=>update(field.key,event.target.value)} disabled={busy}>{field.options.map(option=><option key={option} value={option}>{option==='gst'?'GST registered':option==='non_gst'?'Non-GST / local individual':option}</option>)}</select>:<input type={field.type??'text'} value={valueOf(form,field.key)} onChange={event=>update(field.key,event.target.value)} required={field.required} disabled={busy} autoComplete="off"/>}{field.required&&<small>Required</small>}</label>)}
+    {role==='seller'&&step===0&&<p className="wide">Choose your existing tax registration. Non-GST selling follows the configured home-state rules; tax verification is reviewed manually.</p>}
+    {role==='seller'&&step===1&&form.sellerType==='non_gst'&&<label className="check-label wide"><input type="checkbox" checked={form.declarationAccepted===true} onChange={event=>update('declarationAccepted',event.target.checked)} required/>I understand that Non-GST selling is limited by the configured home-state rules.</label>}
+    {role==='creator'&&step===0&&<fieldset className="wide"><legend>Choose one to three specializations ({specializations.length}/3)</legend><div className="specialization-options">{creatorSpecializationsFor(valueOf(form,'macroCategory')).map(item=><button key={item} type="button" aria-pressed={specializations.includes(item)} disabled={busy||specializations.length===3&&!specializations.includes(item)} onClick={()=>update('specializations',selectCreatorSpecialization(specializations,item))}>{item}</button>)}</div><p>{professional?'This specialization requires a professional credential and verification video.':'This category uses ordinary identity review. No professional degree is required.'}</p></fieldset>}
+    {evidence.map(([key,label,documentKind])=><label className="evidence-field wide" key={key}>{label}<input type="file" accept={documentKind.includes('verification-video')?'video/mp4,video/webm,video/quicktime':documentKind.includes('exterior')||documentKind.includes('interior')?'image/jpeg,image/png,image/webp':'image/jpeg,image/png,image/webp,application/pdf'} disabled={busy} onChange={event=>void upload(key,documentKind,event.target.files?.[0])}/><small>{valueOf(form,key)?'Uploaded to private storage.':'Choose a file, up to 15 MB. Upload completion is required.'}</small></label>)}
+    {role==='seller'&&step===2&&<div className="wide"><Button variant="secondary" onClick={locate} disabled={busy}>Use current business location</Button><p>{typeof form.locationLatitude==='number'?`Location captured: ${form.locationLatitude.toFixed(5)}, ${(form.locationLongitude as number).toFixed(5)}`:'Capture your location while at your business premises.'}</p></div>}
+    {role==='creator'&&professional&&step===3&&<p className="wide">{professionalRule?.verificationInstructions} Professional approval is separate from Creator access and any paid verification badge.</p>}
+    </div>}{error&&<div className="form-error" role="alert">{error}</div>}{notice&&<div className="auth-notice" role="status">{notice}</div>}<div className="form-actions"><Button variant="ghost" disabled={busy} onClick={()=>step===0?navigate('/onboarding'):void save(step-1)}><ArrowLeft size={16}/>Back</Button><Button variant="secondary" disabled={busy} onClick={()=>void save(step)}>Save draft</Button><Button type="submit" disabled={busy}>{busy?'Please wait…':review?'Submit for review':'Save & continue'}<ArrowRight size={16}/></Button></div></form><div className="integration-note"><ShieldCheck size={18}/><span>Saved drafts and uploaded evidence belong to your existing SOCIAL 24-7 account. Verification and approval remain subject to review.</span></div></main></div></div>
 }

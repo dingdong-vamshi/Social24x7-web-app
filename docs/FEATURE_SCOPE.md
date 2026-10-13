@@ -1,5 +1,7 @@
 # Phase 1 feature scope
 
+> Historical frontend-only scope. The 13 October 2026 connected-platform brief supersedes this list. For current scope, read [WEB_PLATFORM_ARCHITECTURE.md](WEB_PLATFORM_ARCHITECTURE.md) and [REAL_BACKEND_QA_MATRIX.md](REAL_BACKEND_QA_MATRIX.md). Production routes no longer use fixture authentication, approvals, orders or balances.
+
 ## Included
 
 - Partner landing and entry

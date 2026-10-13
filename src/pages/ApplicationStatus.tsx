@@ -1,50 +1,25 @@
-import { useCallback, useState } from 'react'
-import { ArrowRight, Check, CheckCircle2, Clock3, FileSearch, ShieldCheck } from 'lucide-react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { CheckCircle2, FileSearch, RefreshCw } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { Brand } from '../components/Brand'
 import { Button, ErrorState, LoadingState, StatusPill } from '../components/Ui'
-import type { PartnerRole } from '../domain/models'
-import { useRepository } from '../hooks/useRepository'
-import { repositories } from '../repositories/mock'
+import { useAuth } from '../auth/AuthContext'
+import { requireSupabase } from '../lib/supabase'
+import { getMyCreatorApplication, getMySellerApplication, getMyProfessionalRequest, type CreatorApplication, type SellerApplication, type ProfessionalVerificationRequest } from '../auth/onboardingRepository'
 
 export function ApplicationStatusPage() {
-  const [params] = useSearchParams()
-  const role: PartnerRole = params.get('role') === 'creator' ? 'creator' : 'seller'
-  const load = useCallback(() => repositories.applications.get(role), [role])
-  const { data, error, loading } = useRepository(load)
-  const [approved, setApproved] = useState(false)
-  const navigate = useNavigate()
-
-  async function previewApproval() {
-    await repositories.applications.useApprovedFixture(role)
-    setApproved(true)
-  }
-
-  const workspaceName = role === 'seller' ? 'Arjun QA Store' : 'Maya Makes'
-  const workspaceLabel = role === 'seller' ? 'Seller Studio' : 'Creator Center'
-  const timeline = approved && data
-    ? [...data.timeline.map((event) => ({ ...event, complete: true })), { label: 'Application approved', date: 'Preview fixture', complete: true }]
-    : data?.timeline
-
-  return <div className="status-page">
-    <header><Brand /><Button to="/onboarding" variant="ghost">Switch role</Button></header>
-    <main>
-      <div className="status-title"><div className="status-icon">{approved ? <CheckCircle2 /> : <FileSearch />}</div><div><div className="eyebrow">Partner application</div><h1>Application status</h1><p>Follow review progress and see what needs your attention.</p></div></div>
-      {loading && <LoadingState />}
-      {error && <ErrorState message={error} />}
-      {data && <div className="status-grid">
-        <section className="application-card">
-          <div className="application-head"><div><small>{role === 'seller' ? 'Seller application' : 'Creator application'} · {data.id}</small><h2>{workspaceName}</h2></div><StatusPill>{approved ? 'Approved' : 'Under review'}</StatusPill></div>
-          <div className="review-callout">{approved ? <CheckCircle2 /> : <Clock3 />}<div><strong>{approved ? 'This preview application is approved' : 'Application review preview'}</strong><p>{approved ? `The approved local fixture can now open ${workspaceLabel}. No production verification occurred.` : 'In a connected environment, verification progress and any required action will appear here.'}</p></div></div>
-          <dl className="application-facts"><div><dt>Submitted</dt><dd>{data.submittedAt}</dd></div><div><dt>Current stage</dt><dd>{approved ? 'Approved fixture' : 'Initial document review'}</dd></div><div><dt>Missing requirements</dt><dd>None</dd></div></dl>
-          <div className="next-action"><ShieldCheck /><span><strong>{approved ? 'Workspace access is ready' : 'No action needed in this preview'}</strong><small>{approved ? `Continue to ${workspaceLabel} to inspect the operational experience.` : 'Use the approved fixture when you are ready to inspect the next stage.'}</small></span></div>
-        </section>
-        <aside className="timeline-card">
-          <h2>Application timeline</h2>
-          <ol>{timeline?.map((event) => <li key={event.label} className={event.complete ? 'complete' : ''}><span>{event.complete ? <Check size={15} /> : null}</span><div><strong>{event.label}</strong><small>{event.date}</small></div></li>)}</ol>
-          <div className="fixture-box"><strong>{approved ? `Open ${workspaceLabel}` : 'Preview an approval decision'}</strong><p>{approved ? 'Continue with the approved local fixture. All workspace records remain mock data.' : 'Advance this local fixture to Approved so the complete visual flow can be reviewed without a backend.'}</p>{approved ? <Button onClick={() => navigate(`/${role}`)}>Open {workspaceLabel} <ArrowRight size={16} /></Button> : <Button onClick={previewApproval}>Preview approved status <ArrowRight size={16} /></Button>}</div>
-        </aside>
-      </div>}
-    </main>
-  </div>
+  const [params]=useSearchParams()
+  const role=params.get('role')==='creator'?'creator':'seller'
+  const {user,access,refreshProfile}=useAuth()
+  const userId=user?.id
+  const [application,setApplication]=useState<CreatorApplication|SellerApplication|null>(null)
+  const [professional,setProfessional]=useState<ProfessionalVerificationRequest|null>(null)
+  const [loading,setLoading]=useState(true)
+  const [error,setError]=useState('')
+  const load=useCallback(async()=>{if(!userId)return;setLoading(true);setError('');try{const client=requireSupabase();const result=role==='seller'?await getMySellerApplication(client,userId):await getMyCreatorApplication(client,userId);setApplication(result);setProfessional(role==='creator'?await getMyProfessionalRequest(client,userId):null)}catch(cause){setError(cause instanceof Error?cause.message:'Unable to load application status.')}finally{setLoading(false)}},[userId,role])
+  useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer)},[load])
+  const approved=access?.[`${role}_status`]==='approved'
+  const editable=application&&['draft','more_information_required','rejected'].includes(application.status)
+  const status=application?.status??access?.[`${role}_status`]??'not_applied'
+  return <div className="status-page"><header><Brand/><Button to="/onboarding" variant="ghost">Your workspaces</Button></header><main><div className="status-title"><div className="status-icon">{approved?<CheckCircle2/>:<FileSearch/>}</div><div><div className="eyebrow">{role==='seller'?'Seller':'Creator'} application</div><h1>Application status</h1><p>Your current review status from your existing account.</p></div></div>{loading?<LoadingState/>:error?<ErrorState message={error}/>:<section className="application-card"><div className="application-head"><h2>{application?('storefrontName'in application?application.storefrontName:application.identityName):'Your application'}</h2><StatusPill>{status.replaceAll('_',' ')}</StatusPill></div><div className="review-callout"><FileSearch/><div><strong>{approved?'Your workspace is available':status==='draft'?'Your application is saved':status==='not_applied'?'Start your application':'Application review'}</strong><p>{approved?'Your account has approved access. Open the workspace below.':editable?'Continue your saved application or respond to the requested corrections.':application?'Your application is controlled by the review team. Refresh to check for changes.':'Choose your role and complete the application to request access.'}</p></div></div>{application&&<dl className="application-facts"><div><dt>Submitted</dt><dd>{application.submittedAt?new Date(application.submittedAt).toLocaleString('en-IN'):'Not submitted'}</dd></div><div><dt>Last updated</dt><dd>{new Date(application.updatedAt).toLocaleString('en-IN')}</dd></div>{application.reviewNote&&<div><dt>Reviewer note</dt><dd>{application.reviewNote}</dd></div>}{application.requestedInformation&&<div><dt>Requested corrections</dt><dd>{application.requestedInformation}</dd></div>}{professional&&<div><dt>Professional credential review</dt><dd>{professional.status.replaceAll('_',' ')}{professional.requestedInformation?` — ${professional.requestedInformation}`:''}</dd></div>}</dl>}<div className="header-actions">{approved?<Button to={`/partner/${role}`}>Open {role==='seller'?'Seller Studio':'Creator Center'}</Button>:editable||!application?<Button to={`/partner/onboarding/${role}`}>{editable?'Continue application':'Start application'}</Button>:null}<Button variant="secondary" onClick={()=>void Promise.all([load(),refreshProfile()]).catch(cause=>setError(cause.message))}><RefreshCw size={16}/>Refresh status</Button></div></section>}</main></div>
 }

@@ -1,0 +1,91 @@
+.commerce-workspace .workspace-content { min-width: 0; }
+.commerce-workspace .sidebar nav { overflow-y: auto; }
+.commerce-workspace .workspace-switcher { cursor: default; }
+.commerce-topbar-title { font-weight: 700; color: #173e36; }
+.commerce-workspace-select select { max-width: 200px; border: 1px solid #d9e2de; border-radius: 8px; padding: 9px 12px; background: #fff; color: #243c35; }
+.commerce-footer { display: flex; gap: 16px; justify-content: space-between; border-top: 1px solid #dfe7e2; margin-top: 36px; padding-top: 20px; color: #64746b; font-size: 12px; }
+.commerce-footer a { color: #265b49; font-weight: 700; }
+.commerce-store-selector { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.commerce-store-selector label { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #64746b; }
+.commerce-store-selector select, .commerce-filter-label select { border: 1px solid #d9e2de; border-radius: 8px; padding: 9px 12px; background: white; max-width: 100%; }
+.commerce-note { font-size: 13px; line-height: 1.7; color: #596d63; background: #f0f5f1; border-left: 3px solid #a2bca6; padding: 13px 16px; border-radius: 0 8px 8px 0; margin: 20px 0; overflow-wrap: anywhere; }
+.commerce-success { padding: 14px 18px; border: 1px solid #a9d5b9; background: #eaf7ee; color: #215936; border-radius: 10px; margin: 16px 0; line-height: 1.6; }
+.commerce-success a { font-weight: 700; text-decoration: underline; }
+.commerce-two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.commerce-quick-links { display: grid; }
+.commerce-quick-links a { display: flex; justify-content: space-between; gap: 15px; align-items: center; color: #254e3d; padding: 18px 0; border-bottom: 1px solid #edf1ec; font-size: 14px; font-weight: 600; }
+.commerce-quick-links a:last-child { border-bottom: 0; }
+.commerce-summary-row { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid #edf1ec; font-size: 13px; }
+.commerce-summary-row small { display: block; margin-top: 5px; color: #728176; font-size: 12px; }
+.commerce-summary-row .status-pill { display: block; margin-top: 6px; text-align: center; }
+.commerce-row-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.commerce-workspace .commerce-table { overflow-x: auto; }
+.commerce-table td { overflow-wrap: anywhere; }
+.commerce-table td code { white-space: normal; }
+.commerce-form { display: grid; gap: 20px; }
+.commerce-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.commerce-form label { display: grid; gap: 8px; color: #344b3c; font-size: 13px; font-weight: 600; }
+.commerce-form input:not([type=checkbox]), .commerce-form textarea { border: 1px solid #cfdad1; border-radius: 8px; padding: 12px; width: 100%; min-width: 0; background: white; font: inherit; color: #253d2d; }
+.commerce-form small { color: #6a796d; font-weight: 400; line-height: 1.5; }
+.commerce-form .commerce-checkbox { display: flex; align-items: center; gap: 10px; }
+.commerce-checkbox input { width: 18px; height: 18px; }
+.commerce-form-actions { display: flex; justify-content: flex-end; gap: 12px; }
+.commerce-record-list { display: grid; gap: 12px; }
+.commerce-record { border: 1px solid #dce5dd; border-radius: 12px; background: #fff; overflow: hidden; }
+.commerce-record summary { display: flex; align-items: center; gap: 20px; padding: 20px; cursor: pointer; list-style: none; font-size: 13px; }
+.commerce-record summary::-webkit-details-marker { display: none; }
+.commerce-record summary > :first-child { flex: 1; }
+.commerce-record summary small { display: block; color: #748077; margin-top: 5px; }
+.commerce-details-hint { color: #327150; font-weight: 600; font-size: 12px; }
+.commerce-record-body { border-top: 1px solid #e8eee9; padding: 20px; font-size: 14px; line-height: 1.7; }
+.commerce-record-body p:first-child { margin-top: 0; }
+.commerce-identifier { overflow-wrap: anywhere; color: #6b786e; font-size: 12px; }
+.commerce-definition { display: grid; gap: 0; margin: 0; }
+.commerce-definition > div { display: grid; grid-template-columns: minmax(140px, 1fr) 2fr; gap: 20px; padding: 16px 0; border-bottom: 1px solid #edf1ec; }
+.commerce-definition > div:last-child { border-bottom: 0; }
+.commerce-definition dt { color: #657466; font-size: 13px; }
+.commerce-definition dd { margin: 0; font-size: 14px; color: #273e2b; overflow-wrap: anywhere; }
+.commerce-filter-label { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: #576c5f; font-size: 13px; }
+.commerce-status-bars { display: grid; gap: 20px; padding: 8px 0; }
+.commerce-status-bars span { display: flex; justify-content: space-between; font-size: 14px; }
+.commerce-status-bars meter { width: 100%; height: 15px; accent-color: #4f8560; }
+.commerce-discovery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.commerce-product-card { border: 1px solid #dce5dd; border-radius: 15px; background: white; overflow: hidden; display: flex; flex-direction: column; }
+.commerce-product-image { aspect-ratio: 4/3; background: #edf2eb; position: relative; }
+.commerce-product-image > img { width: 100%; height: 100%; object-fit: cover; }
+.commerce-product-image > div { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; color: #91a18f; font-size: 12px; }
+.commerce-product-category { position: absolute; bottom: 12px; left: 12px; font-size: 11px; padding: 6px 10px; border-radius: 20px; background: rgba(255,255,255,.93); color: #3e5440; max-width: calc(100% - 24px); }
+.commerce-product-copy { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+.commerce-product-copy > small { color: #6d7b6c; font-size: 11px; }
+.commerce-product-copy h2 { font-size: 18px; line-height: 1.4; margin: 8px 0; }
+.commerce-product-copy > p { font-size: 13px; line-height: 1.6; color: #6b766a; margin: 0 0 15px; flex: 1; }
+.commerce-product-facts { display: flex; justify-content: space-between; gap: 10px; padding: 14px 0; border-top: 1px solid #edf1ec; margin-bottom: 10px; }
+.commerce-product-facts small { display: block; color: #737f71; font-size: 11px; margin-bottom: 4px; }
+.commerce-product-facts strong { font-size: 16px; color: #315c3b; }
+.commerce-promotion { border: 1px solid #dce5dd; border-radius: 12px; background: #fff; padding: 24px; }
+.commerce-promotion-heading { display: flex; gap: 20px; justify-content: space-between; align-items: flex-start; }
+.commerce-promotion-heading h2 { font-size: 17px; margin: 0 0 8px; }
+.commerce-promotion-heading p, .commerce-muted { color: #6b7b6b; font-size: 12px; line-height: 1.6; margin: 0 0 14px; }
+.commerce-copy-field { display: block; margin: 12px 0; }
+.commerce-copy-field input { width: 100%; min-width: 0; border: 1px solid #dfe6df; background: #f6f8f5; border-radius: 8px; padding: 12px; color: #526952; font: 12px monospace; }
+.commerce-access { max-width: 650px; margin: 80px auto; padding: 32px; }
+.commerce-access p { line-height: 1.7; }
+.commerce-workspace :is(button,a,input,select,textarea,summary):focus-visible { outline: 3px solid #699c55; outline-offset: 3px; }
+@media (max-width: 1200px) { .commerce-discovery-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 900px) { .commerce-two-column { grid-template-columns: 1fr; } .commerce-record summary { flex-wrap: wrap; gap: 12px; } .commerce-record summary > :first-child { flex-basis: 50%; } }
+@media (max-width: 600px) {
+  .commerce-topbar-title { font-size: 12px; }
+  .commerce-workspace-select select { max-width: 140px; padding: 8px; font-size: 11px; }
+  .commerce-workspace .topbar { gap: 8px; }
+  .commerce-workspace .top-actions { gap: 6px; }
+  .commerce-form-grid, .commerce-discovery-grid { grid-template-columns: 1fr; }
+  .commerce-record summary { padding: 16px; }
+  .commerce-record-body { padding: 16px; }
+  .commerce-definition > div { grid-template-columns: 1fr; gap: 6px; }
+  .commerce-promotion { padding: 18px; }
+  .commerce-promotion-heading { gap: 10px; }
+  .commerce-footer { flex-direction: column; gap: 8px; }
+  .commerce-store-selector label { align-items: flex-start; flex-direction: column; width: 100%; }
+  .commerce-store-selector select { width: 100%; }
+}
+@media (max-width: 390px) { .commerce-topbar-title { display: none; } }
