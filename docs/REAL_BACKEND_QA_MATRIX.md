@@ -66,6 +66,10 @@ Controlled production writes: normal QA Auth sessions/read markers, two clearly 
 
 ## Release verification
 
-Pending final build and existing-project deployment checks; do not interpret this document as a deployment PASS until this section is updated.
+`npm run build`, `npm run lint`, and `npm test` passed: **73 tests across 9 files**. Vite reports a non-blocking 571 KB main-chunk warning; workspace/chat routes are lazy-loaded. No actual privileged-key token patterns were found in source or the production bundle; Supabase SDK terminology alone is not a secret.
+
+Pushed implementation to `dingdong-vamshi/Social24x7-web-app`, `main`. The existing Vercel project `social24x7-web-app` deployed successfully and the production alias remains `https://social24x7-web-app.vercel.app/`. Only public `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` were configured. No custom domains were bound. The initial connected release passed production landing, real QA login, Seller overview/products/orders, Creator overview/discovery and persisted chat checks without page errors. Final UI copy/date polish does not change these backend contracts; the final release SHA and post-polish production screenshots are recorded with the external flow proof.
+
+Security review is scoped, not a certification of the inherited backend. The read-only advisor audit also reported existing function-search-path warnings, broad security-definer execution grants and disabled leaked-password protection. These were not changed in this web task; appropriate backend-owner review remains necessary. Live isolation cases above passed, while employee, attachment and full signup lifecycle cases remain explicitly unverified.
 
 Old repository baseline and final read-only check: branch `main`, clean, HEAD `e207f7526f140976630b92c09782a87998f6a8c6`. No old-repository commit, push or deployment occurred.
