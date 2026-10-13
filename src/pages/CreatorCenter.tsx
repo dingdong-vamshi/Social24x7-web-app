@@ -1,0 +1,67 @@
+import { useCallback, useState } from 'react'
+import { ArrowDownToLine, ArrowRight, CheckCircle2, Copy, ExternalLink, Landmark, Link2, Megaphone, MousePointerClick, PackageSearch, Plus, ShieldCheck, ShoppingBag, TrendingUp, WalletCards } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { OrdersChart, RevenueChart } from '../components/Charts'
+import { WorkspaceShell } from '../components/WorkspaceShell'
+import { Button, ErrorState, FilterBar, LoadingState, MetricCard, PageHeader, SectionCard, StatusPill } from '../components/Ui'
+import { useRepository } from '../hooks/useRepository'
+import { repositories } from '../repositories/mock'
+import { formatMoney } from '../utils/format'
+
+export function CreatorCenter() {
+  const path = useLocation().pathname.split('/')[2] ?? 'overview'
+  return <WorkspaceShell role="creator"><CreatorView section={path}/></WorkspaceShell>
+}
+
+function CreatorView({ section }: { section: string }) {
+  if (section === 'discover') return <Discover />
+  if (section === 'promotions') return <Promotions />
+  if (section === 'links') return <AffiliateLinks />
+  if (section === 'earnings') return <Earnings />
+  if (section === 'analytics') return <CreatorAnalytics />
+  if (section === 'profile') return <Profile />
+  return <CreatorOverview />
+}
+
+function CreatorOverview() {
+  const load = useCallback(() => repositories.analytics.creatorOverview(), [])
+  const { data, loading, error } = useRepository(load)
+  if (loading) return <LoadingState/>
+  if (error || !data) return <ErrorState message={error}/>
+  return <><PageHeader eyebrow="Creator Center" title="Good morning, Maya" description="A clear view of your promotions, attributed orders, and earnings." actions={<Button to="/creator/discover"><PackageSearch size={17}/> Discover products</Button>}/><div className="creator-hero"><div><span>CREATOR COMMERCE</span><h2>Turn trusted recommendations into measurable earnings.</h2><p>Every figure below comes from the Phase 1 attribution and commission fixture model.</p><Button to="/creator/promotions" variant="secondary">View active promotions <ArrowRight size={16}/></Button></div><div className="creator-hero-art"><div className="link-node"><Link2/></div><div className="creator-orbit"><i>01</i><i>02</i><i>03</i></div></div></div><div className="metric-grid creator-metrics"><MetricCard label="Estimated earnings" value={formatMoney(data.estimatedEarningsMinor)} detail={`${formatMoney(data.pendingPayoutMinor)} pending`} tone="green"/><MetricCard label="Active promotions" value={String(data.activePromotions)} detail="Across 5 seller partners"/><MetricCard label="Link clicks" value={data.clicks.toLocaleString('en-IN')} detail="+18.6% in 30 days"/><MetricCard label="Attributed orders" value={String(data.orders)} detail={`${data.conversion}% conversion`} tone="dark"/></div><div className="dashboard-grid"><SectionCard title="Earnings trend" description="Estimated commission · last 7 days" className="span-two"><RevenueChart/></SectionCard><SectionCard title="Campaign activity" description="What happened recently"><div className="activity-list"><Activity icon={<ShoppingBag/>} title="3 attributed orders" detail="Everyday Linen Shirt · 48 min ago"/><Activity icon={<MousePointerClick/>} title="184 new clicks" detail="Across 4 active links · today"/><Activity icon={<WalletCards/>} title="₹3,638 moved to eligible" detail="Settlement window completed · 9:12 AM"/></div></SectionCard></div></>
+}
+
+function Activity({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) { return <div><span>{icon}</span><div><strong>{title}</strong><small>{detail}</small></div></div> }
+
+function Discover() {
+  const load = useCallback(() => repositories.creatorDiscovery.listEligibleProducts(), [])
+  const { data, loading, error } = useRepository(load)
+  const [created, setCreated] = useState('')
+  async function create(productId: string) { const promotion = await repositories.creatorPromotions.create(productId); setCreated(promotion.productTitle) }
+  return <><PageHeader eyebrow="Marketplace" title="Discover products" description="Find seller products that are eligible for creator promotion."/><FilterBar placeholder="Search products or sellers"><select aria-label="Category"><option>All categories</option><option>Fashion</option><option>Beauty</option><option>Fitness</option></select><select aria-label="Commission"><option>Any commission</option><option>8% and above</option></select><select aria-label="Performance"><option>All performance</option><option>High</option></select></FilterBar>{created && <div className="notice-bar"><CheckCircle2/><span><strong>Promotion created for {created}.</strong> A local tracking link is ready in Affiliate links.</span></div>}{loading ? <LoadingState/> : error ? <ErrorState message={error}/> : <div className="product-discovery-grid">{data?.map((product) => <article key={product.id}><div className={`discovery-image category-${product.category.toLowerCase()}`}><span>{product.category}</span><strong>{product.title.split(' ').slice(0, 2).map((word) => word[0]).join('')}</strong></div><div className="discovery-copy"><small>{product.seller}</small><h2>{product.title}</h2><div className="discovery-meta"><span><b>{product.commissionBps/100}%</b> commission</span><span><b>{formatMoney(product.salePriceMinor ?? product.priceMinor)}</b> price</span></div><div className="performance-tag"><TrendingUp size={15}/> {product.performance} performer</div><Button onClick={() => create(product.id)}>Create promotion <ArrowRight size={16}/></Button></div></article>)}</div>}</>
+}
+
+function Promotions() {
+  const load = useCallback(() => repositories.creatorPromotions.list(), [])
+  const { data, loading, error } = useRepository(load)
+  return <><PageHeader eyebrow="Creator commerce" title="Promotions" description="Track every product promotion from link creation to attributed earnings." actions={<Button to="/creator/discover"><Plus size={17}/> New promotion</Button>}/><div className="subtabs"><button className="active">All <b>7</b></button><button>Active <b>5</b></button><button>Paused</button><button>Completed <b>2</b></button></div><FilterBar placeholder="Search promotion or product"><select aria-label="Promotion period"><option>Last 30 days</option><option>All time</option></select></FilterBar>{loading ? <LoadingState/> : error ? <ErrorState message={error}/> : <div className="table-card"><table><thead><tr><th>Promotion</th><th>Status</th><th>Clicks</th><th>Orders</th><th>Attributed sales</th><th>Commission</th><th/></tr></thead><tbody>{data?.map((item) => <tr key={item.id}><td data-label="Promotion"><strong>{item.productTitle}</strong><small>{item.seller} · {item.trackingCode}</small></td><td data-label="Status"><StatusPill>{item.status}</StatusPill></td><td data-label="Clicks">{item.clicks.toLocaleString('en-IN')}</td><td data-label="Orders">{item.orders}</td><td data-label="Attributed sales">{formatMoney(item.attributedMinor)}</td><td data-label="Commission"><strong>{formatMoney(item.commissionMinor)}</strong></td><td><button className="row-action">View</button></td></tr>)}</tbody></table></div>}</>
+}
+
+function AffiliateLinks() {
+  const load = useCallback(() => repositories.creatorPromotions.list(), [])
+  const { data, loading, error } = useRepository(load)
+  const [copied, setCopied] = useState('')
+  function copy(code: string) { setCopied(code); void navigator.clipboard?.writeText(`https://social24.app/p/${code}`) }
+  return <><PageHeader eyebrow="Attribution" title="Affiliate links" description="Copy and share trackable Social24 product links." actions={<Button to="/creator/discover"><Plus size={17}/> Create link</Button>}/><div className="finance-disclaimer"><ShieldCheck/><span>Tracking codes are local fixtures. Production links will resolve through Social24 attribution services in Phase 2.</span></div>{loading ? <LoadingState/> : error ? <ErrorState message={error}/> : <div className="link-list">{data?.map((item) => <article key={item.id}><div className="link-product"><span><Link2/></span><div><strong>{item.productTitle}</strong><small>{item.seller}</small></div></div><div className="link-url"><code>social24.app/p/{item.trackingCode}</code><button onClick={() => copy(item.trackingCode)}><Copy size={16}/>{copied === item.trackingCode ? 'Copied' : 'Copy'}</button></div><div className="link-stats"><span><small>Clicks</small><strong>{item.clicks.toLocaleString('en-IN')}</strong></span><span><small>Orders</small><strong>{item.orders}</strong></span><span><small>Commission</small><strong>{formatMoney(item.commissionMinor)}</strong></span></div><button className="icon-button" aria-label="Open link"><ExternalLink size={17}/></button></article>)}</div>}</>
+}
+
+function Earnings() {
+  const load = useCallback(() => repositories.creatorEarnings.list(), [])
+  const { data, loading, error } = useRepository(load)
+  const totals = data?.reduce((sum, item) => sum + item.commissionMinor, 0) ?? 0
+  return <><PageHeader eyebrow="Commission ledger" title="Earnings" description="Follow attributed commission from estimated to eligible and paid." actions={<Button variant="secondary"><ArrowDownToLine size={17}/> Export statement</Button>}/><div className="metric-grid compact-metrics"><MetricCard label="Estimated" value={formatMoney(totals)} detail="Current attribution estimate" tone="green"/><MetricCard label="Pending" value="₹4,298" detail="Within settlement window"/><MetricCard label="Eligible" value="₹3,638" detail="Ready for future payout"/><MetricCard label="Paid" value="₹5,320" detail="Completed mock records"/></div><div className="finance-disclaimer"><Landmark/><span>Payout execution is intentionally unavailable. A web-gateway and payout repository boundary will be integrated in Phase 2.</span></div>{loading ? <LoadingState/> : error ? <ErrorState message={error}/> : <div className="table-card"><table><thead><tr><th>Attribution</th><th>Product</th><th>Seller</th><th>Attributed order value</th><th>Commission</th><th>Status</th></tr></thead><tbody>{data?.map((item, index) => <tr key={item.id}><td data-label="Attribution"><strong>{item.id}</strong><small>{index === 0 ? '13 Oct 2026' : '09 Oct 2026'}</small></td><td data-label="Product">{item.productTitle}</td><td data-label="Seller">{item.seller}</td><td data-label="Attributed order value">{formatMoney(item.attributedMinor)}</td><td data-label="Commission"><strong>{formatMoney(item.commissionMinor)}</strong></td><td data-label="Status"><StatusPill>{index === 0 ? 'Pending' : index === 1 ? 'Eligible' : 'Paid'}</StatusPill></td></tr>)}</tbody></table></div>}</>
+}
+
+function CreatorAnalytics() { return <><PageHeader eyebrow="Performance" title="Creator analytics" description="Understand how audiences move from clicks to attributed orders." actions={<select aria-label="Analytics period"><option>Last 30 days</option><option>Last 7 days</option></select>}/><div className="metric-grid compact-metrics"><MetricCard label="Clicks" value="4,928" detail="+18.6% vs prior period" tone="green"/><MetricCard label="Attributed orders" value="107" detail="+14 orders"/><MetricCard label="Conversion" value="2.17%" detail="+0.3 percentage points"/><MetricCard label="Commission" value="₹13,256" detail="+12.2% vs prior period"/></div><div className="dashboard-grid"><SectionCard title="Attributed sales" description="Daily product order value" className="span-two"><RevenueChart/></SectionCard><SectionCard title="Orders by day" description="Attributed orders"><OrdersChart/></SectionCard><SectionCard title="Campaign performance" description="Share of attributed sales"><div className="bar-list"><div><span>Everyday Linen Shirt <b>56%</b></span><i><em style={{width:'56%'}}/></i></div><div><span>Studio Yoga Mat <b>31%</b></span><i><em style={{width:'31%'}}/></i></div><div><span>Botanical Face Serum <b>13%</b></span><i><em style={{width:'13%'}}/></i></div></div></SectionCard></div></> }
+
+function Profile() { return <><PageHeader eyebrow="Creator identity" title="Profile" description="Manage the business-facing profile sellers see when considering partnerships." actions={<Button variant="secondary">Edit profile</Button>}/><div className="profile-layout"><section className="creator-profile-card"><div className="profile-cover"><div className="large-avatar">MK</div></div><div className="profile-copy"><div><h2>Maya Kapoor <CheckCircle2/></h2><p>@mayamakes · Lifestyle & slow fashion</p></div><StatusPill>Verified</StatusPill><dl><div><dt>Primary platform</dt><dd><Megaphone size={16}/> Instagram · 48.2K</dd></div><div><dt>Creator category</dt><dd>Content & Digital Media</dd></div><div><dt>Specialization</dt><dd>Content Creator</dd></div><div><dt>Professional verification</dt><dd>Not required</dd></div></dl></div></section><aside className="profile-side"><SectionCard title="Profile strength" description="Ready for partnerships"><div className="profile-strength"><strong>94%</strong><i><em style={{width:'94%'}}/></i><span><CheckCircle2/> Identity verified</span><span><CheckCircle2/> Payout details added</span><span><CheckCircle2/> Social channel connected</span></div></SectionCard><SectionCard title="Payment & tax" description="Repository-ready information"><div className="payment-summary"><Landmark/><div><strong>HDFC Bank · •••• 3819</strong><small>PAN verified · GST not registered</small></div></div></SectionCard></aside></div></> }
