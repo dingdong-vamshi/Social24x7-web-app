@@ -12,6 +12,13 @@ const storage = {
   set(key: string, value: unknown) { if (typeof window !== 'undefined') window.localStorage.setItem(key, JSON.stringify(value)) },
 }
 
+const localPromotions = () => {
+  const value = storage.get('social24:creator:promotions')
+  if (!value) return []
+  try { return JSON.parse(value) as Promotion[] }
+  catch { return [] }
+}
+
 const sessionFor = (role: PartnerRole, approved = false): PartnerSession => ({
   id: role === 'seller' ? 'partner-seller-001' : 'partner-creator-001',
   name: role === 'seller' ? 'Arjun Rao' : 'Maya Kapoor',
@@ -70,11 +77,12 @@ export const repositories: RepositoryRegistry = {
   sellerTeam: { async listMembers() { return wait(team) } },
   creatorDiscovery: { async listEligibleProducts() { return wait(products.filter((product) => product.creatorPromotionEnabled)) } },
   creatorPromotions: {
-    async list() { return wait(promotions) },
+    async list() { return wait([...localPromotions(), ...promotions]) },
     async create(productId) {
       const product = products.find((item) => item.id === productId)
       if (!product) throw new Error('Product not found.')
       const promotion: Promotion = { id: `PROMO-${Date.now()}`, productTitle: product.title, seller: product.seller, trackingCode: `S24-${product.sku}`, clicks: 0, orders: 0, attributedMinor: 0, commissionMinor: 0, status: 'Active' }
+      storage.set('social24:creator:promotions', [promotion, ...localPromotions()])
       return wait(promotion)
     },
   },

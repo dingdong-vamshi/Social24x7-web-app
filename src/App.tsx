@@ -20,7 +20,7 @@ export default function App() {
     }
     window.addEventListener(PREVIEW_NOTICE_EVENT, handleNotice)
     const handlePreviewControl = (event: MouseEvent) => {
-      const target = (event.target as Element | null)?.closest('.row-action, .filter-button, .evidence-button, .subtabs button, .shipment-timeline button, .health-grid button, .notice-bar button, .link-list > article > .icon-button')
+      const target = (event.target as Element | null)?.closest('.row-action, .evidence-button, .shipment-timeline button, .health-grid button')
       if (target && !(target as HTMLButtonElement).disabled) announcePreviewAction('This control is a Phase 1 interaction preview. No production record was changed.')
     }
     document.addEventListener('click', handlePreviewControl)

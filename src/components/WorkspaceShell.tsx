@@ -40,7 +40,7 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
   return <div className={`workspace ${collapsed ? 'nav-collapsed' : ''}`}>
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
       <div className="sidebar-brand"><Brand compact={collapsed} /><button aria-label="Close navigation" className="icon-button mobile-only" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>
-      <div className="workspace-switcher"><div className="avatar">{role === 'seller' ? 'A' : 'M'}</div>{!collapsed && <div><strong>{name}</strong><span>{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span></div>}{!collapsed && <ChevronDown size={16} />}</div>
+      <button className="workspace-switcher" type="button" aria-label="Switch workspace" onClick={() => announcePreviewAction('Workspace switching is not connected in this Phase 1 preview.')}><span className="avatar">{role === 'seller' ? 'A' : 'M'}</span>{!collapsed && <span className="workspace-switcher-copy"><strong>{name}</strong><span>{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span></span>}{!collapsed && <ChevronDown size={16} />}</button>
       <nav aria-label={`${role} workspace`}>
         {!collapsed && <span className="nav-label">Workspace</span>}
         {nav.map((item) => <NavLink key={item.path} to={item.path} end={item.path === `/${role}`} onClick={() => setMobileOpen(false)} title={collapsed ? item.label : undefined}>{item.icon}{!collapsed && <span>{item.label}</span>}</NavLink>)}
@@ -54,7 +54,7 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
     <div className="workspace-main">
       <header className="topbar">
         <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
-        <div className="command-search"><Search size={18} /><span>Search {role === 'seller' ? 'orders, products, customers' : 'products, links, campaigns'}</span><kbd>⌘ K</kbd></div>
+        <button className="command-search" type="button" onClick={() => announcePreviewAction(`Global ${role} workspace search is not connected in this Phase 1 preview.`)}><Search size={18} /><span>Search {role === 'seller' ? 'orders, products, customers' : 'products, links, campaigns'}</span><kbd>⌘ K</kbd></button>
         <div className="top-actions"><button className="icon-button" aria-label="Refresh preview data" onClick={() => announcePreviewAction('Preview data is already up to date. No production request was made.')}><RefreshCcw size={18} /></button><button className="profile-chip" onClick={() => announcePreviewAction('Account settings are not connected in this Phase 1 preview.')}><span>{role === 'seller' ? 'AR' : 'MK'}</span><span className="profile-copy"><strong>{role === 'seller' ? 'Arjun Rao' : 'Maya Kapoor'}</strong><small>{role === 'seller' ? 'Owner' : 'Creator'}</small></span><ChevronDown size={15} /></button></div>
       </header>
       <main className="workspace-content">{children}</main>

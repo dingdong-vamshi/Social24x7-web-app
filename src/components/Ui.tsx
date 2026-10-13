@@ -22,8 +22,8 @@ export function StatusPill({ children }: { children: ReactNode }) {
   return <span className={`status-pill ${key}`}>{children}</span>
 }
 
-export function FilterBar({ placeholder = 'Search', children }: { placeholder?: string; children?: ReactNode }) {
-  return <div className="filter-bar"><label className="search-field"><Search size={17} /><span className="sr-only">Search</span><input placeholder={placeholder} /></label>{children}</div>
+export function FilterBar({ placeholder = 'Search', value, onChange, children }: { placeholder?: string; value?: string; onChange?: (value: string) => void; children?: ReactNode }) {
+  return <div className="filter-bar"><label className="search-field"><Search size={17} /><span className="sr-only">{placeholder}</span><input aria-label={placeholder} placeholder={placeholder} value={value} onChange={onChange ? (event) => onChange(event.target.value) : undefined} /></label>{children}</div>
 }
 
 export function EmptyState({ title, description }: { title: string; description: string }) {
