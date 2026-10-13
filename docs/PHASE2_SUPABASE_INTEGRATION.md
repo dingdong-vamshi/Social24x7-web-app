@@ -31,3 +31,15 @@ This document is planning-only. No connection, migration, RPC, Storage policy, o
 6. Add settlement and analytics read models only after confirming existing records cannot serve those views efficiently.
 7. Route payment/subscription and AI work through secure server or Edge Function boundaries.
 8. Run contract tests against a safe non-production environment before enabling production.
+
+## Future chat and web considerations
+
+Chat is not part of the current Partner Web Phase 1 implementation. If stakeholder scope later adds messaging to Partner Web or the separate consumer web client, all clients should use:
+
+- the same Supabase Auth account and device/session policy;
+- the same canonical conversations, participants, and message records;
+- the same Realtime publication plus reconnect reconciliation;
+- the same RLS membership and Business Chat permission rules; and
+- an optional bounded, account-partitioned local cache for startup and limited offline history.
+
+A web cache should use IndexedDB rather than browser `localStorage` for message bodies. A mobile cache should use an encrypted SQLite-class store with its key protected by platform Keychain/Keystore. Cache design does not provide E2EE. Encryption scope, AI Assistant access, retention, multi-device behavior, and whether Partner Web contains Business Chat all require explicit approval before implementation. See `docs/CHAT_WEB_ARCHITECTURE_GAPS.md`.
