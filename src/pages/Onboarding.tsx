@@ -6,9 +6,10 @@ import { Button } from '../components/Ui'
 import { creatorCategories, requiresProfessionalVerification } from '../domain/creator-policy'
 import type { PartnerRole } from '../domain/models'
 import { repositories } from '../repositories/mock'
+import { announcePreviewAction } from '../utils/preview'
 
 export function RoleSelection() {
-  return <div className="selection-page"><header><Brand /><Link to="/login">Sign in</Link></header><main><div className="selection-intro"><div className="eyebrow">Set up your workspace</div><h1>How will you use Social24?</h1><p>Choose a path now. Both roles belong to the same Social24 account architecture.</p></div><div className="role-options"><Link to="/onboarding/seller" className="role-option seller"><span className="role-number">01</span><div className="role-icon"><Store /></div><h2>Seller</h2><p>List and manage products, orders, fulfillment, finance, teams, and daily business operations.</p><span className="role-link">Start seller onboarding <ArrowRight /></span></Link><Link to="/onboarding/creator" className="role-option creator"><span className="role-number">02</span><div className="role-icon"><Megaphone /></div><h2>Creator</h2><p>Discover products, promote brands, create affiliate links, and track attributed earnings.</p><span className="role-link">Start creator onboarding <ArrowRight /></span></Link></div><div className="selection-foot"><ShieldCheck size={18} /><span>Your information is saved through a repository interface ready for future secure backend integration.</span></div></main></div>
+  return <div className="selection-page"><header><Brand /><Link to="/login">Sign in</Link></header><main><div className="selection-intro"><div className="eyebrow">Set up your workspace</div><h1>How will you use Social 24x7?</h1><p>Choose a path now. Both roles belong to the same Social 24x7 account architecture.</p></div><div className="role-options"><Link to="/onboarding/seller" className="role-option seller"><span className="role-number">01</span><div className="role-icon"><Store /></div><h2>Seller</h2><p>List and manage products, orders, fulfillment, finance, teams, and daily business operations.</p><span className="role-link">Start seller onboarding <ArrowRight /></span></Link><Link to="/onboarding/creator" className="role-option creator"><span className="role-number">02</span><div className="role-icon"><Megaphone /></div><h2>Creator</h2><p>Discover products, promote brands, create affiliate links, and track attributed earnings.</p><span className="role-link">Start creator onboarding <ArrowRight /></span></Link></div><div className="selection-foot"><ShieldCheck size={18} /><span>Your information is saved through a repository interface ready for future secure backend integration.</span></div></main></div>
 }
 
 type Field = { name: string; label: string; placeholder?: string; type?: string; options?: string[]; wide?: boolean; required?: boolean }
@@ -29,8 +30,9 @@ const sellerSteps: Step[] = [
   ], upload: 'Cancelled cheque or bank proof' },
   { title: 'Store setup', description: 'Shape how customers and creators see your store.', icon: <Store />, fields: [
     { name: 'displayName', label: 'Display name', placeholder: 'Arjun Everyday', required: true }, { name: 'supportEmail', label: 'Support email', placeholder: 'care@arjuneveryday.com', type: 'email' }, { name: 'storeCategory', label: 'Store category', options: ['Fashion', 'Beauty', 'Home & living', 'Fitness'] }, { name: 'supportPhone', label: 'Support phone', placeholder: '+91 98765 00000' }, { name: 'description', label: 'Store description', placeholder: 'Tell customers what makes your store different.', wide: true },
+    { name: 'pickupAddress', label: 'Pickup address', placeholder: 'Warehouse, street, city, state, PIN', wide: true },
   ], upload: 'Store logo or brand mark' },
-  { title: 'Verification', description: 'Confirm the evidence Social24 will review.', icon: <ShieldCheck />, fields: [
+  { title: 'Verification', description: 'Confirm the evidence Social 24x7 will review.', icon: <ShieldCheck />, fields: [
     { name: 'verificationContact', label: 'Verification contact', placeholder: 'Representative name' }, { name: 'availability', label: 'Preferred verification window', options: ['10 AM–1 PM', '2 PM–5 PM', '5 PM–7 PM'] },
   ], upload: 'Business verification evidence (video placeholder)' },
   { title: 'Review', description: 'Check your information before submission.', icon: <CheckCircle2 />, review: true },
@@ -51,11 +53,11 @@ function creatorSteps(professional: boolean): Step[] {
       { name: 'pan', label: 'PAN', placeholder: 'ABCDE1234F', required: true }, { name: 'idType', label: 'Identity document', options: ['Aadhaar', 'Passport', 'Driving licence'] }, { name: 'idNumber', label: 'Document number', placeholder: 'Masked ID number', required: true },
     ], upload: 'Identity document' },
     { title: 'Payment & tax', description: 'Details for future creator commission payouts.', icon: <Landmark />, fields: [
-      { name: 'accountHolder', label: 'Account holder', placeholder: 'Maya Kapoor', required: true }, { name: 'accountNumber', label: 'Account number', placeholder: 'Enter account number', required: true }, { name: 'ifsc', label: 'IFSC', placeholder: 'ICIC0000123', required: true }, { name: 'gstRegistered', label: 'GST registered?', options: ['No', 'Yes'] },
+      { name: 'payoutUpi', label: 'Payout UPI (optional)', placeholder: 'creator@upi' }, { name: 'accountHolder', label: 'Account holder', placeholder: 'Maya Kapoor', required: true }, { name: 'accountNumber', label: 'Account number', placeholder: 'Enter account number', required: true }, { name: 'ifsc', label: 'IFSC', placeholder: 'ICIC0000123', required: true }, { name: 'gstRegistered', label: 'GST registered?', options: ['No', 'Yes'] },
     ] },
   ]
   if (professional) steps.push({ title: 'Professional verification', description: 'This specialization requires evidence of professional credentials.', icon: <ShieldCheck />, fields: [
-    { name: 'licence', label: 'Registration / licence number', placeholder: 'Professional registration number', required: true }, { name: 'institution', label: 'Issuing institution', placeholder: 'Council or institution', required: true },
+    { name: 'professionalTitle', label: 'Professional title', placeholder: 'Doctor, dentist, advocate…', required: true }, { name: 'degree', label: 'Degree / qualification', placeholder: 'Professional qualification', required: true }, { name: 'licence', label: 'Registration / licence number', placeholder: 'Professional registration number', required: true }, { name: 'institution', label: 'Issuing institution', placeholder: 'Council or institution', required: true },
   ], upload: 'Professional credential and workplace verification video' })
   steps.push({ title: 'Review', description: 'Check your information before submission.', icon: <CheckCircle2 />, review: true })
   return steps
@@ -89,24 +91,28 @@ export function OnboardingWizard() {
     return field.options ?? []
   }
   async function next() {
-    const missing = current.fields?.filter((field) => field.required && !(form[field.name] ?? '').trim()).map((field) => field.label) ?? []
+    const completedForm = { ...form }
+    current.fields?.forEach((field) => {
+      if (!completedForm[field.name] && field.options) completedForm[field.name] = optionsFor(field)[0] ?? ''
+    })
+    const missing = current.fields?.filter((field) => field.required && !(completedForm[field.name] ?? '').trim()).map((field) => field.label) ?? []
     if (missing.length) { setError(`Complete: ${missing.join(', ')}`); return }
-    setError(''); setBusy(true)
+    setForm(completedForm); setError(''); setBusy(true)
     try {
       const repository = role === 'seller' ? repositories.sellerOnboarding : repositories.creatorOnboarding
-      await repository.save(step, form)
+      await repository.save(step, completedForm)
       if (step === steps.length - 1) { await repository.submit(); navigate(`/application?role=${role}`) }
       else setStep((value) => value + 1)
     } finally { setBusy(false) }
   }
   return <div className="onboarding-page">
-    <header><Brand /><div><span>Need help?</span><button>Partner support</button></div></header>
+    <header><Brand /><div><span>Need help?</span><button onClick={() => announcePreviewAction('Partner support is not connected in this Phase 1 preview.')}>Partner support</button></div></header>
     <div className="onboarding-layout">
       <aside><Link to="/onboarding"><ArrowLeft size={16} /> Change role</Link><div className="onboarding-role"><span>{role === 'seller' ? <Store /> : <Megaphone />}</span><div><small>{role === 'seller' ? 'Seller onboarding' : 'Creator onboarding'}</small><strong>{role === 'seller' ? 'Build your business profile' : 'Build your creator profile'}</strong></div></div><ol>{steps.map((item, index) => <li key={item.title} className={index === step ? 'active' : index < step ? 'complete' : ''}><span>{index < step ? <Check size={15} /> : index + 1}</span><div><strong>{item.title}</strong><small>{index < step ? 'Completed' : index === step ? 'In progress' : 'Not started'}</small></div></li>)}</ol></aside>
       <main>
         <div className="mobile-progress"><span>Step {step + 1} of {steps.length}</span><b>{progress}%</b><div><i style={{ width: `${progress}%` }} /></div></div>
         <div className="form-card"><div className="form-heading"><span className="form-icon">{current.icon}</span><div><div className="eyebrow">Step {step + 1} of {steps.length}</div><h1>{current.title}</h1><p>{current.description}</p></div></div>
-          {current.review ? <ReviewSummary role={role} form={form} professional={professional} /> : <div className="field-grid">{current.fields?.map((field) => <label key={field.name} className={field.wide ? 'wide' : ''}>{field.label}{field.options ? <select value={form[field.name] ?? optionsFor(field)[0]} onChange={(event) => update(field.name, event.target.value)}>{optionsFor(field).map((option) => <option key={option}>{option}</option>)}</select> : <input type={field.type ?? 'text'} value={form[field.name] ?? ''} onChange={(event) => update(field.name, event.target.value)} placeholder={field.placeholder} />}{field.required && <small>Required</small>}</label>)}{current.upload && <button className="upload-zone wide" type="button"><UploadCloud /><strong>{current.upload}</strong><span>Choose files or drag them here · PDF, JPG, PNG</span></button>}</div>}
+          {current.review ? <ReviewSummary role={role} form={form} professional={professional} /> : <div className="field-grid">{current.fields?.map((field) => <label key={field.name} className={field.wide ? 'wide' : ''}>{field.label}{field.options ? <select value={form[field.name] ?? optionsFor(field)[0]} onChange={(event) => update(field.name, event.target.value)}>{optionsFor(field).map((option) => <option key={option}>{option}</option>)}</select> : <input type={field.type ?? 'text'} value={form[field.name] ?? ''} onChange={(event) => update(field.name, event.target.value)} placeholder={field.placeholder} />}{field.required && <small>Required</small>}</label>)}{current.upload && <button className="upload-zone wide" type="button" onClick={() => announcePreviewAction('File upload is represented visually in Phase 1; no document was transmitted.')}><UploadCloud /><strong>{current.upload}</strong><span>Choose files or drag them here · PDF, JPG, PNG</span></button>}</div>}
           {error && <div className="form-error" role="alert">{error}</div>}
           <div className="form-actions"><Button variant="ghost" onClick={() => step === 0 ? navigate('/onboarding') : setStep((value) => value - 1)}><ArrowLeft size={17} /> Back</Button><Button onClick={next} disabled={busy}>{busy ? <><LoaderCircle className="spin" size={17} /> Saving…</> : step === steps.length - 1 ? <>Submit application <Check size={17} /></> : <>Save & continue <ArrowRight size={17} /></>}</Button></div>
         </div>

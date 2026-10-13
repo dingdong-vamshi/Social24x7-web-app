@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 import { ArrowRight, LoaderCircle, Search, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { announcePreviewAction } from '../utils/preview'
 
 export function Button({ children, to, variant = 'primary', type = 'button', onClick, disabled }: { children: ReactNode; to?: string; variant?: 'primary' | 'secondary' | 'ghost'; type?: 'button' | 'submit'; onClick?: () => void; disabled?: boolean }) {
   const className = `button ${variant}`
-  return to ? <Link className={className} to={to}>{children}</Link> : <button className={className} type={type} onClick={onClick} disabled={disabled}>{children}</button>
+  const action = onClick ?? (type === 'submit' ? undefined : () => announcePreviewAction())
+  return to ? <Link className={className} to={to}>{children}</Link> : <button className={className} type={type} onClick={action} disabled={disabled}>{children}</button>
 }
 
 export function PageHeader({ eyebrow, title, description, actions }: { eyebrow?: string; title: string; description?: string; actions?: ReactNode }) {

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { BarChart3, Boxes, ChevronDown, CircleDollarSign, CircleUserRound, ClipboardCheck, Handshake, HeartPulse, LayoutDashboard, Menu, PackageCheck, PanelLeftClose, RefreshCcw, RotateCcw, Search, Settings2, ShieldCheck, ShoppingBag, Store, Truck, Users, WalletCards, X } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import type { PartnerRole } from '../domain/models'
+import { announcePreviewAction } from '../utils/preview'
 import { Brand } from './Brand'
 
 export interface NavItem { label: string; path: string; icon: ReactNode }
@@ -54,7 +55,7 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
       <header className="topbar">
         <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
         <div className="command-search"><Search size={18} /><span>Search {role === 'seller' ? 'orders, products, customers' : 'products, links, campaigns'}</span><kbd>⌘ K</kbd></div>
-        <div className="top-actions"><button className="icon-button" aria-label="Refresh"><RefreshCcw size={18} /></button><button className="profile-chip"><span>{role === 'seller' ? 'AR' : 'MK'}</span><span className="profile-copy"><strong>{role === 'seller' ? 'Arjun Rao' : 'Maya Kapoor'}</strong><small>{role === 'seller' ? 'Owner' : 'Creator'}</small></span><ChevronDown size={15} /></button></div>
+        <div className="top-actions"><button className="icon-button" aria-label="Refresh preview data" onClick={() => announcePreviewAction('Preview data is already up to date. No production request was made.')}><RefreshCcw size={18} /></button><button className="profile-chip" onClick={() => announcePreviewAction('Account settings are not connected in this Phase 1 preview.')}><span>{role === 'seller' ? 'AR' : 'MK'}</span><span className="profile-copy"><strong>{role === 'seller' ? 'Arjun Rao' : 'Maya Kapoor'}</strong><small>{role === 'seller' ? 'Owner' : 'Creator'}</small></span><ChevronDown size={15} /></button></div>
       </header>
       <main className="workspace-content">{children}</main>
     </div>

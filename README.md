@@ -1,8 +1,8 @@
-# Social24 Partner Web
+# Social 24x7 Partner Web
 
-Social24 Partner Web is the dedicated desktop-first business application for Social24 sellers and creators. It combines onboarding with daily operational work: Seller Studio for commerce operations and Creator Center for affiliate commerce.
+Social 24x7 Partner Web is the dedicated desktop-first business application for Social 24x7 sellers and creators. It combines onboarding with daily operational work: Seller Studio for commerce operations and Creator Center for affiliate commerce.
 
-This repository is intentionally separate from the Social24 mobile application. It contains no consumer social feed, personal chat, games, wallet, nearby discovery, or consumer utility modules.
+This repository is intentionally separate from the Social 24x7 mobile application. It contains no consumer social feed, personal chat, games, wallet, nearby discovery, or consumer utility modules.
 
 ## Phase 1
 
@@ -57,6 +57,7 @@ Only browser-safe variables are named in `.env.example`. Never place service-rol
 - `docs/FRONTEND_ARCHITECTURE.md`
 - `docs/PHASE2_SUPABASE_INTEGRATION.md`
 - `docs/FEATURE_SCOPE.md`
+- `docs/CHAT_WEB_ARCHITECTURE_GAPS.md`
 
 ## Deployment
 

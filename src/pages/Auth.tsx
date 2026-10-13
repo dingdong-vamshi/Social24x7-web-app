@@ -21,7 +21,7 @@ export function Login() {
     finally { setBusy(false) }
   }
   return <AuthShell>
-    <div className="auth-kicker"><LockKeyhole size={16} /> Unified Social24 account</div>
+    <div className="auth-kicker"><LockKeyhole size={16} /> Unified Social 24x7 account</div>
     <h1>{challengeId ? 'Enter the verification code' : 'Welcome back'}</h1>
     <p>{challengeId ? `We sent a code to ${phone}.` : 'Sign in to continue to your seller or creator workspace.'}</p>
     <form onSubmit={submit} className="auth-form">
@@ -35,9 +35,9 @@ export function Login() {
 }
 
 function AuthShell({ children }: { children: React.ReactNode }) {
-  return <div className="auth-page"><header><Brand /><Link to="/">Back to partner home</Link></header><main><section className="auth-panel">{children}</section><aside className="auth-story"><div className="auth-story-inner"><div className="eyebrow">Social24 Partner</div><h2>One account.<br />Two ways to grow.</h2><div className="auth-story-list"><div><CheckCircle2 /><span><strong>Seller Studio</strong><small>Catalog, orders, teams, finance and creator partnerships.</small></span></div><div><MessageSquareText /><span><strong>Creator Center</strong><small>Discover products, create promotions and track earnings.</small></span></div></div></div></aside></main></div>
+  return <div className="auth-page"><header><Brand /><Link to="/">Back to partner home</Link></header><main><section className="auth-panel">{children}</section><aside className="auth-story"><div className="auth-story-inner"><div className="eyebrow">Social 24x7 Partner</div><h2>One account.<br />Two ways to grow.</h2><div className="auth-story-list"><div><CheckCircle2 /><span><strong>Seller Studio</strong><small>Catalog, orders, teams, finance and creator partnerships.</small></span></div><div><MessageSquareText /><span><strong>Creator Center</strong><small>Discover products, create promotions and track earnings.</small></span></div></div></div></aside></main></div>
 }
 
 export function Register() {
-  return <AuthShell><div className="auth-kicker"><ShieldCheck size={16} /> Partner registration</div><h1>Create your Social24 partner profile</h1><p>Use your phone number to create or continue a unified account. You’ll choose a seller or creator path next.</p><div className="registration-options"><Link to="/login"><span className="option-icon">+91</span><span><strong>Continue with phone</strong><small>OTP verification</small></span><ArrowRight /></Link></div><p className="legal-copy">By continuing, you agree to complete the verification appropriate to your selected business role.</p></AuthShell>
+  return <AuthShell><div className="auth-kicker"><ShieldCheck size={16} /> Partner registration</div><h1>Create your Social 24x7 partner profile</h1><p>Use your phone number to create or continue a unified account. You’ll choose a seller or creator path next.</p><div className="registration-options"><Link to="/login"><span className="option-icon">+91</span><span><strong>Continue with phone</strong><small>OTP verification</small></span><ArrowRight /></Link></div><p className="legal-copy">By continuing, you agree to complete the verification appropriate to your selected business role.</p></AuthShell>
 }

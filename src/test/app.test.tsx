@@ -11,7 +11,7 @@ const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}>
 describe('routing and role branching', () => {
   it('renders the partner landing entry', () => {
     renderAt('/')
-    expect(screen.getByRole('heading', { name: /Grow your business with Social24/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Grow your business with Social 24x7/i })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /Start selling/i }).length).toBeGreaterThan(0)
   })
 
@@ -49,6 +49,18 @@ describe('onboarding', () => {
     expect(await screen.findByRole('heading', { name: 'Business information' })).toBeInTheDocument()
   })
 
+  it('preserves seller values when navigating back and forward', async () => {
+    const user = userEvent.setup()
+    renderAt('/onboarding/seller')
+    await user.type(screen.getByLabelText(/Representative name/), 'Aarav QA')
+    await user.type(screen.getByLabelText(/Business email/), 'aarav.qa@example.com')
+    await user.type(screen.getByLabelText(/Phone number/), '+91 9000000001')
+    await user.click(screen.getByRole('button', { name: /Save & continue/ }))
+    expect(await screen.findByRole('heading', { name: 'Business information' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Back/ }))
+    expect(screen.getByLabelText(/Representative name/)).toHaveValue('Aarav QA')
+  })
+
   it('uses conditional professional creator rules', () => {
     expect(requiresProfessionalVerification('Content Creator')).toBe(false)
     expect(requiresProfessionalVerification('Doctor')).toBe(true)
@@ -58,8 +70,9 @@ describe('onboarding', () => {
   it('shows approved workspace fixture from application status', async () => {
     const user = userEvent.setup()
     renderAt('/application?role=creator')
-    const button = await screen.findByRole('button', { name: /Open Creator Center/ })
-    await user.click(button)
+    await user.click(await screen.findByRole('button', { name: /Preview approved status/ }))
+    expect(await screen.findByText('Approved')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Open Creator Center/ }))
     expect(await screen.findByRole('heading', { name: /Good morning, Maya/ })).toBeInTheDocument()
   })
 })
