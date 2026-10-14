@@ -1,0 +1,9 @@
+.profile-settings, .profile-settings .section-card, .profile-settings form, .profile-settings fieldset, .profile-settings label {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.profile-settings fieldset { display: grid; gap: 16px; }
+.profile-settings input[type=file] { width: 100%; max-width: 100%; min-width: 0; }
+.profile-settings .button { max-width: 100%; white-space: normal; padding-block: 10px; }
+.profile-settings input[type=checkbox] { justify-self: start; }

@@ -104,7 +104,7 @@ export interface BusinessWorkspaceRepository {
   getContext(): Promise<BusinessWorkContext | null>;
   listInbox(status?: "open" | "resolved" | null): Promise<WorkConversation[]>;
   listMessages(conversationId: string): Promise<WorkMessage[]>;
-  sendMessage(conversationId: string, body: string): Promise<void>;
+  sendMessage(conversationId: string, body: string, clientId?: string): Promise<void>;
   startByPhone(phone: string): Promise<string | null>;
   resolve(conversationId: string): Promise<void>;
   markRead(conversationId: string): Promise<void>;
@@ -133,12 +133,29 @@ export function createBusinessWorkspaceRepository(
       );
       return (rows ?? []).map(message);
     },
-    async sendMessage(conversationId, body) {
-      await rpc(client, "send_business_employee_message", {
-        target_conversation: conversationId,
-        message_body: body,
-        message_client_id: null,
-      });
+    async sendMessage(conversationId, body, clientId = crypto.randomUUID()) {
+      try {
+        const { data, error } = await client.rpc("send_business_employee_message", {
+          target_conversation: conversationId,
+          message_body: body,
+          message_client_id: clientId,
+        });
+        if (error) throw new Error(error.message);
+        if (!data) throw new Error("Message delivery was not confirmed.");
+      } catch (cause) {
+        // The existing RPC inserts a globally unique client_id. An interrupted response
+        // may still have committed. Only an authorized canonical match confirms delivery.
+        try {
+          const { data: identity, error: authError } = await client.auth.getUser();
+          if (!authError && identity.user) {
+            const { data, error } = await client.from("messages")
+              .select("id,body").eq("client_id", clientId)
+              .eq("conversation_id", conversationId).eq("sender_id", identity.user.id).maybeSingle();
+            if (!error && data && data.body === body.trim()) return;
+          }
+        } catch { /* Preserve the original failure; never infer success from a failed lookup. */ }
+        throw cause;
+      }
     },
     startByPhone: (phone) =>
       rpc(client, "start_business_customer_chat_by_phone", { p_phone: phone }),
@@ -154,16 +171,19 @@ export function createBusinessWorkspaceRepository(
     },
     getCompanyFeed: () => rpc(client, "get_business_company_feed"),
     subscribe(storefrontId, onChange) {
+      const subscriptionId = crypto.randomUUID();
+      let active = true;
+      const changed = () => { if (active) onChange(); };
       const channels: RealtimeChannel[] = [
         client
-          .channel(`business-workspace-messages:${storefrontId}`)
+          .channel(`business-workspace-messages:${storefrontId}:${subscriptionId}`)
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "messages" },
-            onChange,
+            changed,
           ),
         client
-          .channel(`business-workspace-assignments:${storefrontId}`)
+          .channel(`business-workspace-assignments:${storefrontId}:${subscriptionId}`)
           .on(
             "postgres_changes",
             {
@@ -172,10 +192,10 @@ export function createBusinessWorkspaceRepository(
               table: "business_conversation_assignments",
               filter: `storefront_id=eq.${storefrontId}`,
             },
-            onChange,
+            changed,
           ),
         client
-          .channel(`business-workspace-assignment-events:${storefrontId}`)
+          .channel(`business-workspace-assignment-events:${storefrontId}:${subscriptionId}`)
           .on(
             "postgres_changes",
             {
@@ -184,10 +204,10 @@ export function createBusinessWorkspaceRepository(
               table: "business_conversation_assignment_events",
               filter: `storefront_id=eq.${storefrontId}`,
             },
-            onChange,
+            changed,
           ),
         client
-          .channel(`business-workspace-member:${storefrontId}`)
+          .channel(`business-workspace-member:${storefrontId}:${subscriptionId}`)
           .on(
             "postgres_changes",
             {
@@ -196,11 +216,14 @@ export function createBusinessWorkspaceRepository(
               table: "storefront_team_memberships",
               filter: `storefront_id=eq.${storefrontId}`,
             },
-            onChange,
+            changed,
           ),
       ];
-      channels.forEach((channel) => void channel.subscribe());
+      channels.forEach((channel) => void channel.subscribe(status => {
+        if (status === "SUBSCRIBED") changed();
+      }));
       return () => {
+        active = false;
         channels.forEach((channel) => void client.removeChannel(channel));
       };
     },

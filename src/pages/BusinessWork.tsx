@@ -19,6 +19,7 @@ import { CommerceResult, useCommerce } from "../components/LiveCommerce";
 import { requireSupabase } from "../lib/supabase";
 import {
   createBusinessWorkspaceRepository,
+  type CompanyFeed as CompanyFeedData,
   type WorkConversation,
   type WorkMessage,
 } from "../features/businessWorkspace/businessWorkspaceRepository";
@@ -27,6 +28,8 @@ import {
   normalizeBusinessLoginId,
 } from "../features/team/rules";
 import { dateTime, label } from "../repositories/commerce";
+import { CompanyMedia } from '../features/team/CompanyMedia';
+import { companyProductMedia, isCompanyStoragePath } from '../features/team/companyMediaRepository';
 import "../features/team/team.css";
 import "../features/chat/team.css";
 
@@ -229,7 +232,7 @@ function WorkSession() {
     const context = await repository.getContext();
     if (!context || context.status !== "verified")
       throw new Error("Work access is no longer verified. Contact your owner.");
-    return { context, inbox: await repository.listInbox(filter) };
+    return { context, inbox: (await repository.listInbox(filter)).filter(row => row.storefrontId === context.storefrontId) };
   }, [repository, filter, revision]);
   const [state, setState] = useState<{
     data?: Awaited<ReturnType<typeof load>>;
@@ -338,9 +341,10 @@ function WorkSession() {
             </div>
             {tab === "feed" &&
             context.permissions.includes("business_feed_view") ? (
-              <CompanyFeed repository={repository} />
+              <CompanyFeed repository={repository} revision={revision} />
             ) : (
               <>
+                <p className="team-chat-boundary">This is the separate Business Work inbox. You can reply only to an open conversation assigned to your verified work identity. Supervisor access is read-only until an authorized reassignment.</p>
                 {context.permissions.includes("business_chat_reply") && (
                   <form className="commerce-form" onSubmit={start}>
                     <label>
@@ -443,27 +447,37 @@ function WorkThread({
   const load = useCallback(async () => {
     void revision;
     const context = await repository.getContext();
-    if (context?.status !== "verified") throw new Error("Work access revoked.");
+    if (context?.status !== "verified" || context.storefrontId !== conversation.storefrontId) throw new Error("Work access revoked.");
     const messages = await repository.listMessages(conversation.conversationId);
     await repository.markRead(conversation.conversationId);
     return messages;
-  }, [repository, conversation.conversationId, revision]);
+  }, [repository, conversation.conversationId, conversation.storefrontId, revision]);
   const result = useCommerce(load);
   const [body, setBody] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [resolving, setResolving] = useState(false);
   const pending = useRef(false);
+  const pendingDelivery = useRef<{ body: string; clientId: string } | null>(null);
   async function run(resolve = false) {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
     setError("");
     try {
+      const context = await repository.getContext();
+      if (!context || context.status !== 'verified' || context.storefrontId !== conversation.storefrontId || context.membershipId !== conversation.assigneeMembershipId || !context.permissions.includes('business_chat_reply')) throw new Error('Your reply permission or assignment is no longer available. Refresh the inbox.');
       if (resolve) await repository.resolve(conversation.conversationId);
-      else
-        await repository.sendMessage(conversation.conversationId, body.trim());
-      setBody("");
+      else {
+        const text = body.trim();
+        if (!text) throw new Error('Enter a reply before sending.');
+        if (!pendingDelivery.current || pendingDelivery.current.body !== text) {
+          pendingDelivery.current = { body: text, clientId: crypto.randomUUID() };
+        }
+        await repository.sendMessage(conversation.conversationId, text, pendingDelivery.current.clientId);
+        pendingDelivery.current = null;
+        setBody("");
+      }
       setResolving(false);
       onChanged();
     } catch (cause) {
@@ -569,10 +583,12 @@ function WorkThread({
 }
 function CompanyFeed({
   repository,
+  revision,
 }: {
   repository: ReturnType<typeof createBusinessWorkspaceRepository>;
+  revision: number;
 }) {
-  const load = useCallback(() => repository.getCompanyFeed(), [repository]);
+  const load = useCallback(() => { void revision; return repository.getCompanyFeed() }, [repository, revision]);
   const result = useCommerce(load);
   return (
     <CommerceResult result={result}>
@@ -581,25 +597,15 @@ function CompanyFeed({
           title={feed.storefront.name}
           description={feed.storefront.tagline}
         >
+          {feed.storefront.logoPath && isCompanyStoragePath(feed.storefront.logoPath) && <div className="company-feed-logo"><CompanyMedia key={feed.storefront.logoPath} reference={{ bucket: 'shop-media', path: feed.storefront.logoPath }} alt={`${feed.storefront.name} logo`} /></div>}
           <h3>Company products</h3>
-          {feed.products.map((p) => (
-            <p key={p.id}>
-              {p.title} ·{" "}
-              {(p.priceMinor / 100).toLocaleString("en-IN", {
-                style: "currency",
-                currency: p.currency,
-              })}{" "}
-              · {p.inventoryAvailable} available
-            </p>
-          ))}
+          <CompanyProducts products={feed.products} />
           <h3>Company posts</h3>
           {feed.posts.map((p) => (
             <article key={p.id}>
               <p>{p.body}</p>
               <small>{dateTime(p.createdAt)}</small>
-              {p.mediaPaths.length > 0 && (
-                <p>Post media remains available in the existing app.</p>
-              )}
+              <div className="company-post-media">{p.mediaPaths.map((path, index) => isCompanyStoragePath(path) && ['image', 'video'].includes(p.mediaType) ? <CompanyMedia key={`${path}:${index}`} reference={{ bucket: 'social-posts', path }} alt={`Company post ${p.mediaType} ${index + 1}`} video={p.mediaType === 'video'} /> : <p key={index}>This post media is unavailable.</p>)}</div>
             </article>
           ))}
           {!feed.posts.length && <p>No posts returned.</p>}
@@ -607,4 +613,29 @@ function CompanyFeed({
       )}
     </CommerceResult>
   );
+}
+
+function CompanyProducts({ products }: { products: CompanyFeedData['products'] }) {
+  const load = useCallback(() => companyProductMedia(requireSupabase(), products), [products]);
+  const media = useCommerce(load);
+  return <>
+    {media.error && <p role="status">
+      {media.error} <button type="button" onClick={media.refresh}>Retry product images</button>
+    </p>}
+    <div className="company-product-grid">
+      {products.map(product => {
+        const reference = media.data?.[product.id];
+        return <article key={product.id} className="company-product-card">
+          {reference
+            ? <CompanyMedia key={`${reference.bucket}:${reference.path}`} reference={reference} alt={product.title} />
+            : <p className="company-media-fallback">{media.data ? 'No available product image' : media.error ? 'Product image unavailable' : 'Loading image…'}</p>}
+          <h4>{product.title}</h4>
+          <p>{product.shortDescription}</p>
+          <strong>{(product.priceMinor / 100).toLocaleString('en-IN', { style: 'currency', currency: product.currency })}</strong>
+          <p>{product.inventoryAvailable} available</p>
+        </article>;
+      })}
+    </div>
+    {!products.length && <p>No active company products returned.</p>}
+  </>;
 }

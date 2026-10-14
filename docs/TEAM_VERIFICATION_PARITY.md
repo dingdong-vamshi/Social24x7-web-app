@@ -16,11 +16,11 @@ Root Owner is protected in the UI and backend. Owner monitoring does not expose 
 
 Auth trusts app_metadata, not editable user_metadata. Work context is rechecked on load, periodic refresh, return/reconnect and relevant events. Failed refresh removes protected data. Tests cover denied identities; actual old-client suspension → web-session revocation remains untested.
 
-## Confirmed shared-backend blocker
+## Validator finding corrected — 14 October 2026
 
-Read-only inspection of create_storefront_team_invitation found two backslashes before the email dot in the SQL regex. A read-only expression using an ordinary test email fails that validation. The UI correctly surfaces the error; it does not supply a malformed workaround email.
+The earlier validator defect report was incorrect: JSON display escaping was mistaken for SQL content. Extracting the exact current live pattern shows ONE escaped dot (hex 5c2e). Twelve read-only syntax cases pass, including ordinary domains and .test, with malformed inputs rejected. See SPRINT_TEAM_FINDINGS.md.
 
-Recommended repair: review all mobile/web callers, correct the shared validator in a separately reviewed compatible migration, test valid/invalid emails, uniqueness, grant limits and activation lifecycle. No function/schema/RLS was changed here.
+No validator migration is warranted. Production has active Work identities, but a controlled authorized Work credential/session is still needed for full activation, assignment and revocation acceptance. No invitations, roles, statuses, schema or RLS were changed.
 
 ## Verification distinctions
 

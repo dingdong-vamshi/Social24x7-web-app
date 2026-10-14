@@ -1,0 +1,8 @@
+.buyer-returns { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.buyer-returns section { margin-block: 1rem; border-top: 1px solid var(--border, #dedfe5); padding-top: 1rem; }
+.buyer-returns fieldset { min-width: 0; display: grid; gap: .8rem; }
+.buyer-returns label { min-width: 0; }
+.buyer-returns input, .buyer-returns textarea { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.buyer-returns button { max-width: 100%; white-space: normal; }
+.buyer-returns .buyer-return-confirm { display: flex; align-items: flex-start; gap: .6rem; }
+.buyer-returns .buyer-return-confirm input { flex: 0 0 auto; width: auto; margin-top: .25rem; }

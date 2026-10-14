@@ -101,9 +101,9 @@ export function createTeamRepository(client: SupabaseClient): TeamRepository {
     const row = Array.isArray(value)
       ? (value[0] as Record<string, unknown> | undefined)
       : value;
-    if (!row) throw new Error("Activation credentials were not returned.");
+    if (!row || typeof row.activation_code !== 'string' || !row.activation_code.trim() || !row.expires_at) throw new Error("Activation credentials were not returned. Refresh the team before trying again.");
     return {
-      membershipId: String(row.membership_id ?? ""),
+      membershipId: String(row.membership_id ?? parameters.target_member ?? ""),
       activationCode: String(row.activation_code ?? ""),
       expiresAt: String(row.expires_at ?? ""),
     };

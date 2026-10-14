@@ -11,6 +11,7 @@ import { useAuth } from "../auth/AuthContext";
 import { CommerceResult, useCommerce } from "../components/LiveCommerce";
 import { Button, SectionCard } from "../components/Ui";
 import { requireSupabase } from "../lib/supabase";
+import { PackingUpload } from "../features/sellerSprint/SellerTools";
 import { dateTime, label, money, type Order } from "../repositories/commerce";
 import {
   createOperationsRepository,
@@ -66,6 +67,7 @@ export function FulfillmentEditor({
     <>
       <OrderHistory id={order.id} />
       <EvidenceList id={order.id} kind="order" />
+      <PackingUpload orderId={order.id} onSaved={onSaved} />
       {choices.length ? (
         <form className="commerce-form" onSubmit={submit}>
           <h3>Update fulfillment</h3>

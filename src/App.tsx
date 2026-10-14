@@ -16,6 +16,7 @@ const Social = lazy(() => import('./pages/Social').then(module => ({ default: mo
 const BusinessLogin = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessLogin })))
 const BusinessWork = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessWork })))
 const SellerStudio = lazy(() => import('./pages/SellerStudio').then(module => ({ default: module.SellerStudio })))
+const ProfessionalVerification = lazy(() => import('./pages/ProfessionalVerification').then(module => ({ default: module.ProfessionalVerification })))
 const CreatorCenter = lazy(() => import('./pages/CreatorCenter').then(module => ({ default: module.CreatorCenter })))
 const ConsumerWeb = lazy(() => import('./pages/ConsumerWeb').then(module => ({ default: module.ConsumerWeb })))
 const ConsumerOrders = lazy(() => import('./pages/ConsumerWeb').then(module => ({ default: module.ConsumerOrders })))
@@ -43,7 +44,7 @@ export default function App(){return <AppBoundary><AuthProvider><RouteEffects/><
   </Route>
   <Route element={<RequireAuth role="admin"/>}><Route path="/partner/admin" element={<AdminDashboard/>}/><Route path="/partner/admin/application/:kind/:id" element={<AdminDashboard/>}/><Route path="/partner/admin/*" element={<AdminDashboard/>}/></Route>
   <Route element={<RequireAuth role="seller"/>}><Route path="/partner/seller/social/*" element={<WorkspaceShell role="seller"><Social seller/></WorkspaceShell>}/><Route path="/partner/seller/chat" element={<WorkspaceShell role="seller"><BusinessChat/></WorkspaceShell>}/><Route path="/partner/seller/*" element={<SellerStudio/>}/></Route>
-  <Route element={<RequireAuth role="creator"/>}><Route path="/partner/creator/chat" element={<WorkspaceShell role="creator"><BusinessChat/></WorkspaceShell>}/><Route path="/partner/creator/*" element={<CreatorCenter/>}/></Route>
+  <Route element={<RequireAuth role="creator"/>}><Route path="/partner/creator/professional" element={<ProfessionalVerification/>}/><Route path="/partner/creator/chat" element={<WorkspaceShell role="creator"><BusinessChat/></WorkspaceShell>}/><Route path="/partner/creator/*" element={<CreatorCenter/>}/></Route>
   <Route path="/seller/*" element={<LegacyRoute from="/seller" to="/partner/seller"/>}/><Route path="/creator/*" element={<LegacyRoute from="/creator" to="/partner/creator"/>}/>
   <Route path="*" element={<NotFound/>}/>
 </Routes></Suspense></AuthProvider></AppBoundary>}

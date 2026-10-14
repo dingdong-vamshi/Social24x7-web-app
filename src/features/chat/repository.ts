@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createConsumerExtensions } from './consumerExtensions'
 
 export type ConversationKind = 'personal' | 'group' | 'business'
 export interface Participant { user_id: string; last_read_at: string | null; cleared_at: string | null; archived_at: string | null }
@@ -82,6 +83,7 @@ export function createChatRepository(client: SupabaseClient, userId: string) {
     return mergeMessages((data ?? []) as Message[])
   }
   return {
+    ...createConsumerExtensions(client, userId),
     getConversation,
     async listConversations(businessOnly = false, page = 0) {
       let query = client.from('conversations').select(conversationFields).in('kind', businessOnly ? ['business'] : ['personal', 'group', 'business'])

@@ -34,6 +34,7 @@ const creatorNav: NavItem[] = [
   { label: 'Earnings', path: '/partner/creator/earnings', icon: <CircleDollarSign size={19} /> },
   { label: 'Analytics', path: '/partner/creator/analytics', icon: <BarChart3 size={19} /> },
   { label: 'Profile', path: '/partner/creator/profile', icon: <CircleUserRound size={19} /> },
+  { label: 'Professional verification', path: '/partner/creator/professional', icon: <ShieldCheck size={19} /> },
 ]
 
 export function WorkspaceShell({ role, children }: { role: PartnerRole; children: ReactNode }) {

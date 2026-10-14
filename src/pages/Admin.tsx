@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useParams } from 'react-router-dom'
 import { ClipboardCheck, Menu, RefreshCw, ShieldCheck, X } from 'lucide-react'
 import { AdminProducts } from './AdminProducts'
+import { AdminReturns } from './AdminReturns'
 import { useAuth } from '../auth/AuthContext'
 import type { ApplicationKind } from '../auth/onboardingRepository'
 import { AccountMenu } from '../components/AccountMenu'
@@ -13,7 +14,7 @@ import '../commerce.css'
 import './admin.css'
 
 const base = '/partner/admin'
-const sections = [['', 'Overview'], ['seller', 'Seller Applications'], ['creator', 'Creator Applications'], ['professional', 'Professional Verification'], ['all', 'All Applications'], ['history', 'Review History'], ['products', 'Product moderation']]
+const sections = [['', 'Overview'], ['seller', 'Seller Applications'], ['creator', 'Creator Applications'], ['professional', 'Professional Verification'], ['all', 'All Applications'], ['history', 'Review History'], ['products', 'Product moderation'], ['returns', 'Returns & refunds']]
 const pending = (item: AdminApplication) => ['submitted', 'under_review'].includes(item.status)
 const date = (value: string | null) => value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not recorded'
 const detailPath = (item: AdminApplication) => `${base}/application/${item.kind}/${item.id}`
@@ -39,7 +40,7 @@ function AdminWorkspace() {
     {mobile && <button className="sidebar-backdrop" aria-label="Close Admin navigation" onClick={() => setMobile(false)}/>}
     <div className="workspace-main"><header className="topbar"><button className="icon-button mobile-menu" aria-label="Open Admin navigation" aria-expanded={mobile} onClick={() => setMobile(true)}><Menu/></button><span className="commerce-topbar-title">Admin Dashboard</span><div className="top-actions">{count !== undefined && <Link className="admin-pending" to={`${base}/all?status=pending`}>{count} pending</Link>}<AccountMenu/></div></header>
     <main className="workspace-content" id="main-content">
-      {route === 'products' ? <AdminProducts/> : detail ? <ApplicationDetail key={`${params.kind}:${params.id}`} onReviewed={result.refresh}/> : !section ? <><h1>Admin page not found</h1><Button to={base}>Return to overview</Button></> : <>
+      {route === 'returns' ? <AdminReturns/> : route === 'products' ? <AdminProducts/> : detail ? <ApplicationDetail key={`${params.kind}:${params.id}`} onReviewed={result.refresh}/> : !section ? <><h1>Admin page not found</h1><Button to={base}>Return to overview</Button></> : <>
         <PageHeader eyebrow="SOCIAL 24-7 · Administration" title={section[1] === 'Overview' ? 'Application overview' : section[1]} description={route === 'history' ? 'Latest recorded review on each application. This is not a complete event history.' : 'Review submitted applications and their current status.'} actions={<Button variant="secondary" onClick={result.refresh}><RefreshCw size={16}/>Refresh</Button>}/>
         <CommerceResult result={result}>{items => route === '' ? <Overview items={items}/> : <ApplicationList key={route + search} items={route === 'history' ? items.filter(item => item.reviewed_at).sort((a,b) => b.reviewed_at!.localeCompare(a.reviewed_at!)) : route === 'all' ? items : items.filter(item => item.kind === route)} history={route === 'history'}/>}</CommerceResult>
       </>}

@@ -1,6 +1,7 @@
+import { BuyerReturns } from '../features/buyerReturns/BuyerReturns'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, Check, Download, LoaderCircle, MessageCircle, Package, RefreshCw, Search, Send, ShieldCheck, Users } from 'lucide-react'
-import { Link, NavLink, useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CounterpartyDirectory } from './CommerceOperations'
 import { useAuth } from '../auth/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -8,6 +9,7 @@ import { Brand } from '../components/Brand'
 import { AccountMenu } from '../components/AccountMenu'
 import { createChatRepository, mayCompose, mergeMessages, PAGE_SIZE, text, visibleMessages, type ChatRepository, type Conversation, type CustomerOrder, type Message } from '../features/chat/repository'
 import '../features/chat/chat.css'
+import { AttachmentComposer, GroupMembers, NewGroup } from '../features/chat/ConsumerChatTools'
 
 const displayDate = (value: string) => new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 const displayTime = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -39,6 +41,8 @@ export function BusinessChat() {
 
 function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const [newGroup, setNewGroup] = useState(false)
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
   const selectedId = businessOnly ? params.get('conversation') : id
@@ -130,12 +134,13 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
     } catch (error) { setError(errorText(error)) } finally { setOlderBusy(false) }
   }
   const selected = Boolean(selectedId)
-  return <main className={`chat-workspace ${selected ? 'has-selection' : ''} ${businessOnly ? 'business-chat' : ''}`}>
+  return <main className={`chat-workspace ${selected ? 'has-selection' : ''} ${businessOnly ? 'business-chat' : ''} ${newGroup ? 'creating-group' : ''}`}>
     <aside className="chat-sidebar" aria-label="Conversations">
       <div className="chat-sidebar-title"><div><span className="eyebrow">{businessOnly ? 'Business workspace' : 'Your conversations'}</span><h1>{businessOnly ? 'Business Chat' : 'Chats'}</h1></div><button className="chat-icon-button" type="button" onClick={tick} aria-label="Refresh conversations"><RefreshCw size={19} /></button></div>
       <p className={`chat-connection ${online && connected ? 'connected' : ''}`} role="status"><i />{!online ? 'Offline · reconnect to receive updates' : connected ? 'Connected' : 'Connecting · checking for updates'}</p>
       <label className="chat-search"><Search size={17} /><span className="sr-only">Search your conversations</span><input placeholder="Search conversations" value={search} onChange={event => setSearch(event.target.value)} /></label>
       {!businessOnly && <div className="chat-filters" aria-label="Filter conversations">{['all', 'personal', 'group', 'business'].map(value => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'All' : label(value)}</button>)}</div>}
+      {!businessOnly && user?.app_metadata?.account_type !== 'business_employee' && <button type="button" className="chat-tools-toggle" onClick={() => setNewGroup(true)}>New group</button>}
       <div className="chat-conversation-list">{loading && !conversations.length ? <p className="chat-list-notice" role="status">Loading conversations…</p> : showing.length ? showing.map(row => {
         const unread = row.conversation_participants.find(p => p.user_id === user!.id)?.last_read_at
         const content = <><span className="chat-avatar">{row.kind === 'group' ? <Users size={21} /> : row.name.slice(0, 1).toUpperCase()}</span><span className="chat-row-text"><strong>{row.name}</strong><small>{row.kind === 'business' ? row.business_context === 'creator_seller' ? 'Creator · Seller' : 'Customer support' : row.kind === 'group' ? 'Group conversation' : 'Personal conversation'}</small></span><span className="chat-row-meta"><time dateTime={row.updated_at}>{new Date(row.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</time>{(!unread || row.updated_at > unread) && <span className="chat-unread" aria-label="Updated conversation" />}</span></>
@@ -145,9 +150,11 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
       <div className="chat-sidebar-foot"><ShieldCheck size={17} /><p>Signed in to your existing account. Only conversations you can access are shown.</p></div>
     </aside>
     <section className="chat-detail" aria-label="Selected conversation">
+      {newGroup ? <NewGroup repository={repository} created={groupId => { setNewGroup(false); navigate(`/account/chat/${groupId}`); tick() }} close={() => { setNewGroup(false); tick() }} /> : <>
       {selected && <div className="chat-mobile-back">{businessOnly ? <button type="button" onClick={() => setParams({})}><ArrowLeft size={18} />All conversations</button> : <Link to="/account/chats"><ArrowLeft size={18} />All conversations</Link>}</div>}
       {error && <div className="chat-alert" role="alert">{error}<button type="button" onClick={tick}>Retry</button></div>}
       {loading && selected ? <div className="chat-state" role="status"><LoaderCircle className="spin" /><p>Loading conversation…</p></div> : conversation ? <ChatThread key={conversation.id} conversation={conversation} messages={visibleMessages(messages)} repository={repository} userId={user!.id} refresh={tick} more={moreMessages} olderBusy={olderBusy} loadOlder={loadOlder} readError={readError} /> : <div className="chat-state"><div className="chat-welcome-icon"><MessageCircle size={40} /></div><h2>{selected ? 'Conversation unavailable' : businessOnly ? 'Your customer conversations' : 'Stay in the conversation'}</h2><p>{selected ? 'Choose a conversation from the list, or refresh to check your access.' : 'Open a conversation to see the same history as your SOCIAL 24-7 app.'}</p>{!selected && <small>Messages are protected by account access controls. End-to-end encryption is not currently available.</small>}</div>}
+      </>}
     </section>
   </main>
 }
@@ -157,6 +164,8 @@ function ChatThread({ conversation, messages, repository, userId, refresh, more,
   const [pending, setPending] = useState<{ body: string; clientId: string } | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [membersOpen, setMembersOpen] = useState(false)
+  const [attachmentOpen, setAttachmentOpen] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
   const newest = messages.at(-1)?.id
   useEffect(() => { bottom.current?.scrollIntoView({ behavior: 'instant', block: 'end' }) }, [newest])
@@ -171,7 +180,8 @@ function ChatThread({ conversation, messages, repository, userId, refresh, more,
     catch (error) { setError(errorText(error)) }
     finally { setSending(false) }
   }
-  return <><header className="chat-thread-header"><span className="chat-avatar">{conversation.kind === 'group' ? <Users size={22} /> : conversation.name.slice(0, 1).toUpperCase()}</span><div><h2>{conversation.name}</h2><p>{conversation.kind === 'group' ? `${conversation.conversation_participants.length} members` : conversation.kind === 'business' ? conversation.business_context === 'creator_seller' ? 'Creator · Seller conversation' : 'Business conversation' : 'Personal conversation'}</p></div><button className="chat-icon-button" type="button" aria-label="Refresh message history" onClick={refresh}><RefreshCw size={18} /></button></header>
+  return <><header className="chat-thread-header"><span className="chat-avatar">{conversation.kind === 'group' ? <Users size={22} /> : conversation.name.slice(0, 1).toUpperCase()}</span><div><h2>{conversation.name}</h2><p>{conversation.kind === 'group' ? `${conversation.conversation_participants.length} members` : conversation.kind === 'business' ? conversation.business_context === 'creator_seller' ? 'Creator · Seller conversation' : 'Business conversation' : 'Personal conversation'}</p></div>{conversation.kind === 'group' && <button className="chat-members-toggle" type="button" aria-expanded={membersOpen} onClick={() => setMembersOpen(value => !value)}>{membersOpen ? 'Hide members' : 'View members'}</button>}<button className="chat-icon-button" type="button" aria-label="Refresh message history" onClick={refresh}><RefreshCw size={18} /></button></header>
+    {membersOpen && conversation.kind === 'group' && <GroupMembers conversation={conversation} repository={repository} />}
     {readError && <p role="status" className="chat-read-notice">{readError}</p>}
     <div className="chat-messages" role="log" aria-label="Messages" aria-live="polite" aria-relevant="additions text">
       {more && <button className="chat-load-more" type="button" disabled={olderBusy} onClick={loadOlder}>{olderBusy ? 'Loading…' : 'Load earlier messages'}</button>}
@@ -182,6 +192,7 @@ function ChatThread({ conversation, messages, repository, userId, refresh, more,
       {error && <div className="chat-alert" role="alert">{error}<button type="button" disabled={sending} onClick={() => void send()}>Retry delivery</button><button type="button" disabled={sending} onClick={() => { setPending(null); setBody(''); setError(''); refresh() }}>Discard draft</button></div>}
       <label className="sr-only" htmlFor="chat-message-input">Message</label><textarea id="chat-message-input" placeholder="Write a message…" rows={2} maxLength={2000} value={body} disabled={sending || Boolean(pending)} onChange={event => setBody(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send() } }} /><button className="chat-send" type="submit" aria-label="Send message" disabled={sending || Boolean(pending) || !body.trim()}>{sending ? <LoaderCircle className="spin" size={20} /> : <Send size={20} />}</button><small>{body.length}/2,000 · Shift + Enter for a new line</small>
     </form>}
+    {allowed && <><button className="chat-tools-toggle" type="button" aria-expanded={attachmentOpen} onClick={() => setAttachmentOpen(value => !value)}>{attachmentOpen ? 'Hide attachment' : 'Attach file'}</button><div hidden={!attachmentOpen}><AttachmentComposer repository={repository} conversation={conversation} userId={userId} disabled={sending || Boolean(pending)} sent={refresh} /></div></>}
   </>
 }
 
@@ -219,5 +230,5 @@ function OrderHistory({ userId }: { userId: string }) {
     }).catch(error => { if (alive) setError(errorText(error)) }).finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
   }, [repository, page, refresh])
-  return <main className="consumer-orders"><header><div><span className="eyebrow">Your purchases</span><h1>Order history</h1><p>Track the orders placed with your SOCIAL 24-7 account.</p></div><button className="button secondary" type="button" disabled={loading} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={17} />Refresh</button></header>{error && <div role="alert" className="chat-alert">{error}<button type="button" onClick={() => setRefresh(value => value + 1)}>Retry</button></div>}{loading && !orders.length ? <div className="chat-state" role="status"><LoaderCircle className="spin" /><p>Loading your orders…</p></div> : !orders.length && !error ? <div className="chat-state"><Package size={38} /><h2>No orders yet</h2><p>Orders you place in SOCIAL 24-7 will appear here.</p><Link className="button secondary" to="/account/chats">Back to conversations</Link></div> : <div className="customer-order-grid">{orders.map(order => <article className="customer-order" key={order.id}><header><div><small>Order #{order.id.slice(0, 8).toUpperCase()}</small><h2>{order.order_items[0]?.storefront_name_snapshot || 'Order'}</h2><time dateTime={order.created_at}>{displayDate(order.created_at)}</time></div><span className="status-pill">{label(order.status)}</span></header><ul>{order.order_items.map(item => <li key={item.id}><span>{item.product_title_snapshot}<small>Quantity: {item.quantity}</small></span><strong>{new Intl.NumberFormat(undefined, { style: 'currency', currency: order.currency.trim() }).format(item.subtotal_minor / 100)}</strong></li>)}</ul><div className="customer-order-total"><span>Total · {label(order.payment_status)}</span><strong>{new Intl.NumberFormat(undefined, { style: 'currency', currency: order.currency.trim() }).format(order.total_minor / 100)}</strong></div>{order.order_fulfillments && <div className="customer-order-tracking"><Package size={18} /><div><strong>{label(order.order_fulfillments.status)}</strong>{order.order_fulfillments.carrier && <p>{order.order_fulfillments.carrier}</p>}{order.order_fulfillments.tracking_number && <p>Tracking: {order.order_fulfillments.tracking_number}</p>}{order.order_fulfillments.customer_note && <p>{order.order_fulfillments.customer_note}</p>}</div></div>}</article>)}</div>}{more && <button className="button secondary" type="button" disabled={loading} onClick={() => setPage(value => value + 1)}>{loading ? 'Loading…' : 'Load more orders'}</button>}</main>
+  return <main className="consumer-orders"><header><div><span className="eyebrow">Your purchases</span><h1>Order history</h1><p>Track the orders placed with your SOCIAL 24-7 account.</p></div><button className="button secondary" type="button" disabled={loading} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={17} />Refresh</button></header>{error && <div role="alert" className="chat-alert">{error}<button type="button" onClick={() => setRefresh(value => value + 1)}>Retry</button></div>}{loading && !orders.length ? <div className="chat-state" role="status"><LoaderCircle className="spin" /><p>Loading your orders…</p></div> : !orders.length && !error ? <div className="chat-state"><Package size={38} /><h2>No orders yet</h2><p>Orders you place in SOCIAL 24-7 will appear here.</p><Link className="button secondary" to="/account/chats">Back to conversations</Link></div> : <div className="customer-order-grid">{orders.map(order => <article className="customer-order" key={order.id}><header><div><small>Order #{order.id.slice(0, 8).toUpperCase()}</small><h2>{order.order_items[0]?.storefront_name_snapshot || 'Order'}</h2><time dateTime={order.created_at}>{displayDate(order.created_at)}</time></div><span className="status-pill">{label(order.status)}</span></header><ul>{order.order_items.map(item => <li key={item.id}><span>{item.product_title_snapshot}<small>Quantity: {item.quantity}</small></span><strong>{new Intl.NumberFormat(undefined, { style: 'currency', currency: order.currency.trim() }).format(item.subtotal_minor / 100)}</strong></li>)}</ul><div className="customer-order-total"><span>Total · {label(order.payment_status)}</span><strong>{new Intl.NumberFormat(undefined, { style: 'currency', currency: order.currency.trim() }).format(order.total_minor / 100)}</strong></div>{order.order_fulfillments && <div className="customer-order-tracking"><Package size={18} /><div><strong>{label(order.order_fulfillments.status)}</strong>{order.order_fulfillments.carrier && <p>{order.order_fulfillments.carrier}</p>}{order.order_fulfillments.tracking_number && <p>Tracking: {order.order_fulfillments.tracking_number}</p>}{order.order_fulfillments.customer_note && <p>{order.order_fulfillments.customer_note}</p>}</div></div>}<BuyerReturns orderId={order.id} onChanged={() => setRefresh(value => value + 1)}/></article>)}</div>}{more && <button className="button secondary" type="button" disabled={loading} onClick={() => setPage(value => value + 1)}>{loading ? 'Loading…' : 'Load more orders'}</button>}</main>
 }

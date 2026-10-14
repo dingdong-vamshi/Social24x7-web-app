@@ -47,3 +47,14 @@
 .work-auth-page .commerce-form > .button { width: 100%; }
 .work-auth-page > a:not(.brand) { color: #147650; text-decoration: underline; }
 @media(max-width:600px) { .work-auth-page { margin: 20px 14px; padding: 20px; } }
+.company-feed-media { display:block; width:100%; max-width:560px; max-height:420px; object-fit:contain; border-radius:12px; background:#f1f5f1; }
+.company-feed-logo { width:80px; margin-bottom:20px; }
+.company-feed-logo .company-feed-media { height:80px; }
+.company-post-media { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:12px; margin:12px 0 24px; }
+.company-product-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:16px; }
+.company-product-card { padding:16px; border:1px solid #dde7df; border-radius:14px; min-width:0; }
+.company-product-card .company-feed-media { height:180px; object-fit:contain; }
+.company-product-card h4 { margin:14px 0 8px; }
+.company-product-card p { line-height:1.6; font-size:13px; }
+.company-media-fallback { padding:18px; background:#f2f6f1; color:#5b6c5d; border-radius:10px; font-size:12px; overflow-wrap:anywhere; }
+.company-media-fallback button { border:0; background:transparent; padding:0; text-decoration:underline; color:inherit; cursor:pointer; }

@@ -4,28 +4,28 @@ This is not a full-parity release certificate. “Not ported” means unfinished
 
 | Feature | Remaining issue | Type / next action | Severity |
 | --- | --- | --- | --- |
-| Employee invitation | Existing SQL email validator rejects ordinary email | Shared-backend defect; compatible reviewed function repair and activation lifecycle QA | P0 |
+| Employee invitation | Historical validator defect disproved; current syntax checks pass | Controlled employee identity/activation lifecycle acceptance; see SPRINT_TEAM_FINDINGS.md | P0 |
 | Actual employee login/approval/revocation | No authorized active work QA session available; no real roles changed | Access/acceptance; sign in controlled work identity and test role matrix | P0 |
-| Independent professional corrections after Creator approval | Both audited wizards lock approved Creator application | Inherited workflow gap; design standalone correction route using existing professional request rules, never unlock approved application wholesale | P0 |
-| Live Admin review/evidence decisions | Admin login/queues verified; signed evidence access and decision mutations not freshly exercised | Controlled applicant QA; no real approvals for screenshots | P0 |
-| Live Seller/Creator mutation acceptance | New operations tested with isolated responses only | Controlled QA store/product/order/return; confirm ledger/inventory side effects before authorized test | P0 |
-| Admin return/refund review | Separate Admin queue/review not ported | Frontend gap; reuse existing lifecycle Admin return contract, no automatic transfer | P1 |
-| Seller packing/return evidence upload | Viewing exists; browser upload/capture/finalization absent | Frontend gap; reuse existing evidence intents and distinguish trusted capture from uploaded evidence | P1 |
-| Storefront logo/cover upload | Only text/contact/SEO settings ported | Frontend gap; authorized storage asset editor | P1 |
-| Product-specific SEO metadata | Store-level SEO exists; product fields incomplete | Frontend gap; inspect secure save contract and port old fields | P1 |
-| Storefront traffic analytics | Current web summaries use orders/commissions only | Frontend gap; port storefront_events visitors/views/conversion with real denominators | P1 |
-| Order date/value filtering | Search/status available, date/value range incomplete | Frontend gap | P1 |
-| Avatar/privacy editor | Name/username/bio supported; avatar/privacy controls absent | Frontend gap; preserve shared profile privacy contract | P1 |
-| Full Creator product details | Cards and canonical old product link; not equivalent in-web detail view | Frontend gap; port detail/media without changing ownership | P1 |
-| Chat attachment upload | Signed viewing exists; upload composer absent | Frontend gap; canonical chat-media/send_chat_attachment flow | P1 |
-| Group creation/member details | Existing group history/text only | Frontend gap; list_group_eligible_contacts/create_group_conversation/get_group_members; investigate administration separately | P1 |
+| Independent professional corrections after Creator approval | Standalone professional route implemented; no Creator approval reset | Live editable professional QA request required; approved professional reopening is not supported by current backend | P0 |
+| Live Admin review/evidence decisions | Admin queues/signing/error/decision UI tested; controlled QA Seller evidence references missing Storage objects | Real controlled pending application with valid private evidence needed; no genuine approvals performed | P0 |
+| Live Seller/Creator mutation acceptance | One own-store QA draft created/edited; two images attached/reordered; SEO saved with canonical readback | Publishing, fulfillment, returns and promotion mutations still require suitable controlled records | P0 |
+| Admin return/refund review | Authorized read-only queue implemented; decision RPC has no repeat/state guard and changes commissions/creates refunds | Reviewed backend safety change needed before mutation controls; no money movement | P1 |
+| Seller packing/return evidence upload | Packing uploaded-file flow implemented; Seller return evidence not authorized by buyer-only existing intent | Packing needs controlled order acceptance; Seller-specific return evidence needs policy decision | P1 |
+| Storefront logo/cover upload | Existing Storage owner policy binds storefront display name instead of object path | Narrow branding INSERT proposal/rollback prepared; explicit migration approval requested, not applied | P1 |
+| Product-specific SEO metadata | Implemented and saved on one controlled unpublished QA draft | Wider production use still subject to owner permissions and stale-version protection | P1 |
+| Storefront traffic analytics | Actual event/order analytics integrated with real denominators and reporting windows | Does not prove complete tracking coverage, payment conversion or marketing attribution | P1 |
+| Order date/value filtering | Server-side date/value/currency/status filters implemented and isolated tests pass | Final deployed interaction checks recorded in sprint handoff | P1 |
+| Avatar/privacy editor | Own-account avatar/privacy implemented, account-switch and uncertain-result safeguards tested | Live privacy/avatar changes not executed | P1 |
+| Full Creator product details | In-web details and promotion relation implemented; real read verified locally | Some existing product media objects are missing; fallback works, media repair not fabricated | P1 |
+| Chat attachment upload | Implemented; one harmless QA image finalized and readable by both existing QA participants | Production frontend readback and wider MIME/size acceptance remain; no APK claim | P1 |
+| Group creation/member details | Existing accepted-contact create/member RPCs integrated; picker opened/cancelled safely | Creation mutation and membership lifecycle unverified; group administration remains unfinished | P1 |
 | Rich chat payloads | Poll/event/reaction interaction incomplete | Frontend gap; exact action/type inventory still required | P1 |
-| Consumer order return submission | Orders read-only | Frontend gap; buyer evidence/return request path | P1 |
-| Company feed post media | Text and product list only | Frontend gap; signed media viewing | P1 |
-| Full Admin audit timeline | Latest notes/review state only | Further source/backend inventory before promising full event history | P1 |
+| Consumer order return submission | Buyer request/status/uploaded evidence integrated with actual eligibility and explicit review confirmation | Controlled delivered QA order needed; no genuine order, commission or refund changed | P1 |
+| Company feed post media | Authorized metadata-backed signed/public media implemented | Live controlled employee session still required | P1 |
+| Full Admin audit timeline | Latest review visible; current RPC overwrites latest fields and no append-only application review table found | Cannot reconstruct absent history; reviewed backward-compatible event logging proposal needed | P1 |
 | Legacy product media editing | Existing replacement service supports product-media; legacy shop-media rejected | Backend compatibility; no unsafe rewrite of legacy paths | P1 |
 | Fresh onboarding screenshots | Approved Seller/Creator status comparisons captured; fresh forms cannot be exercised with approved identities | Controlled unapproved QA identity; no forced status changes | P1 |
-| Business inbox scope | Old Seller inbox empty while Team has five open chats; ordinary and work inboxes are distinct | Clarify navigation/scope and test same assigned conversation through both clients | P1 |
+| Business inbox scope | Ordinary Seller inbox and employee-assigned/owner-supervision inbox explicitly distinguished | Live assignment/reassignment and Work revocation need controlled employee credentials | P1 |
 | Comprehensive every-button/role acceptance | Regression and sampled browser cases do not cover every existing page/control | QA work remains; execute role/action checklist with controlled records | P1 |
 | Actual installed APK | No device-level acceptance performed | Test device required; browser proof is not APK proof | P1 |
 | Test-payment and buyer-KYC override tools | Old test-only operations change financial/verification records | Controlled QA policy/records required before exposing or executing | P2 |
