@@ -1,5 +1,6 @@
 import { ArrowRight, ArrowUpRight, Check, MessageCircle, Package, ShieldCheck, Sparkles } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { SurfaceLink as Link } from '../components/SurfaceLink'
 import { PublicFooter, PublicNav } from '../components/PublicNav'
 import { Brand } from '../components/Brand'
 

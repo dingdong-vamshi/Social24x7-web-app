@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { isAuthOrigin } from './domains'
 
 export const expectedProjectRef = 'kcuxyxqtfkxrbtmugjsn'
 const url = import.meta.env.VITE_SUPABASE_URL?.trim()
@@ -12,7 +13,7 @@ function isPublicKey(value: string | undefined) {
 }
 export const supabaseConfigured = Boolean(validUrl && isPublicKey(key))
 export const supabase = supabaseConfigured ? createClient(url!, key!, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: isAuthOrigin(window.location.origin, import.meta.env.DEV), flowType: 'pkce' },
 }) : null
 export function requireSupabase() {
   if (!supabase) throw new Error('Account services are unavailable. Please try again later.')

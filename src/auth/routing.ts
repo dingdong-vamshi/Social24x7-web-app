@@ -1,3 +1,4 @@
+import { isAuthOrigin } from '../lib/domains';
 export type PartnerIntent = "seller" | "creator";
 type Access = {
   admin_access?: boolean;
@@ -126,9 +127,7 @@ export function confirmationUrl(
   role: PartnerIntent | null,
   development = false,
 ) {
-  const allowed =
-    origin === "https://social24x7-web-app.vercel.app" ||
-    (development && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin));
+  const allowed = isAuthOrigin(origin, development);
   if (!allowed)
     throw new Error(
       "Registration is not enabled on this hostname. Use the verified Partner website.",

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { SurfaceLink as Link } from './SurfaceLink'
 import { Brand } from './Brand'
 import { useAuth } from '../auth/AuthContext'
 import { AccountMenu } from './AccountMenu'

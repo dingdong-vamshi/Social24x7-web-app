@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { SurfaceLink as Link } from "../components/SurfaceLink";
 import { Laptop, ShieldCheck, Smartphone } from "lucide-react";
 import { PublicNav, PublicFooter } from "../components/PublicNav";
 import "../features/social/social.css";

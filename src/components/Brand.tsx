@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { SurfaceLink as Link } from './SurfaceLink'
 
 type BrandVariant = 'icon' | 'full' | 'compact' | 'sidebar' | 'footer'
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, LogOut } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { SurfaceLink as Link } from './SurfaceLink'
 import { useAuth } from '../auth/AuthContext'
 import { allowedWorkspace, roleAction, roleDestination, rememberWorkspace, workspacePath, type Workspace } from '../auth/routing'
 import './account.css'
