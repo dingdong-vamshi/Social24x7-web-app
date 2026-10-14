@@ -107,7 +107,7 @@ export function BusinessLogin({ activate = false }: { activate?: boolean }) {
       </main>
     );
   return (
-    <main className="account-page team-management">
+    <main className="account-page team-management work-auth-page">
       <Brand />
       <h1>{activate ? "Activate work account" : "Work account login"}</h1>
       <p>

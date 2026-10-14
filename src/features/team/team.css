@@ -40,3 +40,10 @@
 .team-management .section-card {
   overflow-wrap: anywhere;
 }
+.work-auth-page { max-width: 580px; margin: 64px auto; padding: 28px; background: white; border: 1px solid #dce5df; border-radius: 20px; }
+.work-auth-page h1 { margin: 24px 0 12px; font-size: 30px; }
+.work-auth-page > p { margin: 18px 0; color: #476354; line-height: 1.6; }
+.work-auth-page .commerce-form { margin-top: 24px; }
+.work-auth-page .commerce-form > .button { width: 100%; }
+.work-auth-page > a:not(.brand) { color: #147650; text-decoration: underline; }
+@media(max-width:600px) { .work-auth-page { margin: 20px 14px; padding: 20px; } }
