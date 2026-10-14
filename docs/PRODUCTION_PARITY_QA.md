@@ -1,5 +1,20 @@
 # Production parity QA
 
+## Current full-parity recovery — 14 October 2026
+
+Recovery commit `fb8689732f1bebbed5fe20260ac990533d4b7de2` deployed Ready as `dpl_8VnR91qb74yDvrzJ8Q8jv35zmHmT`; production bundle matched local bytes. Final Social single-bell/landmark polish has **588 passing tests / 49 files, lint and TypeScript/build PASS**. See final handoff for release chain.
+
+- Normal production username Arjun, email Naveen and Admin QA logins succeeded using approved existing credentials. No tokens injected or authentication bypassed. Supabase dashboard login is unrelated to Partner session state.
+- Seller: ten orders; Pending queue resolves eight; order details expose customer/dispatch/payment/carrier/tracking and guarded fulfillment controls. One product; browser-only Title/Brand draft survived reload and was cleared without server save. Return settings, logistics, affiliate, storefront, analytics and estimate finance reads verified.
+- Creator: six discovery products and price-high ordering; actual active promotion, copied canonical affiliate link, independent profile/verification states. Naveen's three reversed commissions total ₹360 and join to three attributed orders. Provider-neutral Payments makes no payout claim. Creator–Seller inbox three conversations, separate Business inbox eleven.
+- Social: six posts; comments, profile/follower list, recommended product, share-to-personal/group picker, story composer and five notifications/four unread inspected. Two videos reached readyState 4 with no media error; playback was not exercised. No send/publication/read-state mutation.
+- Owner Team: roster metrics, invitation and custom-role forms viewed/cancelled. Employee live acceptance cannot proceed with historical redaction placeholders; active approved Employee B requires an existing current Work session/credential. No reset/reactivation/approval performed.
+- Admin: eight Seller and eight Creator applications, seven approved/one pending each. Existing Arjun details loaded; legacy Instagram is visible with manual-review disclaimer. No submitted LinkedIn value in observed records; no real application or decision manufactured.
+- Mobile viewport override remained actual 1280 despite requested 390, so new recovery mobile proof is **NOT VERIFIED**. Historical seven-width results below remain historical only.
+- No original repository/DNS/new shared-backend changes. Current gaps, source action ledgers and screenshot proof are in `WEBAPP2_FINAL_CLIENT_ACCEPTANCE.md`.
+
+## Historical earlier sprint receipt
+
 Date: 2026-10-14. Target project: social24x7-web-app. Shared Supabase: kcuxyxqtfkxrbtmugjsn.
 
 ## Completed before release

@@ -27,7 +27,7 @@ The current action-level source of truth is [WEBAPP2_ORIGINAL_FUNCTIONAL_PARITY.
 | Existing Webapp 2 client changes | Identifier login/recovery/password rules, Work login, casing/PAN, Seller/Creator social links including LinkedIn, review/Admin mapping, username chat and professional presentation retained | Preserved; exact production and isolated evidence remains in dedicated client/deployment receipts | No genuine application submitted or approved for this recovery |
 | Shared Storage | Approved generic three-policy repair remains intact; distinct product-specific UPDATE source-path weakness remains under review | BLOCKED BY BACKEND for that residual security repair, not a blanket missing frontend implementation | Social ledger read-only policy inspection; no new live policy change |
 
-Coordinator-reported current aggregate gate: **583 tests / 49 files passed; TypeScript, lint and production build passed.** These are automated/local gates, not proof that 583 live actions were executed. No new production business writes are claimed by this checkpoint. The coordinator maintains the actual deployment SHA, website observations and inline screenshot evidence separately.
+Current aggregate gate: **588 tests / 49 files passed; TypeScript, lint and production build passed.** These are automated/local gates, not proof of 588 live actions. Authenticated Seller, Creator, Social, owner-Team and Admin reads passed; see `WEBAPP2_FINAL_CLIENT_ACCEPTANCE.md` and `WEBAPP2_DEPLOYMENT_HANDOFF.md`. No new production business mutations are claimed.
 
 ## Historical sprint receipt — preserved, superseded where noted above
 

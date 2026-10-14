@@ -1,5 +1,7 @@
 # Webapp 2 production verification — 14 October 2026
 
+> Historical earlier-release receipt. Current recovery deployment chain is in `WEBAPP2_DEPLOYMENT_HANDOFF.md`, with current read-only production acceptance in `WEBAPP2_FINAL_CLIENT_ACCEPTANCE.md`. Do not use this earlier receipt's authentication limitations or asset identity as the current release state.
+
 Feature commit c0c296b55479e5fb2efede6e32dee7c04fc94f8b, followed by mobile-action/CLI-cache cleanup commit bc344a745b4ab44da543b7cdf4806e798ad8e2b8. Both pushed to main. No PR requested.
 
 Vercel production deployment dpl_nnACoE6dDbts91uDwgNYgfR2yq3o reported Ready; GitHub Vercel commit status success. Existing project prj_KoHp74rBLTBRH8OWONTOpKQ8GGWQ was reused.

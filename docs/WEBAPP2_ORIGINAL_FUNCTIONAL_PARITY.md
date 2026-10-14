@@ -2,7 +2,7 @@
 
 ## Current implementation checkpoint
 
-All recovery items below have now been implemented; the table is retained as the **before** inventory, not the current missing-feature list. Module ledgers describe the resulting code and isolated tests. Final integrated check: **586 tests / 49 files passed**, ESLint passed, TypeScript + production build passed. Non-fatal build warning: main bundle exceeds 500 kB.
+All recovery items below have now been implemented; the table is retained as the **before** inventory, not the current missing-feature list. Module ledgers describe the resulting code and isolated tests. Final integrated check: **588 tests / 49 files passed**, ESLint passed, TypeScript + production build passed. Non-fatal build warning: main bundle exceeds 500 kB. Current authenticated production reads and exact acceptance limits are recorded in `WEBAPP2_FINAL_CLIENT_ACCEPTANCE.md`.
 
 Deduplicated inventory: **96 action groups**, not atomic buttons: Social 20 (18 supported, 2 original-placeholder groups); Seller 22 (17 supported, 5 placeholder groups); Creator 23 (20 supported, 3 placeholder groups); Team 31 supported. Raw ledgers contain 99 rows; exclude Seller Team, Seller Chat, and Creator shared-Social crosslinks already covered elsewhere. Do not add recovery tables again. All 86 supported groups have implementations, but this does **not** mean 86 live end-to-end passes. Some grouped writes remain isolated-test-only, some records are absent, and employee acceptance lacks a usable current credential.
 

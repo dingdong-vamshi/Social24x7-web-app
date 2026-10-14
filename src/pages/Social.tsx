@@ -122,14 +122,17 @@ function SocialWorkspace({
   );
   const [params, setParams] = useSearchParams(),
     [notifications, setNotifications] = useState(false);
+  const embedded = seller || creator;
+  const Content = embedded ? 'section' : 'main';
   const base = seller ? "/partner/seller/social" : creator ? '/partner/creator/social' : "/account/social";
   const notificationLoad = useCallback(
-    () => repository.notifications(),
-    [repository],
+    () => embedded ? Promise.resolve([]) : repository.notifications(),
+    [repository, embedded],
   );
   const inbox = useResource(notificationLoad);
   const reloadNotifications = inbox.reload;
   useEffect(() => {
+    if (embedded) return;
     const unsub = repository.subscribe(reloadNotifications);
     const refresh = () => {
       if (document.visibilityState === "visible") reloadNotifications();
@@ -141,7 +144,7 @@ function SocialWorkspace({
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("online", refresh);
     };
-  }, [repository, reloadNotifications]);
+  }, [repository, reloadNotifications, embedded]);
   const unread = inbox.data?.filter((n) => !n.readAt).length;
   const post = params.get("post"),
     profile = params.get("profile"),
@@ -162,7 +165,7 @@ function SocialWorkspace({
             Business Chat.
           </p>
         </div>
-        <button
+        {!embedded && <button
           type="button"
           className="button secondary notification-bell"
           aria-expanded={notifications}
@@ -171,7 +174,7 @@ function SocialWorkspace({
         >
           <Bell size={20} />
           {unread !== undefined && unread > 0 && <span>{unread}</span>}
-        </button>
+        </button>}
       </header>
       <nav className="social-tabs" aria-label="Social navigation">
         <Link
@@ -194,7 +197,7 @@ function SocialWorkspace({
           My chats
         </Link>
       </nav>
-      {notifications && (
+      {!embedded && notifications && (
         <NotificationPanel
           repository={repository}
           base={base}
@@ -203,7 +206,7 @@ function SocialWorkspace({
         />
       )}
       <div className="social-columns">
-        <main>
+        <Content aria-label="Social content">
           {post ? (
             <PostDetail
               key={post}
@@ -230,7 +233,7 @@ function SocialWorkspace({
           ) : (
             <Feed key={reels ? 'reels' : 'feed'} repository={repository} base={base} reels={reels} />
           )}
-        </main>
+        </Content>
         <aside className="social-context">
           <Users size={25} />
           <h2>One account, separate permissions</h2>

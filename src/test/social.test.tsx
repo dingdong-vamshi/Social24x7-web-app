@@ -28,11 +28,11 @@ vi.mock("../features/social/repository", async (original) => ({
   createSocialRepository: () => mock.repo,
 }));
 vi.mock("../components/PublicNav", () => ({ PublicNav: () => null }));
-import { Social } from "../pages/Social";
-const mount = (path = "/partner/seller/social") =>
+import { Social, WorkspaceNotifications } from "../pages/Social";
+const mount = (path = "/partner/seller/social", standalone = false) =>
   render(
     <MemoryRouter initialEntries={[path]}>
-      <Social seller />
+      <Social seller={!standalone} />
     </MemoryRouter>,
   );
 const post = {
@@ -58,13 +58,25 @@ beforeEach(() => {
 });
 describe("Social preserves existing personal boundaries", () => {
   it("loads canonical supplied feed and real empty notifications", async () => {
-    mount();
+    mount('/account/social', true);
     expect(await screen.findByText("Authorized test post")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Notifications/ }));
     expect(
       await screen.findByText("You’re all caught up."),
     ).toBeInTheDocument();
     expect(mock.repo.markRead).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+  });
+  it.each(['seller', 'creator'] as const)('uses one shell notification bell and no nested main for embedded %s Social', async role => {
+    const base = '/partner/' + role + '/social';
+    render(<MemoryRouter initialEntries={[base]}><header><WorkspaceNotifications base={base} /></header><main><Social seller={role === 'seller'} creator={role === 'creator'} /></main></MemoryRouter>);
+    expect(await screen.findByText('Authorized test post')).toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(screen.getByRole('region', { name: 'Social content' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Notifications/ })).toHaveLength(1);
+    expect(mock.repo.subscribe).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: /Notifications/ }));
+    expect(await screen.findByText('You’re all caught up.')).toBeInTheDocument();
   });
   it("does not treat a failed feed as an empty feed", async () => {
     mock.repo.feed.mockRejectedValue(new Error("Feed unavailable"));

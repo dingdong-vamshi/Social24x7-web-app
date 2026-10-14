@@ -1,5 +1,7 @@
 # Webapp 2 — Partner delivery ledger
 
+> Historical client-change receipt below. Current recovery acceptance is in `WEBAPP2_FINAL_CLIENT_ACCEPTANCE.md`. Normal production username (Arjun), email (Naveen) and Admin login succeeded; authorized application details are available. Earlier general missing-session statements are superseded. Real submitted LinkedIn data and controlled email-reset completion remain separate evidence gaps.
+
 14 October 2026. Baseline c055fd285d475d943894a40245b7797ccf38f408, initially clean main. Earlier context recovered from Build Social24x7 web app, repo handoffs and screenshots. Original mobile source remained read-only. No Customer pairing, APK, DNS or financial changes.
 
 The supplied request ends at section 25; no separate client screenshot was attached. Results below distinguish implementation, local tests, production configuration reads and real-account acceptance.
