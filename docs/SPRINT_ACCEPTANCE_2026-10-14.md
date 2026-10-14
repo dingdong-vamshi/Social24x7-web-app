@@ -18,9 +18,9 @@ Additional controlled write: one harmless PNG labeled QA was sent through the ne
 
 Combined checkpoint: build, lint and 344 tests pass. Main bundle size warning remains; it is not a build failure. Profile narrow-screen overflow and stale product-save feedback were fixed and rechecked. Additional read-only browser interactions reject reversed dates, retain filter values, show a real future-date empty state, reset filters, and render the saved QA media/SEO editor.
 
-Evidence is outside Git in `/Users/vamshipendyala/Documents/Social24-7-Recovery-Sprint-2026-10-14/`. Local screenshots against real Supabase are labeled `local-*`; isolated Professional UI screenshots are explicitly `local-tested-fixture-*`. Production evidence will use `production-*` after deployment.
+Evidence is outside Git in `/Users/vamshipendyala/Documents/Social24-7-Recovery-Sprint-2026-10-14/`. Local screenshots against real Supabase are labeled `local-*`; isolated Professional UI screenshots are explicitly `local-tested-fixture-*`. The deployed release now has `production-*` screenshots, separately labeled from all local/fixture evidence.
 
-Local read sweep: 20 pages, 114 viewport checks (1440/1280/1024/768/430/390), no page exceptions or overflow after repairs. Actual Admin and Seller browser login, expected default routes, approved onboarding redirects and logout/protected routes pass. Profile avatar missing-object errors are recoverable status, not an invented image.
+Local and repeated production read sweeps: each covered 20 pages, 114 viewport checks (1440/1280/1024/768/430/390), no page exceptions or overflow after repairs. Actual Admin and Seller browser login, expected default routes, approved onboarding redirects and logout/protected routes pass. Profile avatar missing-object errors are recoverable status, not an invented image.
 
 Server enforcement verified with normal QA sessions: another approved Seller cannot update the controlled draft; Seller A cannot fetch Seller B team dashboard; non-Admin review RPC is denied before record lookup; non-owner cannot read the QA Seller application; nonmember cannot read message IDs from an unrelated Personal conversation. These are bounded tests, not a complete cross-role certificate. Work suspended/removed/reassignment tests are isolated; no controlled employee login was available.
 
@@ -29,6 +29,12 @@ Server enforcement verified with normal QA sessions: another approved Seller can
 The approved QA Seller has a document reference but the corresponding private Storage object does not exist; no verification-video reference exists. Its nine `creator_commerce_documents` metadata rows also point to absent objects. Admin signing therefore cannot prove successful evidence access, and another account's failure on that missing object is **not** proof of RLS denial. Do not fabricate replacement KYC. Viewer failure/expiry/retry and access gates are covered by isolated tests; valid controlled evidence is required for end-to-end live acceptance.
 
 The approved QA professional request also has a legacy category/policy mismatch. The new page displays that fact and refuses corrections; it does not silently rewrite existing professional data.
+
+## Deployment and critical security qualification
+
+Implementation `74d0c1e3f29dfc21fb0504ccda684be3a0eb5c0c` deployed successfully to the existing Vercel project. Served JavaScript matched the fresh local build byte-for-byte (SHA-256 `7b3582e93d310810638655d3323671dccf1bec4f25b77c4d6cc0f8b6ef724461`). Final lint and all 344 tests in 36 files pass.
+
+Read-only policy inspection found a pre-existing shared Storage isolation defect affecting generic asset INSERT/UPDATE/DELETE authorization. A pure synthetic expression check confirmed the predicate is not tied to the target object; no real cross-store write or destructive test was attempted. The earlier INSERT-only branding proposal does not resolve this security issue. Full narrowly scoped policy repair requires specific review and approval. No migration was applied. Browser/RLS checks elsewhere do not certify Storage security.
 
 ## Still not certified
 

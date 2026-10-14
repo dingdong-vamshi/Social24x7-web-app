@@ -6,11 +6,11 @@ Baseline: new web HEAD `ea60a51`; the old mobile repository was inspected read-o
 
 | Action | Current result | Evidence boundary |
 |---|---|---|
-| Order date-range/value filters and sorting | Inclusive local calendar dates, exact minor-unit value ranges, selected currency, server-side filtering before the 500-row limit; invalid/reversed ranges retained with feedback | Repository and rendered-form regression; production browser read verification pending |
-| Product-specific SEO | Brand, tags, search keywords, search title/description and AI-discovery summary; same existing product columns as old app | Owner check, whitelisted RLS update and `updated_at` optimistic conflict guard; metadata save is IMPLEMENTED — LIVE MUTATION UNVERIFIED |
-| Storefront traffic/conversion | Actual `storefront_events` and `orders`, same 7/14/30-day window, complete 500-row pagination with 10,000-record safety ceiling | Real definition, no fixtures; production browser read verification pending |
+| Order date-range/value filters and sorting | Inclusive local calendar dates, exact minor-unit value ranges, selected currency, server-side filtering before the 500-row limit; invalid/reversed ranges retained with feedback | Repository/form regression and deployed reversed-range, real empty-result and reset checks pass; value/currency combinations remain isolated-tested |
+| Product-specific SEO | Brand, tags, search keywords, search title/description and AI-discovery summary; same existing product columns as old app | Owner check, whitelisted RLS update and `updated_at` optimistic conflict guard; one controlled unpublished QA draft SEO save and canonical/deployed readback verified |
+| Storefront traffic/conversion | Actual `storefront_events` and `orders`, same 7/14/30-day window, complete 500-row pagination with 10,000-record safety ceiling | Real definition, no fixtures; deployed read verified, tracking completeness not certified |
 | Packing evidence upload | Private uploaded-file intent → upload → finalize; clear ordinary-upload label, size/MIME checks, preserved entries on denial | IMPLEMENTED — LIVE MUTATION UNVERIFIED; no production upload was performed |
-| Storefront logo/cover upload | BLOCKED — BACKEND | Existing Storage owner policy resolves the wrong `name`; narrow approval candidate below, not applied |
+| Storefront logo/cover upload | BLOCKED — BACKEND | Critical shared Storage isolation issue; full reviewed repair required, not applied |
 | Seller return-evidence upload | BLOCKED — POLICY | Existing return-evidence creation requires the buyer, not the Seller; no permission bypass added |
 
 ### Existing contracts and important definitions
@@ -29,63 +29,13 @@ Packing uses only `begin_uploaded_commerce_evidence_capture`, never `begin_trust
 
 The inspected `private.create_commerce_evidence_capture_intent` permits packing for `can_manage_storefront(order.storefront_id)`. For `return`, it requires matching `return_requests.buyer_id = p_owner_id`, item/order and an open submitted/under-review return. A Seller upload cannot be mislabeled as buyer return evidence. Supporting Seller-authored return evidence needs an explicit existing-compatible role/kind decision and reviewed backend extension.
 
-## Storefront image Storage defect — approval proposal only
+## Shared Storage authorization — critical unresolved issue
 
-Live `shop_media_owner_insert`, `shop_media_owner_update` and `shop_media_owner_delete` policies on `storage.objects` are permissive and targeted to `authenticated`. They compare storefront ID with:
+A pre-existing shared Storage isolation defect affects branding and generic asset write authorization. This is broader than a failed logo upload and blocks complete security acceptance. No cross-store mutation was attempted and no production policy was changed.
 
-```sql
-(storage.foldername(storefront.name))[1]
-```
+The earlier INSERT-only branding proposal is insufficient: a reviewed repair must cover INSERT, UPDATE and DELETE together while preserving the newer product-specific moderation restrictions and existing mobile contracts. Permissive policy composition must not create broader owner rights as a side effect. Exact policy details and the superseded proposal are retained in the private evidence directory, not repeated in this client-facing handoff.
 
-That is the **storefront display name**, not the outer Storage object name. Normal display names therefore do not authorize their branding uploads. A specially formed display name could also produce unintended authorization; this is a pre-existing shared security issue, not a web-only input defect. The other insert policy allows only `storeId/products/productId/...` for specific product moderation states. Using that path for a logo would be an inappropriate workaround.
-
-### Why not repair all three to an unrestricted owner prefix?
-
-Simply changing the argument to `objects.name` would activate broad owner writes across `storeId/products/...`, potentially bypassing the newer product-state-specific policies because permissive policies combine with OR. The safe candidate below fixes only the branding insertion need, retaining all existing product policies and leaving general update/delete policy remediation for separately reviewed scope. Existing immutable/public image paths remain readable. No overwrite, deletion, product moderation or role expansion is introduced.
-
-**Not applied; explicit approval plus isolated policy tests required.** Candidate changes only `shop_media_owner_insert` and allows owner uploads of new objects under `storeId/branding/logo/...` or `storeId/branding/cover/...`. A future frontend upload uses unique names and `upsert: false`; the owner-scoped storefront update then stores `logo_path`/`banner_path`. Existing bucket is already public; uploaded branding must be clearly disclosed as public. Do not upload private KYC/evidence there.
-
-```sql
-begin;
-alter policy shop_media_owner_insert on storage.objects
-with check (
-  bucket_id = 'shop-media'
-  and (storage.foldername(objects.name))[2] = 'branding'
-  and (storage.foldername(objects.name))[3] in ('logo', 'cover')
-  and exists (
-    select 1 from public.storefronts as storefront
-    where storefront.id::text = (storage.foldername(objects.name))[1]
-      and storefront.owner_id = (select auth.uid())
-  )
-);
-commit;
-```
-
-Roles, policy name and permissive mode remain unchanged. No UPDATE/DELETE permission is introduced; replacing a displayed logo would point to a new owned object and preserve the old object. Orphan lifecycle/cleanup is a separate operation, not hidden destructive cleanup.
-
-### Exact policy rollback
-
-The following restores the inspected prior INSERT predicate. It intentionally reproduces the old faulty binding for exact rollback; it is not a recommended final security state. Recheck live policy text before applying either direction, because concurrent migrations must not be overwritten.
-
-```sql
-begin;
-alter policy shop_media_owner_insert on storage.objects
-with check (
-  bucket_id = 'shop-media'::text
-  and exists (
-    select 1 from public.storefronts as storefront
-    where storefront.id::text = (storage.foldername(storefront.name))[1]
-      and storefront.owner_id = (select auth.uid())
-  )
-);
-commit;
-```
-
-Rollback changes future authorization only; it does not delete newly created public objects or reverse storefront pointers. Record any authorized QA paths and pointers before acceptance so an approved data restoration can be performed separately if needed.
-
-### Required isolated tests and approval boundary
-
-Before production: capture existing policy definitions, create disposable owner-A/owner-B/work/anonymous fixtures and exercise actual Storage policy evaluation. Owner A may INSERT A/branding/logo and A/branding/cover; reject B's prefix, missing prefix, other bucket, other asset kinds, work employee identity and anonymous access. Verify all legacy product-path approval/suspension denials remain unchanged, and owner B cannot update A's storefront pointers. Validate MIME/15 MiB bucket limits and public-read disclosure. Exercise explicit rollback, then confirm old policies exactly match their captured definitions. These SQL blocks are proposed, **not executed or certified**. An actual Storage upload acceptance case remains required after approval/deployment.
+Required next step: approve a narrowly scoped shared-backend repair after disposable owner/non-owner/employee/anonymous tests, product-state regression, rollback review and a controlled Storage acceptance test. This is a technical security defect requiring migration review, not an unresolved product feature decision.
 
 ## Safe browser acceptance plan
 
