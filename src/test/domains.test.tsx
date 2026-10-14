@@ -12,6 +12,8 @@ describe('official surface routing', () => {
     ['web.social24-7.com', '/', '/web'],
     ['web.social24-7.com', '/web', null],
     ['social24x7-web-app.vercel.app', '/partner/seller/products', null],
+    ['social24x7-web-app.vercel.app', '/partner/register?role=creator&code=secret', origins.partner + '/partner/register?role=creator'],
+    ['social24x7-web-app.vercel.app', '/partner/forgot-password?role=seller#secret', origins.partner + '/partner/forgot-password?role=seller'],
     ['localhost', '/partner/seller/products', null],
     ['social24-7.com', '/', null],
     ['www.social24-7.com', '/partner/register?role=seller', origins.partner + '/partner/register?role=seller'],

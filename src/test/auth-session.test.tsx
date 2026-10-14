@@ -2,14 +2,13 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider, useAuth } from '../auth/AuthContext'
 
-const mocks=vi.hoisted(()=>({event:null as null|((event:string,session:unknown)=>void),verify:vi.fn(),signOut:vi.fn(),profile:vi.fn()}))
+const mocks=vi.hoisted(()=>({event:null as null|((event:string,session:unknown)=>void),signIn:vi.fn(),invoke:vi.fn(),setSession:vi.fn(),signOut:vi.fn(),profile:vi.fn()}))
 vi.mock('../lib/supabase',()=>{
-  const session={user:{id:'qa-user',app_metadata:{}}}
-  const client={auth:{getSession:vi.fn(async()=>({data:{session:null},error:null})),onAuthStateChange:vi.fn((callback:(event:string,session:unknown)=>void)=>{mocks.event=callback;return{data:{subscription:{unsubscribe:vi.fn()}}}}),signInWithPassword:vi.fn(async()=>{mocks.event?.('SIGNED_IN',session);return{data:{session,user:session.user},error:null}}),signOut:mocks.signOut},rpc:vi.fn((name:string)=>name==='verify_my_login_phone'?mocks.verify():Promise.resolve({data:{user_id:'qa-user',seller_status:'approved'},error:null})),from:vi.fn((name:string)=>({select:()=>({eq:()=>name==='profiles'?{maybeSingle:mocks.profile}:Promise.resolve({data:[],error:null})})}))}
+  const client={auth:{getSession:vi.fn(async()=>({data:{session:null},error:null})),onAuthStateChange:vi.fn((callback:(event:string,session:unknown)=>void)=>{mocks.event=callback;return{data:{subscription:{unsubscribe:vi.fn()}}}}),signInWithPassword:mocks.signIn,setSession:mocks.setSession,signOut:mocks.signOut},functions:{invoke:mocks.invoke},rpc:vi.fn(()=>Promise.resolve({data:{user_id:'qa-user',seller_status:'approved'},error:null})),from:vi.fn((name:string)=>({select:()=>({eq:()=>name==='profiles'?{maybeSingle:mocks.profile}:Promise.resolve({data:[],error:null})})}))}
   return{supabase:client,supabaseConfigured:true,requireSupabase:()=>client}
 })
-function Probe(){const auth=useAuth();return <><p>{auth.user?'Account released':'No account'}</p><p>{auth.profile?.display_name}</p><p>{auth.access?.seller_status??'No permissions'}</p><p>{auth.error}</p><button onClick={()=>void auth.signIn({email:'qa@example.com',phone:'+919876543210',password:'not-a-real-password'}).catch(()=>{})}>Verify credentials</button><button onClick={()=>void auth.signOut()}>Log out</button></>}
-beforeEach(()=>{vi.clearAllMocks();mocks.event=null;mocks.signOut.mockResolvedValue({error:null});mocks.profile.mockResolvedValue({data:{id:'qa-user',display_name:'QA'},error:null})})
+function Probe({identifier='qa@example.com'}:{identifier?:string}){const auth=useAuth();return <><p>{auth.user?'Account released':'No account'}</p><p>{auth.profile?.display_name}</p><p>{auth.access?.seller_status??'No permissions'}</p><p>{auth.error}</p><button onClick={()=>void auth.signIn({identifier,password:'legacy-password'}).catch(()=>{})}>Verify credentials</button><button onClick={()=>void auth.signOut()}>Log out</button></>}
+beforeEach(()=>{vi.clearAllMocks();mocks.event=null;mocks.signOut.mockResolvedValue({error:null});mocks.profile.mockResolvedValue({data:{id:'qa-user',display_name:'QA'},error:null});const session={user:{id:'qa-user',app_metadata:{}}};mocks.signIn.mockImplementation(async()=>{mocks.event?.('SIGNED_IN',session);return{data:{session,user:session.user},error:null}});mocks.setSession.mockImplementation(mocks.signIn);mocks.invoke.mockResolvedValue({data:{access_token:'synthetic-access',refresh_token:'synthetic-refresh'},error:null})})
 describe('credential verification and Auth event isolation',()=>{
   it('clears old profile and capabilities immediately on account change',async()=>{
     render(<AuthProvider><Probe/></AuthProvider>)
@@ -45,25 +44,52 @@ describe('credential verification and Auth event isolation',()=>{
     expect(mocks.signOut).toHaveBeenCalledWith({scope:'local'})
     expect(screen.queryByText('QA')).not.toBeInTheDocument()
   })
-  it('does not publish the SIGNED_IN session before the phone check succeeds',async()=>{
+  it('does not publish a session before credential verification completes',async()=>{
     let finish:((value:unknown)=>void)|undefined
-    mocks.verify.mockImplementation(()=>new Promise(resolve=>{finish=resolve}))
+    const session={user:{id:'qa-user',app_metadata:{}}}
+    mocks.signIn.mockImplementation(()=>{mocks.event?.('SIGNED_IN',session);return new Promise(resolve=>{finish=resolve})})
     render(<AuthProvider><Probe/></AuthProvider>)
     await waitFor(()=>expect(mocks.event).not.toBeNull())
     fireEvent.click(screen.getByText('Verify credentials'))
-    await waitFor(()=>expect(mocks.verify).toHaveBeenCalled())
+    await waitFor(()=>expect(mocks.signIn).toHaveBeenCalled())
     expect(screen.getByText('No account')).toBeInTheDocument()
-    await act(async()=>{finish?.({data:true,error:null})})
+    await act(async()=>{finish?.({data:{session,user:session.user},error:null})})
     expect(await screen.findByText('Account released')).toBeInTheDocument()
     expect(screen.getByText('approved')).toBeInTheDocument()
   })
-  it('clears a failed phone-verification session without publishing account access',async()=>{
-    mocks.verify.mockResolvedValue({data:false,error:null})
+  it('rejects a Work identity without publishing personal account access',async()=>{
+    const session={user:{id:'qa-user',app_metadata:{account_type:'business_employee'}}}
+    mocks.signIn.mockResolvedValue({data:{session,user:session.user},error:null})
     render(<AuthProvider><Probe/></AuthProvider>)
     await waitFor(()=>expect(mocks.event).not.toBeNull())
     fireEvent.click(screen.getByText('Verify credentials'))
     await waitFor(()=>expect(mocks.signOut).toHaveBeenCalledWith({scope:'local'}))
     expect(screen.getByText('No account')).toBeInTheDocument()
+    expect(screen.getByText('No permissions')).toBeInTheDocument()
+  })
+  it.each(['qa_user','@QA_User','+919999999999'])('uses the password-verifying server endpoint for %s',async identifier=>{
+    render(<AuthProvider><Probe identifier={identifier}/></AuthProvider>)
+    await waitFor(()=>expect(mocks.event).not.toBeNull())
+    fireEvent.click(screen.getByText('Verify credentials'))
+    expect(await screen.findByText('Account released')).toBeInTheDocument()
+    expect(mocks.invoke).toHaveBeenCalledWith('partner-login',{body:{identifier,password:'legacy-password'}})
+    expect(mocks.setSession).toHaveBeenCalledWith({access_token:'synthetic-access',refresh_token:'synthetic-refresh'})
+  })
+  it('does not apply new-password rules to an existing email login',async()=>{
+    render(<AuthProvider><Probe identifier=" QA@EXAMPLE.COM "/></AuthProvider>)
+    await waitFor(()=>expect(mocks.event).not.toBeNull())
+    fireEvent.click(screen.getByText('Verify credentials'))
+    expect(await screen.findByText('Account released')).toBeInTheDocument()
+    expect(mocks.signIn).toHaveBeenCalledWith({email:'qa@example.com',password:'legacy-password'})
+    expect(mocks.invoke).not.toHaveBeenCalled()
+  })
+  it('fails closed on unknown or ambiguous identifier responses',async()=>{
+    mocks.invoke.mockResolvedValue({data:null,error:{message:'Invalid credentials'}})
+    render(<AuthProvider><Probe identifier="unknown_user"/></AuthProvider>)
+    await waitFor(()=>expect(mocks.event).not.toBeNull())
+    fireEvent.click(screen.getByText('Verify credentials'))
+    await waitFor(()=>expect(mocks.invoke).toHaveBeenCalled())
+    expect(mocks.setSession).not.toHaveBeenCalled()
     expect(screen.getByText('No permissions')).toBeInTheDocument()
   })
 })

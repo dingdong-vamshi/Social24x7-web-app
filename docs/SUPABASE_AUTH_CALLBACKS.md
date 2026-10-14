@@ -1,23 +1,24 @@
-# Supabase Auth callbacks
+# Supabase Auth callbacks — 14 October 2026
 
-Project: kcuxyxqtfkxrbtmugjsn. Code now accepts the verified Partner origin plus the existing Vercel regression origin; localhost is development-only. Registration begins on Partner before PKCE is created. It supplies emailRedirectTo with a fixed role segment, not a user-provided URL.
-
-Required exact official allowlist additions (preserve all existing mobile/recovery entries):
+Project: kcuxyxqtfkxrbtmugjsn. Correct dashboard access was restored. Four exact approved additions were saved and read back:
 
 - https://partner.social24-7.com/auth/callback/seller
 - https://partner.social24-7.com/auth/callback/creator
 - https://partner.social24-7.com/auth/callback/partner
+- https://partner.social24-7.com/auth/reset-password
 
-Retain existing Vercel equivalents where already configured. Do not add broad wildcards or public/customer callbacks: those surfaces do not originate password signup. Do not change the shared Site URL blindly: mobile password recovery may depend on it.
+Six entries now exist. The two legacy entries and shared Site URL remain unchanged. No mobile entries removed, no wildcard added, no DNS changed. Signup and reset template previews use ConfirmationURL; custom SMTP is not configured.
 
-## Configuration access blocker
+Fallback Vercel registration and forgot-password pages move to Partner before creating PKCE state. Existing fallback login remains available. Codes/tokens are never forwarded across origins. Localhost is development-only, not allowlisted in production.
 
-The connected database connector exposes SQL/project tools, not Auth URL/template management. Browser attempts to open this project's URL Configuration in available signed-in dashboard profiles redirect to organizations without this project. Therefore actual Site URL, allowlist, confirmation template and mobile entries cannot be inspected or changed yet. No Auth settings changed. Do not claim the email redirect bug is fully repaired until the exact entries are verified in the correct dashboard account and a controlled-mailbox signup is tested.
+Signup callback verifies the user and routes by authoritative roles/status. Recovery explicitly exchanges a recovery code with URL autodetection disabled on that route; an ordinary existing session is insufficient. Missing, expired, used, non-recovery and cross-browser links fail closed. Callback data is cleared from history. Work accounts retain their separate path.
 
-Confirm-signup template should use the supported ConfirmationURL flow (per-request redirect), not a hardcoded old deployment or SiteURL-only link. Inspect before editing. Preserve email confirmation and existing password-reset templates/mobile callbacks. No mailbox was invented; real email-link QA remains blocked pending an authorized inbox.
+Server policy: minimum eight characters, lowercase, uppercase, digits and symbols. Email confirmation remains enabled. Signup/reset match the policy; existing login does not reject old passwords locally. Work creation remains stricter at ten characters. No actual account password was changed. Paid leaked-password protection remains disabled.
 
-## Session behavior
+## Evidence and limits
 
-Supabase SDK handles PKCE URL exchange once. Callback waits for getSession and verifies getUser, then routes from authoritative backend role/status. It removes callback query/fragment from browser history and does not display raw provider errors. A different browser without the verifier gets a role-preserving sign-in continuation, not token forwarding. Existing Admin precedence remains.
+Private screenshots: /Users/vamshipendyala/Documents/Social24-7-Webapp2-2026-10-14/supabase-redirects.jpg and supabase-password-policy.jpg.
 
-References: [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls), [PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow). Tests are code-level proof, not a delivered-email acceptance test.
+Real delivered-email signup/reset and real used-link acceptance remain BLOCKED: no approved private rotated credential/mailbox session was available. Default mail transport also needs controlled-inbox acceptance. Dashboard readback and unit tests are not email-delivery proof.
+
+References: [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls), [PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow), [Password security](https://supabase.com/docs/guides/auth/password-security).

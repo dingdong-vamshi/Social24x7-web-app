@@ -9,7 +9,7 @@ export interface Profile { id: string; display_name: string; username: string; a
 export interface CommerceAccess { user_id: string; seller_status: string; creator_status: string; professional_status: string; buyer_kyc_status: string; admin_access: boolean }
 export interface Storefront { id: string; name: string; slug: string; active: boolean; verification_status: string }
 interface AuthState { workContext: BusinessWorkContext | null; session: Session | null; profile: Profile | null; access: CommerceAccess | null; storefronts: Storefront[] }
-interface AuthValue extends AuthState { user: User | null; loading: boolean; error: string | null; configured: boolean; refreshProfile: () => Promise<void>; signIn: (credentials: { email: string; phone: string; password: string }) => Promise<void>; signOut: () => Promise<void>; signInWork: (credentials: {loginId:string;password:string}) => Promise<void> }
+interface AuthValue extends AuthState { user: User | null; loading: boolean; error: string | null; configured: boolean; refreshProfile: () => Promise<void>; signIn: (credentials: { identifier: string; password: string }) => Promise<void>; signOut: () => Promise<void>; signInWork: (credentials: {loginId:string;password:string}) => Promise<void> }
 const empty: AuthState = { workContext: null, session: null, profile: null, access: null, storefronts: [] }
 const Context = createContext<AuthValue | null>(null)
 
@@ -77,19 +77,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', refreshOnReturn)
     return () => { active = false; data.subscription.unsubscribe(); window.removeEventListener('focus', refreshOnReturn); document.removeEventListener('visibilitychange', refreshOnReturn) }
   }, [hydrate])
-  const signIn = useCallback(async (credentials: { email: string; phone: string; password: string }) => {
+  const signIn = useCallback(async (credentials: { identifier: string; password: string }) => {
     const client = requireSupabase()
     verifyingCredentials.current = true
     version.current++
     setState(empty); setLoading(true); setError(null)
     try {
-      const result = await client.auth.signInWithPassword({ email: credentials.email.trim().toLowerCase(), password: credentials.password })
-      if (result.error) throw result.error
-      const { data, error } = await client.rpc('verify_my_login_phone', { p_phone: credentials.phone })
-      if (error || data !== true || result.data.user?.app_metadata?.account_type === 'business_employee') {
+      const identifier = credentials.identifier.trim()
+      let result
+      if (identifier.includes('@') && !identifier.startsWith('@')) {
+        result = await client.auth.signInWithPassword({ email: identifier.toLowerCase(), password: credentials.password })
+      } else {
+        const resolved = await client.functions.invoke('partner-login', { body: { identifier, password: credentials.password } })
+        if (resolved.error || !resolved.data?.access_token || !resolved.data?.refresh_token) throw new Error('Unable to sign in with those details. Try your email and password, or use Work login for employee accounts.')
+        result = await client.auth.setSession({ access_token: resolved.data.access_token, refresh_token: resolved.data.refresh_token })
+      }
+      if (result.error || !result.data.session) throw new Error('Unable to sign in with those details. Check your identifier and password.')
+      if (result.data.user?.app_metadata?.account_type === 'business_employee') {
         const logout = await client.auth.signOut({ scope: 'local' })
         if (logout.error) throw new Error('Account verification failed and the session could not be cleared. Close this browser and retry.')
-        throw new Error('Incorrect email, phone number or password. Business work accounts use Work account login.')
+        throw new Error('Business work accounts use Work account login.')
       }
       await hydrate(result.data.session)
     } catch (cause) {

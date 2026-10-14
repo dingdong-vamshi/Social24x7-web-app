@@ -10,6 +10,7 @@ import { AccountMenu } from '../components/AccountMenu'
 import { createChatRepository, mayCompose, mergeMessages, PAGE_SIZE, text, visibleMessages, type ChatRepository, type Conversation, type CustomerOrder, type Message } from '../features/chat/repository'
 import '../features/chat/chat.css'
 import { AttachmentComposer, GroupMembers, NewGroup } from '../features/chat/ConsumerChatTools'
+import { NewPersonalChat } from '../features/chat/NewPersonalChat'
 
 const displayDate = (value: string) => new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 const displayTime = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -43,6 +44,7 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [newGroup, setNewGroup] = useState(false)
+  const [newChat, setNewChat] = useState(false)
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
   const selectedId = businessOnly ? params.get('conversation') : id
@@ -134,13 +136,13 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
     } catch (error) { setError(errorText(error)) } finally { setOlderBusy(false) }
   }
   const selected = Boolean(selectedId)
-  return <main className={`chat-workspace ${selected ? 'has-selection' : ''} ${businessOnly ? 'business-chat' : ''} ${newGroup ? 'creating-group' : ''}`}>
+  return <main className={`chat-workspace ${selected ? 'has-selection' : ''} ${businessOnly ? 'business-chat' : ''} ${newGroup || newChat ? 'creating-group' : ''}`}>
     <aside className="chat-sidebar" aria-label="Conversations">
       <div className="chat-sidebar-title"><div><span className="eyebrow">{businessOnly ? 'Business workspace' : 'Your conversations'}</span><h1>{businessOnly ? 'Business Chat' : 'Chats'}</h1></div><button className="chat-icon-button" type="button" onClick={tick} aria-label="Refresh conversations"><RefreshCw size={19} /></button></div>
       <p className={`chat-connection ${online && connected ? 'connected' : ''}`} role="status"><i />{!online ? 'Offline · reconnect to receive updates' : connected ? 'Connected' : 'Connecting · checking for updates'}</p>
       <label className="chat-search"><Search size={17} /><span className="sr-only">Search your conversations</span><input placeholder="Search conversations" value={search} onChange={event => setSearch(event.target.value)} /></label>
       {!businessOnly && <div className="chat-filters" aria-label="Filter conversations">{['all', 'personal', 'group', 'business'].map(value => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'All' : label(value)}</button>)}</div>}
-      {!businessOnly && user?.app_metadata?.account_type !== 'business_employee' && <button type="button" className="chat-tools-toggle" onClick={() => setNewGroup(true)}>New group</button>}
+      {!businessOnly && user?.app_metadata?.account_type !== 'business_employee' && <><button type="button" className="chat-tools-toggle" onClick={() => { setNewChat(true); setNewGroup(false) }}>New chat</button><button type="button" className="chat-tools-toggle" onClick={() => { setNewGroup(true); setNewChat(false) }}>New group</button></>}
       <div className="chat-conversation-list">{loading && !conversations.length ? <p className="chat-list-notice" role="status">Loading conversations…</p> : showing.length ? showing.map(row => {
         const unread = row.conversation_participants.find(p => p.user_id === user!.id)?.last_read_at
         const content = <><span className="chat-avatar">{row.kind === 'group' ? <Users size={21} /> : row.name.slice(0, 1).toUpperCase()}</span><span className="chat-row-text"><strong>{row.name}</strong><small>{row.kind === 'business' ? row.business_context === 'creator_seller' ? 'Creator · Seller' : 'Customer support' : row.kind === 'group' ? 'Group conversation' : 'Personal conversation'}</small></span><span className="chat-row-meta"><time dateTime={row.updated_at}>{new Date(row.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</time>{(!unread || row.updated_at > unread) && <span className="chat-unread" aria-label="Updated conversation" />}</span></>
@@ -150,7 +152,7 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
       <div className="chat-sidebar-foot"><ShieldCheck size={17} /><p>Signed in to your existing account. Only conversations you can access are shown.</p></div>
     </aside>
     <section className="chat-detail" aria-label="Selected conversation">
-      {newGroup ? <NewGroup repository={repository} created={groupId => { setNewGroup(false); navigate(`/account/chat/${groupId}`); tick() }} close={() => { setNewGroup(false); tick() }} /> : <>
+      {newChat ? <NewPersonalChat repository={repository} revision={refresh} opened={chatId => { setNewChat(false); navigate(`/account/chat/${chatId}`); tick() }} close={() => { setNewChat(false); tick() }}/> : newGroup ? <NewGroup repository={repository} created={groupId => { setNewGroup(false); navigate(`/account/chat/${groupId}`); tick() }} close={() => { setNewGroup(false); tick() }} /> : <>
       {selected && <div className="chat-mobile-back">{businessOnly ? <button type="button" onClick={() => setParams({})}><ArrowLeft size={18} />All conversations</button> : <Link to="/account/chats"><ArrowLeft size={18} />All conversations</Link>}</div>}
       {error && <div className="chat-alert" role="alert">{error}<button type="button" onClick={tick}>Retry</button></div>}
       {loading && selected ? <div className="chat-state" role="status"><LoaderCircle className="spin" /><p>Loading conversation…</p></div> : conversation ? <ChatThread key={conversation.id} conversation={conversation} messages={visibleMessages(messages)} repository={repository} userId={user!.id} refresh={tick} more={moreMessages} olderBusy={olderBusy} loadOlder={loadOlder} readError={readError} /> : <div className="chat-state"><div className="chat-welcome-icon"><MessageCircle size={40} /></div><h2>{selected ? 'Conversation unavailable' : businessOnly ? 'Your customer conversations' : 'Stay in the conversation'}</h2><p>{selected ? 'Choose a conversation from the list, or refresh to check your access.' : 'Open a conversation to see the same history as your SOCIAL 24-7 app.'}</p>{!selected && <small>Messages are protected by account access controls. End-to-end encryption is not currently available.</small>}</div>}

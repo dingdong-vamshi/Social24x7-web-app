@@ -1,0 +1,13 @@
+// @vitest-environment node
+import { beforeEach, expect, it, vi } from 'vitest'
+import { createPartnerLoginHandler } from '../../supabase/functions/partner-login/handler'
+const deps={resolve:vi.fn(),verify:vi.fn(),delay:vi.fn(async(ms:number)=>{void ms})}
+const handler=createPartnerLoginHandler(deps)
+const request=(body:unknown,origin='https://partner.social24-7.com')=>new Request('https://example.test/login',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify(body)})
+beforeEach(()=>{vi.clearAllMocks();deps.resolve.mockResolvedValue({user_id:'synthetic-id',email:'private@example.test'});deps.verify.mockResolvedValue({access_token:'synthetic-access',refresh_token:'synthetic-refresh'})})
+it('returns tokens only after password verification, with no caching',async()=>{const result=await handler(request({identifier:'qa_user',password:'old-password'}));expect(result.status).toBe(200);expect(await result.json()).toEqual({access_token:'synthetic-access',refresh_token:'synthetic-refresh'});expect(result.headers.get('cache-control')).toBe('no-store');expect(deps.verify).toHaveBeenCalledWith({user_id:'synthetic-id',email:'private@example.test'},'old-password')})
+it('gives the same denial for unknown, ambiguous and wrong-password attempts',async()=>{deps.resolve.mockResolvedValueOnce(null);const unknown=await handler(request({identifier:'unknown',password:'wrong'}));deps.verify.mockResolvedValueOnce(null);const wrong=await handler(request({identifier:'known',password:'wrong'}));expect(unknown.status).toBe(400);expect(wrong.status).toBe(400);expect(await unknown.text()).toBe(await wrong.text());expect(deps.delay.mock.calls[0][0]).toBeGreaterThan(600)})
+it.each([null,{}, {identifier:'x',password:''},{identifier:'x'.repeat(255),password:'a'}, {identifier:'x',password:'a'.repeat(129)}])('rejects malformed input without resolution: %j',async body=>{expect((await handler(request(body))).status).toBe(400);expect(deps.resolve).not.toHaveBeenCalled()})
+it('bounds request bodies',async()=>{expect((await handler(request({identifier:'x',password:'y',extra:'x'.repeat(5000)}))).status).toBe(400);expect(deps.resolve).not.toHaveBeenCalled()})
+it('does not trust cross-origin calls',async()=>{expect((await handler(request({identifier:'x',password:'y'},'https://evil.example'))).status).toBe(403);expect(deps.resolve).not.toHaveBeenCalled()})
+it('does not return internal resolution errors',async()=>{deps.resolve.mockRejectedValue(new Error('secret@example.test'));const result=await handler(request({identifier:'x',password:'y'}));expect(await result.text()).not.toContain('secret@example.test');expect(result.status).toBe(400)})

@@ -1,4 +1,6 @@
 export function pageTitle(path: string) {
+  if (path === '/partner/forgot-password') return 'Forgot password'
+  if (path === '/auth/reset-password') return 'Reset password'
   if (path.startsWith('/auth/callback/')) return 'Account confirmation'
   if (path.includes('/register')) return 'Create your account'
   if (path.includes('/login') || path === '/business-login') return 'Sign in'

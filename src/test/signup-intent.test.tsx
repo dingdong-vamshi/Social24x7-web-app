@@ -8,7 +8,7 @@ import { Register } from '../pages/Auth'
 beforeEach(()=>{vi.clearAllMocks();mocks.signUp.mockResolvedValue({data:{user:{identities:[{}]},session:null},error:null})})
 it.each(['seller','creator'])('sends the exact %s callback and retains intent on the sign-in link',async role=>{
  render(<MemoryRouter initialEntries={['/partner/register?role='+role]}><Register/></MemoryRouter>)
- for(const [label,value] of [['Display name','Fictional QA'],['Username','fictional_qa'],['Mobile number','+12025550123'],['Email address','qa@example.test'],['Password','NotARealCredential123'],['Confirm password','NotARealCredential123']]) fireEvent.change(screen.getByLabelText(label,{exact:true}),{target:{value}})
+ for(const [label,value] of [['Display name','Fictional QA'],['Username','fictional_qa'],['Mobile number','+12025550123'],['Email address','qa@example.test'],['Password','NotARealCredential123!'],['Confirm password','NotARealCredential123!']]) fireEvent.change(screen.getByLabelText(label,{exact:true}),{target:{value}})
  fireEvent.click(screen.getByRole('button',{name:'Create account'}))
  await waitFor(()=>expect(mocks.signUp).toHaveBeenCalledTimes(1))
  expect(mocks.signUp.mock.calls[0][0].options.emailRedirectTo).toBe(window.location.origin+'/auth/callback/'+role)

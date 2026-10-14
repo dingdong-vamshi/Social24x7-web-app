@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createConsumerExtensions } from './consumerExtensions'
+import { createPersonalDiscovery } from './personalDiscovery'
+import { verifiedDisplayNames } from '../../auth/publicIdentity'
 
 export type ConversationKind = 'personal' | 'group' | 'business'
 export interface Participant { user_id: string; last_read_at: string | null; cleared_at: string | null; archived_at: string | null }
@@ -48,6 +50,7 @@ export function createChatRepository(client: SupabaseClient, userId: string) {
     ])
     if (profiles.error || stores.error) throw new Error('Conversation names could not be loaded. Please retry.')
     const names: Record<string, string> = Object.fromEntries((profiles.data ?? []).map(p => [p.id, p.display_name || p.username || 'Member']))
+    Object.assign(names, await verifiedDisplayNames(client, ids))
     return rows.map(row => {
       const storeName = stores.data?.find(store => store.id === row.storefront_id)?.name ?? null
       const others = row.conversation_participants.filter(p => p.user_id !== userId).map(p => names[p.user_id] || 'Member')
@@ -84,6 +87,7 @@ export function createChatRepository(client: SupabaseClient, userId: string) {
   }
   return {
     ...createConsumerExtensions(client, userId),
+    ...createPersonalDiscovery(client),
     getConversation,
     async listConversations(businessOnly = false, page = 0) {
       let query = client.from('conversations').select(conversationFields).in('kind', businessOnly ? ['business'] : ['personal', 'group', 'business'])
@@ -150,6 +154,7 @@ export function createChatRepository(client: SupabaseClient, userId: string) {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onChange)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, onChange)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${userId}` }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'connection_requests', filter: `recipient_id=eq.${userId}` }, onChange)
         .subscribe(status => { onStatus(status === 'SUBSCRIBED'); if (status === 'SUBSCRIBED') onChange() })
       return () => { void client.removeChannel(channel) }
     },

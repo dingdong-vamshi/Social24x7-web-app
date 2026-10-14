@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { verifiedDisplayNames } from '../../auth/publicIdentity';
 export interface SocialProfile {
   id: string;
   username: string;
@@ -80,7 +81,9 @@ export function createSocialRepository(
         page_offset: offset,
       });
       if (result.error) throw result.error;
-      return result.data || [];
+      const rows = (result.data || []) as Post[];
+      const names = await verifiedDisplayNames(client, rows.map(row => row.author_id));
+      return rows.map(row => ({ ...row, author_display_name: names[row.author_id] || row.author_display_name }));
     },
     async post(id: string): Promise<Post> {
       if (!uuid(id)) throw new Error("Invalid post link.");
@@ -112,10 +115,11 @@ export function createSocialRepository(
       for (const r of [profiles, likes, comments, ownLike])
         if (r.error) throw r.error;
       const profile = profiles.data?.[0];
+      const names = await verifiedDisplayNames(client, [result.data.author_id]);
       return {
         ...result.data,
         author_username: profile?.username || "",
-        author_display_name: profile?.display_name || "Social member",
+        author_display_name: names[result.data.author_id] || profile?.display_name || "Social member",
         like_count: likes.count || 0,
         comment_count: comments.count || 0,
         liked_by_viewer: Boolean(ownLike.data),
@@ -132,7 +136,9 @@ export function createSocialRepository(
         target_ids: [id],
       });
       if (result.error) throw result.error;
-      return result.data?.[0] || null;
+      const profile = result.data?.[0] as SocialProfile | undefined;
+      const names = profile ? await verifiedDisplayNames(client, [id]) : {};
+      return profile ? { ...profile, display_name: names[id] || profile.display_name } : null;
     },
     async search(query: string): Promise<SearchResult[]> {
       if (!query.trim()) return [];
@@ -141,7 +147,9 @@ export function createSocialRepository(
         result_limit: 24,
       });
       if (result.error) throw result.error;
-      return result.data || [];
+      const rows = (result.data || []) as SearchResult[];
+      const names = await verifiedDisplayNames(client, rows.map(row => row.entity_kind === 'profile' ? row.entity_id : row.author_id));
+      return rows.map(row => ({ ...row, display_name: names[row.entity_kind === 'profile' ? row.entity_id : row.author_id] || row.display_name }));
     },
     async publish(body: string) {
       await check();
@@ -216,12 +224,14 @@ export function createSocialRepository(
         .order("created_at", { ascending: true })
         .limit(100);
       if (result.error) throw result.error;
-      return (result.data || []).map((row) => ({
+      const comments = (result.data || []).map((row) => ({
         ...row,
         profiles: Array.isArray(row.profiles)
           ? row.profiles[0] || null
           : row.profiles,
       }));
+      const names = await verifiedDisplayNames(client, comments.flatMap(row => row.profiles ? [row.profiles.id] : []));
+      return comments.map(row => ({ ...row, profiles: row.profiles ? { ...row.profiles, display_name: names[row.profiles.id] || row.profiles.display_name } : null }));
     },
     async comment(id: string, body: string) {
       await check();

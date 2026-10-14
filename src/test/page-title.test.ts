@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { pageTitle } from '../lib/pageTitle'
 describe('page titles match the current journey', () => {
   it.each([
+    ['/partner/forgot-password', 'Forgot password'],
+    ['/auth/reset-password', 'Reset password'],
     ['/auth/callback/seller', 'Account confirmation'],
     ['/auth/callback/creator', 'Account confirmation'],
     ['/partner/register', 'Create your account'],

@@ -10,6 +10,7 @@ import { PublicNav, PublicFooter } from './components/PublicNav'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import { Account } from './pages/Account'
 import { AuthCallback } from './pages/AuthCallback'
+import { ForgotPassword, ResetPassword } from './pages/PasswordRecovery'
 import { CustomerLink } from './pages/CustomerLink'
 import { pageTitle } from './lib/pageTitle'
 const Social = lazy(() => import('./pages/Social').then(module => ({ default: module.Social })))
@@ -33,7 +34,7 @@ function NotFound(){return <div className="public-site"><PublicNav/><main id="ma
 export default function App(){return <AppBoundary><AuthProvider><RouteEffects/><Suspense fallback={<div className="route-loading" role="status">Loading your workspace…</div>}><Routes>
   <Route path="/business-login" element={<BusinessLogin/>}/><Route path="/business-activate" element={<BusinessLogin activate/>}/><Route path="/business-workspace" element={<BusinessWork/>}/>
   <Route path="/" element={<Home/>}/><Route path="/info/:kind" element={<InformationPage/>}/><Route path="/partner" element={<PartnerEntry/>}/>
-  <Route path="/auth/callback/:intent" element={<AuthCallback/>}/><Route path="/web" element={<CustomerLink/>}/><Route path="/web/app/*" element={<CustomerLink/>}/>
+  <Route path="/auth/callback/:intent" element={<AuthCallback/>}/><Route path="/partner/forgot-password" element={<ForgotPassword/>}/><Route path="/auth/reset-password" element={<ResetPassword/>}/><Route path="/web" element={<CustomerLink/>}/><Route path="/web/app/*" element={<CustomerLink/>}/>
   <Route path="/partner/login" element={<Login/>}/><Route path="/partner/register" element={<Register/>}/><Route path="/web/login" element={<Navigate to="/web" replace/>}/><Route path="/web/register" element={<Navigate to="/web" replace/>}/>
   <Route path="/login" element={<LegacyRoute from="/login" to="/partner/login"/>}/><Route path="/register" element={<LegacyRoute from="/register" to="/partner/register"/>}/>
   <Route element={<RequireAuth/>}>

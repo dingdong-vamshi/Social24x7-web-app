@@ -53,7 +53,7 @@ describe('public navigation and real-account boundaries',()=>{
     renderAt('/partner/register')
     expect(screen.getByRole('heading',{name:'Create your account'})).toBeInTheDocument()
     expect(screen.getByLabelText(/Mobile number/)).toBeInTheDocument()
-    expect(screen.getByText(/SMS sign-in is not currently available/)).toBeInTheDocument()
+    expect(screen.getByText(/A special character/)).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:/Google|Apple|Send OTP/})).not.toBeInTheDocument()
   })
   it('shows a recoverable missing-page state',()=>{

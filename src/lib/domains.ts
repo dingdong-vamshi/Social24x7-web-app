@@ -42,6 +42,12 @@ export function surfaceHref(path: string, hostname = window.location.hostname): 
 }
 export function hostRedirect(hostname: string, path: string): string | null {
   const surface = hostSurface(hostname), pathname = path.split(/[?#]/)[0]
+  // Start PKCE on the allowlisted origin, before any email request creates a
+  // browser-local verifier. Never carry a callback code across origins.
+  if (hostname === 'social24x7-web-app.vercel.app' &&
+      ['/partner/register', '/register', '/partner/forgot-password'].includes(pathname)) {
+    return origins.partner + (pathname === '/register' ? '/partner/register' : pathname) + routeQuery(new URL(path, origins.preview).search)
+  }
   if (surface === 'preview') return null
   // Customer grants are not implemented: private/legacy paths stay fail-closed.
   if (surface === 'customer' && (pathname === '/' || /^\/(?:web|account)(?:\/|$)/.test(pathname))) return pathname === '/web' ? null : '/web'

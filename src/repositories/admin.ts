@@ -1,5 +1,6 @@
 import { requireSupabase } from '../lib/supabase'
 import type { ApplicationKind } from '../auth/onboardingRepository'
+import { sellerPlatforms, platformLabels, socialUrl, type SocialPlatform } from '../auth/applicationFields'
 
 export type ReviewDecision = 'under_review' | 'approved' | 'rejected' | 'more_information_required' | 'suspended'
 export interface AdminApplication {
@@ -60,6 +61,8 @@ export const adminRepository = {
     if (kind === 'seller') {
       for (const [label, key] of [['Legal identity', 'legal_name'], ['Business', 'business_name'], ['Store', 'storefront_name'], ['Seller type', 'seller_type'], ['Registered state', 'registered_state'], ['City', 'city'], ['Store address', 'address_line'], ['Pickup address', 'pickup_address'], ['Return address', 'return_address']]) add(label, row[key])
       add('GSTIN', maskIdentifier(row.gstin)); add('PAN', maskIdentifier(row.pan_number)); add('Bank account', maskIdentifier(payload.bankAccountNumber));
+      const sellerSocial = (payload.socialHandles || payload) as Record<string, unknown>
+      for (const key of sellerPlatforms) if (typeof sellerSocial[key] === 'string' && sellerSocial[key]) add(`Social · ${platformLabels[key]}`, sellerSocial[key])
       asset('Business / identity document', row.document_path); asset('Business exterior', row.exterior_evidence_path); asset('Business interior', row.interior_evidence_path); asset('Business verification video', row.business_verification_video_path)
     } else if (kind === 'creator') {
       for (const [label, key] of [['Identity', 'identity_name'], ['Creator type', 'creator_type'], ['Category', 'macro_category'], ['Specializations', 'specializations'], ['About', 'about']]) add(label, row[key])
@@ -96,4 +99,11 @@ export const adminRepository = {
     if (!data || data.decision !== decision || data.applicationId !== application.id) throw new Error('The review response could not be confirmed. Refresh the application before retrying.')
     return data
   },
+}
+export function safeApplicationLink(label: string, value: string): string | null {
+  if (!label.startsWith('Social · ')) return null
+  const name = label.slice(9)
+  const key = (Object.keys(platformLabels) as SocialPlatform[]).find(key => key === name || platformLabels[key] === name)
+  if (!key) return null
+  try { return socialUrl(value, key) || null } catch { return null }
 }

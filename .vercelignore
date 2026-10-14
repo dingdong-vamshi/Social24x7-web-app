@@ -1,0 +1,3 @@
+qa/
+vite.qa.config.ts
+supabase/tests/

@@ -137,7 +137,11 @@ export const creatorCategories = creatorTaxonomy.map((category) => ({
 }));
 
 export type CreatorMacroCategory = (typeof creatorTaxonomy)[number]['name'];
-export type AudienceTier = 'Nano' | 'Micro' | 'Macro' | 'Mega';
+export type AudienceTier = 'Nano' | 'Micro' | 'Mid' | 'Macro' | 'Mega';
+export const audienceTierLabels: Record<AudienceTier, string> = {
+  Nano: 'Nano Creator — 1K–10K followers', Micro: 'Micro Creator — 10K–50K followers',
+  Mid: 'Mid Creator — 50K–500K followers', Macro: 'Macro Creator — 500K–1M followers', Mega: 'Mega Creator — 1M+ followers',
+};
 
 export const professionalCredentialRules = creatorTaxonomy.flatMap((category) =>
   category.specializations.flatMap((policy) => policy.professionalRule ? [policy.professionalRule] : []),
