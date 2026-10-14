@@ -1,0 +1,11 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { AdminProducts } from '../pages/AdminProducts'
+const m=vi.hoisted(()=>({assert:vi.fn(),rpc:vi.fn(),status:'approved'}))
+vi.mock('../repositories/admin',()=>({assertAdmin:m.assert}))
+beforeEach(()=>{vi.clearAllMocks();m.status='approved';const q={select:()=>q,in:()=>q,order:()=>q,limit:async()=>({data:[{id:'p',title:'Fictional product',product_approval_status:m.status}],error:null})};m.assert.mockResolvedValue({from:()=>q,rpc:m.rpc});m.rpc.mockResolvedValue({data:null,error:null})})
+describe('Admin moderation boundary',()=>{
+ it('requires an explicit reason and confirmation, then rechecks Admin',async()=>{render(<AdminProducts/>);fireEvent.click(await screen.findByRole('button',{name:'Suspend product'}));expect(screen.getByRole('button',{name:'Confirm moderation'})).toBeDisabled();expect(m.rpc).not.toHaveBeenCalled();fireEvent.change(screen.getByLabelText('Reviewer reason'),{target:{value:'Fixture only'}});fireEvent.click(screen.getByRole('button',{name:'Confirm moderation'}));await waitFor(()=>expect(m.rpc).toHaveBeenCalledWith('review_creator_commerce_product',{p_product_id:'p',p_decision:'suspended',p_reason:'Fixture only'}));expect(m.assert.mock.calls.length).toBeGreaterThanOrEqual(2)})
+ it('does not dispatch after Admin access is revoked',async()=>{render(<AdminProducts/>);fireEvent.click(await screen.findByRole('button',{name:'Suspend product'}));fireEvent.change(screen.getByLabelText('Reviewer reason'),{target:{value:'Fixture only'}});m.assert.mockRejectedValue(new Error('Admin access revoked'));fireEvent.click(screen.getByRole('button',{name:'Confirm moderation'}));expect(await screen.findByRole('alert')).toHaveTextContent('Admin access revoked');expect(m.rpc).not.toHaveBeenCalled()})
+ it('cancels without changing product status',async()=>{m.status='suspended';render(<AdminProducts/>);fireEvent.click(await screen.findByRole('button',{name:'Reinstate product'}));fireEvent.click(screen.getByRole('button',{name:'Cancel moderation'}));expect(m.rpc).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'Confirm moderation'})).not.toBeInTheDocument()})
+})

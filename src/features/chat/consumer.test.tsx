@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   listConversations: vi.fn(), getConversation: vi.fn(), reconcile: vi.fn(), listMessages: vi.fn(),
   send: vi.fn(), markRead: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), signOut: vi.fn(),
 }))
-vi.mock('../../lib/supabase', () => ({ supabase: {} }))
+vi.mock('../../lib/supabase', () => ({ supabase: {}, requireSupabase: () => ({}) }))
 vi.mock('../../auth/AuthContext', () => ({ useAuth: () => ({ user: { id: 'qa-user' }, loading: false, configured: true, signOut: mocks.signOut }) }))
 vi.mock('./repository', async original => ({ ...(await original<typeof import('./repository')>()), createChatRepository: () => mocks }))
 

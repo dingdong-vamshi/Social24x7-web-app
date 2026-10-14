@@ -10,6 +10,8 @@ import { PublicNav, PublicFooter } from './components/PublicNav'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import { Account } from './pages/Account'
 
+const BusinessLogin = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessLogin })))
+const BusinessWork = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessWork })))
 const SellerStudio = lazy(() => import('./pages/SellerStudio').then(module => ({ default: module.SellerStudio })))
 const CreatorCenter = lazy(() => import('./pages/CreatorCenter').then(module => ({ default: module.CreatorCenter })))
 const ConsumerWeb = lazy(() => import('./pages/ConsumerWeb').then(module => ({ default: module.ConsumerWeb })))
@@ -24,6 +26,7 @@ class AppBoundary extends Component<{children:ReactNode},{failed:boolean}>{state
 function NotFound(){return <div className="public-site"><PublicNav/><main id="main-content" className="public-info"><p className="public-kicker">PAGE NOT FOUND</p><h1>Let’s find your way back.</h1><p className="info-lead">This page may have moved. Your account and workspaces are available from the main navigation.</p><Link className="public-cta" to="/">Go to homepage</Link></main><PublicFooter/></div>}
 
 export default function App(){return <AppBoundary><AuthProvider><RouteEffects/><Suspense fallback={<div className="route-loading" role="status">Loading your workspace…</div>}><Routes>
+  <Route path="/business-login" element={<BusinessLogin/>}/><Route path="/business-activate" element={<BusinessLogin activate/>}/><Route path="/business-workspace" element={<BusinessWork/>}/>
   <Route path="/" element={<Home/>}/><Route path="/info/:kind" element={<InformationPage/>}/><Route path="/partner" element={<PartnerEntry/>}/>
   <Route path="/partner/login" element={<Login/>}/><Route path="/partner/register" element={<Register/>}/><Route path="/web/login" element={<Login/>}/><Route path="/web/register" element={<Register/>}/>
   <Route path="/login" element={<LegacyRoute from="/login" to="/partner/login"/>}/><Route path="/register" element={<LegacyRoute from="/register" to="/partner/register"/>}/>

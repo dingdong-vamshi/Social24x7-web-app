@@ -20,7 +20,7 @@ export interface Order {
   id: string; storefront_id: string; status: string; currency: string; total_minor: number; payment_status: string
   payment_method: string; created_at: string
   order_items: { id: string; product_title_snapshot: string; quantity: number; subtotal_minor: number }[]
-  order_fulfillments: { status: string; carrier: string | null; tracking_number: string | null; customer_note: string | null } | null
+  order_fulfillments: { status: string; carrier: string | null; tracking_number: string | null; package_reference?: string | null; customer_note: string | null } | null
 }
 export interface ReturnRequest { id: string; order_id: string; status: string; reason: string; details: string | null; admin_note: string | null; requested_at: string }
 export interface Promotion {
@@ -57,7 +57,7 @@ export const commerce = {
     return check(await requireSupabase().from('products').select(productFields).eq('storefront_id', storefrontId).order('updated_at', { ascending: false }).limit(500)) as unknown as Product[]
   },
   async orders(storefrontId: string): Promise<Order[]> {
-    return check(await requireSupabase().from('orders').select('id,storefront_id,status,currency,total_minor,payment_status,payment_method,created_at,order_items(id,product_title_snapshot,quantity,subtotal_minor),order_fulfillments(status,carrier,tracking_number,customer_note)').eq('storefront_id', storefrontId).order('created_at', { ascending: false }).limit(500)) as unknown as Order[]
+    return check(await requireSupabase().from('orders').select('id,storefront_id,status,currency,total_minor,payment_status,payment_method,created_at,order_items(id,product_title_snapshot,quantity,subtotal_minor),order_fulfillments(status,carrier,tracking_number,package_reference,customer_note)').eq('storefront_id', storefrontId).order('created_at', { ascending: false }).limit(500)) as unknown as Order[]
   },
   async returns(storefrontId: string): Promise<ReturnRequest[]> {
     return check(await requireSupabase().from('return_requests').select('id,order_id,status,reason,details,admin_note,requested_at').eq('storefront_id', storefrontId).order('requested_at', { ascending: false }).limit(500))
@@ -114,6 +114,20 @@ export const commerce = {
     const signed = await requireSupabase().storage.from(bucket).createSignedUrl(media.path, 900)
     if (signed.error) return null
     return signed.data.signedUrl
+  },
+  async arrangeProductImages(productId: string, paths: string[], expectedPaths: string[]): Promise<void> {
+    if (paths.length < 1 || paths.length > 10) throw new Error('Keep between one and ten product images. A cover is required.')
+    const client = requireSupabase()
+    const current = check(await client.from('product_media').select('path,storage_bucket,position,original_filename,mime_type,bytes,alt_text,width,height').eq('product_id', productId).order('position')) as ProductMedia[]
+    if (current.some(item => item.storage_bucket !== 'product-media')) throw new Error('Legacy images must be managed in the existing application.')
+    if (JSON.stringify(current.map(item => item.path)) !== JSON.stringify(expectedPaths) || new Set(paths).size !== paths.length || paths.some(path => !current.some(item => item.path === path))) throw new Error('Image list changed. Reload before saving.')
+    const media = paths.map((path, position) => {
+      const item = current.find(item => item.path === path)!
+      return { path, media_type: 'image', alt_text: item.alt_text || '', position, is_primary: position === 0, original_filename: item.original_filename, mime_type: item.mime_type || 'image/jpeg', bytes: item.bytes || 1, width: item.width ?? null, height: item.height ?? null }
+    })
+    const result = await client.rpc('replace_creator_commerce_product_media', { p_product_id: productId, p_media: media })
+    if (result.error) throw new Error(result.error.message)
+    // Detach records only. Never delete stored objects after an uncertain response.
   },
   async addProductImages(productId: string, files: File[]): Promise<void> {
     const client = requireSupabase()

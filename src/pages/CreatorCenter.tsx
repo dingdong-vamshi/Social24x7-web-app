@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { ArrowRight, Copy, ExternalLink, Plus, RefreshCw, ShoppingBag } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { CounterpartyDirectory, Growth } from './CommerceOperations'
 import { WorkspaceShell } from '../components/WorkspaceShell'
 import { CommerceEmpty, CommerceNote, CommerceResult, useCommerce } from '../components/LiveCommerce'
 import { Button, FilterBar, LoadingState, MetricCard, PageHeader, SectionCard, StatusPill } from '../components/Ui'
@@ -20,6 +21,7 @@ function CreatorView({ section, userId }: { section: string; userId: string }) {
   if (section === 'overview' || section === 'analytics') return <Overview userId={userId} analytics={section === 'analytics'} />
   if (section === 'discover') return <Discover userId={userId} />
   if (section === 'promotions' || section === 'links') return <Promotions userId={userId} links={section === 'links'} />
+  if (section === 'growth') return <Growth/>
   if (section === 'earnings') return <Earnings userId={userId} />
   if (section === 'profile') return <Profile />
   return <><PageHeader title="Page not found" description="This Creator page is not available." /><Button to={base}>Back to Creator Center</Button></>
@@ -91,5 +93,5 @@ function Earnings({ userId }: { userId: string }) {
 
 function Profile() {
   const { profile, access } = useAuth()
-  return <><PageHeader eyebrow="Creator identity" title="Profile" description="Your existing SOCIAL 24-7 identity and commerce approval status." /><SectionCard title={profile?.display_name || profile?.username || 'Your profile'}><dl className="commerce-definition"><div><dt>Username</dt><dd>{profile?.username ? `@${profile.username}` : 'Not provided'}</dd></div><div><dt>Creator approval</dt><dd><StatusPill>{label(access?.creator_status || 'unknown')}</StatusPill></dd></div><div><dt>Professional verification</dt><dd>{label(access?.professional_status || 'unknown')}</dd></div><div><dt>Seller approval</dt><dd>{label(access?.seller_status || 'unknown')}</dd></div></dl></SectionCard><CommerceNote>Profile edits and professional evidence updates remain in the existing application. Verification is shown only from the shared backend; ordinary Creator approval does not imply professional verification.</CommerceNote></>
+  return <><PageHeader eyebrow="Creator identity" title="Profile" description="Your existing SOCIAL 24-7 identity and commerce approval status." /><SectionCard title={profile?.display_name || profile?.username || 'Your profile'}><dl className="commerce-definition"><div><dt>Username</dt><dd>{profile?.username ? `@${profile.username}` : 'Not provided'}</dd></div><div><dt>Creator approval</dt><dd><StatusPill>{label(access?.creator_status || 'unknown')}</StatusPill></dd></div><div><dt>Professional verification</dt><dd>{label(access?.professional_status || 'unknown')}</dd></div><div><dt>Seller approval</dt><dd>{label(access?.seller_status || 'unknown')}</dd></div></dl></SectionCard><CounterpartyDirectory role="seller"/><Button to="/account">Edit shared profile</Button><Button to="/partner/creator/growth" variant="secondary">Creator growth</Button><CommerceNote>Professional evidence updates remain subject to the existing application lifecycle. Verification is shown only from the shared backend; ordinary Creator approval does not imply professional verification.</CommerceNote></>
 }

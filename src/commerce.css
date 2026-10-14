@@ -89,3 +89,5 @@
   .commerce-store-selector select { width: 100%; }
 }
 @media (max-width: 390px) { .commerce-topbar-title { display: none; } }
+.commerce-form fieldset { min-width: 0; padding: 16px; border: 1px solid #dce5df; border-radius: 12px; }
+.commerce-form select { width: 100%; max-width: 100%; padding: 12px; border: 1px solid #c9d8d0; border-radius: 8px; color: #163e2e; background: white; font: inherit; }

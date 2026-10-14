@@ -17,6 +17,19 @@ const draft: ProductDraft = { title: 'QA product', slug: 'qa-product', category:
 
 describe('live commerce repository', () => {
   beforeEach(() => vi.resetAllMocks())
+  it('reorders private images through the existing service without deleting objects', async () => {
+    mocks.from.mockReturnValue(query([{path:'a',storage_bucket:'product-media',position:0},{path:'b',storage_bucket:'product-media',position:1}]))
+    mocks.rpc.mockResolvedValue({data:null,error:null})
+    await commerce.arrangeProductImages('product',['b','a'],['a','b'])
+    expect(mocks.rpc).toHaveBeenCalledWith('replace_creator_commerce_product_media',{p_product_id:'product',p_media:[expect.objectContaining({path:'b',position:0,is_primary:true}),expect.objectContaining({path:'a',position:1,is_primary:false})]})
+  })
+  it('refuses legacy or stale image replacement', async () => {
+    mocks.from.mockReturnValue(query([{path:'a',storage_bucket:'shop-media'}]))
+    await expect(commerce.arrangeProductImages('product',['a'],['a'])).rejects.toThrow('Legacy')
+    mocks.from.mockReturnValue(query([{path:'a',storage_bucket:'product-media'},{path:'new',storage_bucket:'product-media'}]))
+    await expect(commerce.arrangeProductImages('product',['a'],['a'])).rejects.toThrow('Image list changed')
+    expect(mocks.rpc).not.toHaveBeenCalled()
+  })
   it('filters store discovery by the authenticated owner instead of trusting a local role flag', async () => {
     const builder = query()
     mocks.from.mockReturnValue(builder)

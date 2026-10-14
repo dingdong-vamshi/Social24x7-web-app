@@ -24,7 +24,7 @@ function AuthForm({ register = false }: { register?: boolean }) {
   const consumer = location.pathname.startsWith('/web')
   const requestedRole = params.get('role')
   const requested = params.get('next') || (requestedRole === 'seller' || requestedRole === 'creator' ? `/partner/onboarding/${requestedRole}` : null)
-  const next = auth.user ? loginDestination(auth.user.id, auth.access, requested) : requested
+  const next = auth.user?.app_metadata?.account_type === 'business_employee' ? '/business-workspace' : auth.user ? loginDestination(auth.user.id, auth.access, requested) : requested
   async function submit(event: FormEvent) {
     event.preventDefault(); if (busy) return; setError(''); setNotice('')
     const normalizedPhone = normalizePhone(phone)
@@ -68,6 +68,7 @@ function AuthForm({ register = false }: { register?: boolean }) {
         <Button type="submit" disabled={busy || auth.loading || !auth.configured}>{busy ? 'Please wait…' : register ? 'Create account' : 'Sign in'}<ArrowRight size={17} /></Button>
       </form>}
       <p className="auth-alternative">{register ? 'Already have an account?' : 'New to SOCIAL 24-7?'} <Link to={`${consumer ? '/web' : '/partner'}/${register ? 'login' : 'register'}${requested ? `?next=${encodeURIComponent(requested)}` : ''}`}>{register ? 'Sign in' : 'Create account'}</Link></p><div className="auth-security"><ShieldCheck size={17} /><span>SMS sign-in is not currently available. Your existing email and password connect to the same account as the app.</span></div>
+      <p className="auth-alternative">Employee? <Link to="/business-login">Use Work account login</Link></p>
     </section></main>
     {!consumer && <section className="auth-how"><h2>From first step to your workspace</h2><div>{['Create or sign in to your account', 'Choose Seller or Creator', 'Submit your details for review', 'Open your approved workspace'].map((item, index) => <article key={item}><span>0{index + 1}</span><h3>{item}</h3></article>)}</div><p>Creating an account does not automatically approve a business or professional credential.</p></section>}
   </div>

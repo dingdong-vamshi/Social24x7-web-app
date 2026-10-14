@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, Check, Download, LoaderCircle, MessageCircle, Package, RefreshCw, Search, Send, ShieldCheck, Users } from 'lucide-react'
-import { Link, NavLink, useParams, useSearchParams } from 'react-router-dom'
+import { Link, NavLink, useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { CounterpartyDirectory } from './CommerceOperations'
 import { useAuth } from '../auth/AuthContext'
 import { supabase } from '../lib/supabase'
 import { Brand } from '../components/Brand'
@@ -31,8 +32,9 @@ export function ConsumerWeb() {
 /** Mount inside the approved business workspace; never includes Personal/Group Chat. */
 export function BusinessChat() {
   const { user, loading } = useAuth()
+  const { pathname } = useLocation()
   const [params] = useSearchParams()
-  return loading || !user || !supabase ? <SessionNotice /> : <ChatWorkspace key={`${user.id}:${params.get('conversation') || ''}`} businessOnly />
+  return loading || !user || !supabase ? <SessionNotice /> : <><CounterpartyDirectory role={pathname.startsWith('/partner/creator') ? 'seller' : 'creator'}/><ChatWorkspace key={`${user.id}:${params.get('conversation') || ''}`} businessOnly /></>
 }
 
 function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {

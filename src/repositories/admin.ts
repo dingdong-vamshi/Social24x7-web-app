@@ -23,7 +23,7 @@ export function reviewActions(status: string): Array<{ decision: ReviewDecision;
   if (status === 'suspended') return [{ decision: 'approved', label: 'Reinstate', reason: false }]
   return []
 }
-async function assertAdmin() {
+export async function assertAdmin() {
   const client = requireSupabase()
   const { data, error } = await client.rpc('get_my_creator_commerce_access')
   if (error) throw error
