@@ -27,6 +27,7 @@ import "../features/social/social.css";
 import { RichProfile, ShareButton, SocialMediaPreview, Stories } from '../features/social/ExpandedSocial';
 import { validateSocialMedia } from '../features/social/extendedRepository';
 import { ShareToChat } from '../features/social/ShareToChat';
+import { AvailableMedia, SocialAvatar } from '../features/social/AvailableMedia';
 
 const message = (e: unknown) =>
   e instanceof Error ? e.message : "Unable to load this view. Please retry.";
@@ -415,9 +416,7 @@ function PostCard({
   return (
     <article className="social-card social-post">
       <header>
-        {post.author_avatar_url ? <img className="avatar social-author-avatar" src={post.author_avatar_url} alt="" /> : <span className="avatar">
-          {post.author_display_name?.slice(0, 1) || "S"}
-        </span>}
+        <SocialAvatar src={post.author_avatar_url} name={post.author_display_name || 'Social member'} />
         <div>
           <Link to={base + "?profile=" + post.author_id}>
             <strong>{post.author_display_name}</strong>
@@ -430,23 +429,7 @@ function PostCard({
       </header>
       {repository.viewerId !== post.author_id && <button className="button secondary" disabled={busy} onClick={() => { if (busy) return; setBusy(true); setError(''); void repository.follow(post.author_id, !following).then(() => setFollowing(!following)).catch(cause => setError(message(cause))).finally(() => setBusy(false)); }}>{following ? 'Unfollow author' : 'Follow author'}</button>}
       <p className="post-body">{post.body}</p>
-      {post.media_paths?.map((path) =>
-        post.media_type === "video" ? (
-          <video
-            key={path}
-            src={repository.mediaUrl(path)}
-            controls
-            preload="metadata"
-          />
-        ) : (
-          <img
-            key={path}
-            src={repository.mediaUrl(path)}
-            alt="Post attachment"
-            loading="lazy"
-          />
-        ),
-      )}
+      {post.media_paths?.map(path => <AvailableMedia key={path} src={repository.mediaUrl(path)} video={post.media_type === 'video'} alt="Post attachment" />)}
       <div className="social-card-actions">
         <button
           className="button secondary"

@@ -1,5 +1,7 @@
 # Original → Partner Web action inventory
 
+Latest acceptance evidence and 611-test continuation: `WEBAPP2_LIVE_ACCEPTANCE_2026-10-14.md`. The inventory counts below are unchanged; historical no-mutation/test-total statements are not the latest acceptance status.
+
 ## Current implementation checkpoint
 
 All recovery items below have now been implemented; the table is retained as the **before** inventory, not the current missing-feature list. Module ledgers describe the resulting code and isolated tests. Final integrated check: **588 tests / 49 files passed**, ESLint passed, TypeScript + production build passed. Non-fatal build warning: main bundle exceeds 500 kB. Current authenticated production reads and exact acceptance limits are recorded in `WEBAPP2_FINAL_CLIENT_ACCEPTANCE.md`.

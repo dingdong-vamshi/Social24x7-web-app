@@ -1,5 +1,7 @@
 # SOCIAL 24-7 Partner Web — client acceptance report
 
+> Historical recovery checkpoint. The later `WEBAPP2_LIVE_ACCEPTANCE_2026-10-14.md` supersedes claims below about no safe mutations, untested Reels playback, unavailable responsive proof, and current test totals. Preserve this earlier evidence as dated, not as the latest release verdict.
+
 Recorded 14 October 2026. Recovery code is deployed; this report distinguishes implemented parity from incomplete live acceptance. It does not certify full functional parity. See `WEBAPP2_DEPLOYMENT_HANDOFF.md` for the deployment chain and the accompanying final response for the exact post-polish commit/deployment receipt.
 
 Evidence labels: **production read** means the authenticated deployed page/data was observed without a business mutation; **isolated test** means a controlled component/repository test, not a real application submission, approval, message, publication, payout or lifecycle transition. `PARTIAL` below can mean incomplete acceptance evidence, not missing implementation. The exact distinctions appear in section K.

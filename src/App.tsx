@@ -1,4 +1,5 @@
-import { Component, lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
+import { AppBoundary } from './components/AppBoundary'
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ApplicationStatusPage } from './pages/ApplicationStatus'
 import { Login, Register } from './pages/Auth'
@@ -28,7 +29,6 @@ const AdminDashboard = lazy(() => import('./pages/Admin').then(module => ({ defa
 function LegacyRoute({from,to}:{from:string;to:string}){const location=useLocation();return <Navigate to={location.pathname.replace(from,to)+location.search+location.hash} replace/>}
 function Home(){return <Landing/>}
 function RouteEffects(){const {pathname}=useLocation();useEffect(()=>{window.scrollTo(0,0);document.title=`${pageTitle(pathname)} | SOCIAL 24-7`;const robots=document.createElement('meta');robots.name='robots';robots.content='noindex, nofollow';if(pathname.startsWith('/partner/admin'))document.head.appendChild(robots);return()=>robots.remove()},[pathname]);return null}
-class AppBoundary extends Component<{children:ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return{failed:true}}render(){return this.state.failed?<main className="public-info"><h1>This page could not load.</h1><p>Refresh the page to try again. Your saved account data is still on the server.</p><button className="public-cta" onClick={()=>window.location.reload()}>Reload page</button></main>:this.props.children}}
 function NotFound(){return <div className="public-site"><PublicNav/><main id="main-content" className="public-info"><p className="public-kicker">PAGE NOT FOUND</p><h1>Let’s find your way back.</h1><p className="info-lead">This page may have moved. Your account and workspaces are available from the main navigation.</p><Link className="public-cta" to="/">Go to homepage</Link></main><PublicFooter/></div>}
 
 export default function App(){return <AppBoundary><AuthProvider><RouteEffects/><Suspense fallback={<div className="route-loading" role="status">Loading your workspace…</div>}><Routes>

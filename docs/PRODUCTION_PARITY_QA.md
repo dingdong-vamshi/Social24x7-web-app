@@ -1,5 +1,7 @@
 # Production parity QA
 
+Latest continuation: `WEBAPP2_LIVE_ACCEPTANCE_2026-10-14.md` records normal multi-account login, controlled two-way messages, restored draft mutation, actual Reels playback and measured mobile viewport. The no-mutation statements below apply to their historical checkpoints only.
+
 ## Current full-parity recovery — 14 October 2026
 
 Recovery commit `fb8689732f1bebbed5fe20260ac990533d4b7de2` deployed Ready as `dpl_8VnR91qb74yDvrzJ8Q8jv35zmHmT`; production bundle matched local bytes. Final Social single-bell/landmark polish has **588 passing tests / 49 files, lint and TypeScript/build PASS**. See final handoff for release chain.
