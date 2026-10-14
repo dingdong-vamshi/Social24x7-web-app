@@ -117,7 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await hydrate(data.session)
   }, [hydrate])
   const signOut = useCallback(async () => {
-    const { error } = await requireSupabase().auth.signOut()
+    // Leave other origins and the installed app signed in. Device-wide revocation
+    // is a separate explicit action, not the ordinary Partner logout button.
+    const { error } = await requireSupabase().auth.signOut({ scope: 'local' })
     if (error) throw error
     forgetWorkspace(currentUserId.current)
     version.current++; currentUserId.current = null; setState(empty); setError(null); setLoading(false)

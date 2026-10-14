@@ -42,6 +42,7 @@ describe('credential verification and Auth event isolation',()=>{
     fireEvent.click(screen.getByText('Log out'))
     expect(await screen.findByText('No account')).toBeInTheDocument()
     expect(sessionStorage.getItem('workspace:qa-user')).toBeNull()
+    expect(mocks.signOut).toHaveBeenCalledWith({scope:'local'})
     expect(screen.queryByText('QA')).not.toBeInTheDocument()
   })
   it('does not publish the SIGNED_IN session before the phone check succeeds',async()=>{
