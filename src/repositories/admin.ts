@@ -1,6 +1,6 @@
 import { requireSupabase } from '../lib/supabase'
 import type { ApplicationKind } from '../auth/onboardingRepository'
-import { sellerPlatforms, platformLabels, socialUrl, type SocialPlatform } from '../auth/applicationFields'
+import { sellerPlatforms, platformLabels, savedSocialFields, socialUrl, type SocialPlatform } from '../auth/applicationFields'
 
 export type ReviewDecision = 'under_review' | 'approved' | 'rejected' | 'more_information_required' | 'suspended'
 export interface AdminApplication {
@@ -61,7 +61,7 @@ export const adminRepository = {
     if (kind === 'seller') {
       for (const [label, key] of [['Legal identity', 'legal_name'], ['Business', 'business_name'], ['Store', 'storefront_name'], ['Seller type', 'seller_type'], ['Registered state', 'registered_state'], ['City', 'city'], ['Store address', 'address_line'], ['Pickup address', 'pickup_address'], ['Return address', 'return_address']]) add(label, row[key])
       add('GSTIN', maskIdentifier(row.gstin)); add('PAN', maskIdentifier(row.pan_number)); add('Bank account', maskIdentifier(payload.bankAccountNumber));
-      const sellerSocial = (payload.socialHandles || payload) as Record<string, unknown>
+      const sellerSocial = savedSocialFields(payload)
       for (const key of sellerPlatforms) if (typeof sellerSocial[key] === 'string' && sellerSocial[key]) add(`Social · ${platformLabels[key]}`, sellerSocial[key])
       asset('Business / identity document', row.document_path); asset('Business exterior', row.exterior_evidence_path); asset('Business interior', row.interior_evidence_path); asset('Business verification video', row.business_verification_video_path)
     } else if (kind === 'creator') {

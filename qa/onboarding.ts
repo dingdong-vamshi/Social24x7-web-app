@@ -1,7 +1,7 @@
 // Memory-only adapters. No account, evidence, application or bank data leaves
 // this preview. Reopening the page resets all synthetic state.
 const params = new URLSearchParams(window.location.search)
-let draft = { currentStep: Number(params.get('step') || 0), sellerType: 'non_gst', audienceTier: 'Mid', macroCategory: 'Content & Digital Media', specializations: ['Content Creator'], selectedPlatforms: ['instagram', 'youtube'], instagram: 'https://instagram.com/synthetic_preview', youtube: 'https://youtube.com/@synthetic_preview', website: 'https://example.com/', businessName: 'Synthetic Demo', storefrontName: 'Synthetic Preview', identityName: 'Synthetic Applicant' }
+let draft = { currentStep: Number(params.get('step') || 0), sellerType: 'non_gst', audienceTier: 'Mid', macroCategory: 'Content & Digital Media', specializations: ['Content Creator'], selectedPlatforms: ['linkedin', 'instagram', 'facebook', 'tiktok'], linkedin: params.get('view') === 'seller' ? 'https://www.linkedin.com/company/synthetic-preview' : 'https://www.linkedin.com/in/synthetic-preview', instagram: 'https://instagram.com/synthetic_preview', facebook: 'https://facebook.com/synthetic_preview', tiktok: 'https://www.tiktok.com/@synthetic_preview', googleMaps: 'https://maps.app.goo.gl/synthetic', youtube: 'https://youtube.com/@synthetic_preview', website: 'https://example.com/', businessName: 'Synthetic Demo', storefrontName: 'Synthetic Preview', identityName: 'Synthetic Applicant' }
 export const getMySellerApplication = async () => ({ status: 'draft', applicationPayload: draft })
 export const getMyCreatorApplication = getMySellerApplication
 export const getMyProfessionalRequest = async () => null

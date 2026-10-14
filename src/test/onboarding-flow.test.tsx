@@ -9,6 +9,46 @@ vi.mock('../auth/onboardingRepository',()=>({getMySellerApplication:mocks.load,g
 function mount(role='seller'){return render(<MemoryRouter initialEntries={['/partner/onboarding/'+role]}><Routes><Route path="/partner/onboarding/:role" element={<OnboardingFlow/>}/><Route path="/application" element={<div>Current review state</div>}/></Routes></MemoryRouter>)}
 beforeEach(()=>{vi.clearAllMocks();mocks.load.mockResolvedValue(null);mocks.save.mockResolvedValue({})})
 describe('connected onboarding state',()=>{
+  it.each(['seller','creator'])('saves and resumes %s LinkedIn through the existing account draft contract',async(role)=>{
+    const linkedIn='https://www.linkedin.com/'+(role==='seller'?'company':'in')+'/synthetic'
+    let stored:Record<string,unknown>={currentStep:role==='seller'?4:1}
+    mocks.load.mockImplementation(async()=>({status:'draft',applicationPayload:stored,...(role==='creator'?{socialHandles:stored.socialHandles}: {})}))
+    mocks.save.mockImplementation(async(_client,_role,payload)=>{stored=payload;return payload})
+    const first=mount(role)
+    if(role==='creator')fireEvent.click(await screen.findByLabelText('LinkedIn'))
+    const input=await screen.findByLabelText(role==='seller'?'LinkedIn':'LinkedIn profile URL')
+    expect(input).toHaveProperty('required',role==='creator')
+    fireEvent.change(input,{target:{value:linkedIn}})
+    fireEvent.click(screen.getByRole('button',{name:'Save draft'}))
+    await waitFor(()=>expect(mocks.save).toHaveBeenCalledWith({},role,expect.objectContaining({linkedin:linkedIn,socialHandles:expect.objectContaining({linkedin:linkedIn})})))
+    first.unmount();mount(role)
+    expect(await screen.findByLabelText(role==='seller'?'LinkedIn':'LinkedIn profile URL')).toHaveValue(linkedIn)
+  })
+  it.each(['seller','creator'])('restores nested-only %s social links and displays them on Review',async(role)=>{
+    const linkedin='https://linkedin.com/company/synthetic'
+    mocks.load.mockResolvedValue({status:'draft',applicationPayload:{currentStep:role==='seller'?5:3,socialHandles:{linkedin}}})
+    mount(role)
+    expect(await screen.findByText(linkedin)).toBeInTheDocument()
+    expect(screen.getByText('Verification requires Admin review')).toBeInTheDocument()
+  })
+  it('renders all four requested Creator URLs only when selected, reports LinkedIn errors and clears deselected data on save',async()=>{
+    mocks.load.mockResolvedValue({status:'draft',applicationPayload:{currentStep:1}});mount('creator')
+    await screen.findByRole('heading',{name:'Social presence'})
+    for(const label of ['LinkedIn','Instagram','Facebook','TikTok']){
+      expect(screen.queryByLabelText(label+' profile URL')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByLabelText(label));expect(screen.getByLabelText(label+' profile URL')).toBeRequired()
+    }
+    const input=screen.getByLabelText('LinkedIn profile URL')
+    fireEvent.change(input,{target:{value:'https://linkedin.com.evil.test/in/synthetic'}});fireEvent.blur(input)
+    expect(screen.getByRole('alert')).toHaveTextContent('official LinkedIn URL')
+    expect(input).toHaveAttribute('aria-invalid','true')
+    fireEvent.click(screen.getByRole('button',{name:'Save draft'}))
+    expect(await screen.findByText('Use an official LinkedIn URL.',{selector:'.form-error'})).toBeInTheDocument()
+    expect(mocks.save).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByLabelText('LinkedIn'));expect(screen.queryByLabelText('LinkedIn profile URL')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button',{name:'Save draft'}))
+    await waitFor(()=>expect(mocks.save).toHaveBeenLastCalledWith({},'creator',expect.objectContaining({linkedin:'',socialHandles:expect.objectContaining({linkedin:''})})))
+  })
   it('reviews only selected Creator links and masks the normalized PAN',async()=>{
     mocks.load.mockResolvedValue({status:'draft',applicationPayload:{currentStep:4,panNumber:'abcde1234f',selectedPlatforms:['youtube'],youtube:'https://youtube.com/@synthetic',instagram:'https://instagram.com/removed'}})
     mount('creator');await screen.findByText('Verification requires Admin review')

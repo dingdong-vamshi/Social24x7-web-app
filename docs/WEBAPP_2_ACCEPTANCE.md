@@ -13,12 +13,26 @@ The supplied request ends at section 25; no separate client screenshot was attac
 | C05 | Visibility · PasswordInput.tsx | Hidden default, keyboard button, no submit, preserved value; unit/browser tests | Production keyboard toggle verified; signup has separate accessible confirmation toggle | PASS — PRODUCTION VERIFIED (toggle); value persistence unit-tested |
 | C06 | Casing · applicationFields.ts / Onboarding.tsx | Blur-only trade/store/city normalization; legal/acronyms/URLs preserved; draft save/back tests | Existing authoritative draft RPC source traced; genuine records untouched | PASS — LOCAL ONLY |
 | C07 | PAN · applicationFields.ts / Onboarding.tsx | Uppercase/trim/format errors, normalized save, masked review test; not verification | Existing Seller draft/server normalization traced; no genuine PAN changed | PASS — LOCAL ONLY |
-| C08 | Seller links · Onboarding.tsx | Four optional HTTPS/domain-validated links, review and draft mapping | Existing application_payload.socialHandles; source and memory integration tested; no production submission | PASS — LOCAL ONLY |
+| C08 | Seller links · Onboarding.tsx | Five optional HTTPS/domain-validated links including LinkedIn, review and draft mapping | Existing application_payload.socialHandles; source and memory integration tested; no production submission | PASS — LOCAL ONLY |
 | C09 | Admin links · repositories/admin.ts / Admin.tsx | Same authoritative record, safe external links, manual-review wording; memory submission/detail test + isolated browser | Existing Admin authorization/review source inspected; live pending counts read only; no decisions | PASS — LOCAL ONLY |
 | C10 | New Chat · personalDiscovery.ts / NewPersonalChat.tsx | Discoverable username search, request/accept/decline, pending/reuse, no business access; UI + SQL tests | New wrappers/consent guard deployed; real two-account send/list/Realtime not tested | IMPLEMENTED — BACKEND UNVERIFIED for live delivery |
 | C11 | Dr title · publicIdentity.ts, social/chat repositories | Current approved medical professional only, no duplicated title, no legal-name write, revoked status denied; SQL tests | Presentation RPC deployed/read-verified; live approved UI/title not tested | PASS — LOCAL ONLY |
 | C12 | Tiers · onboardingRules.ts | Nano 1K–10K, Micro 10K–50K, Mid 50K–500K, Macro 500K–1M, Mega 1M+; no derived numeric count | Existing payload tier; isolated browser shows all options; no production application mutation | PASS — LOCAL ONLY |
-| C13 | Creator links · Onboarding.tsx | Conditional Instagram/Facebook/TikTok/YouTube/website URLs; selected only on review/save; validation tests | Existing social_handles + payload; Admin source/mapping; no production submission | PASS — LOCAL ONLY |
+| C13 | Creator links · Onboarding.tsx | Conditional LinkedIn/Instagram/Facebook/TikTok/YouTube/website URLs; selected only on review/save; validation tests | Existing social_handles + payload; Admin source/mapping; no production submission | PASS — LOCAL ONLY |
+
+## Updated client requirements — 17:18, October 14
+
+The supplied text adds LinkedIn to C08 and C13. No new screenshot attachment was present to compare visually. All other requirements remain unchanged; this update builds on commit 5325bc72665eb1bc14a777b96f419a31f773ed67.
+
+- Seller: website, LinkedIn, Instagram, Facebook and Google Maps. All links remain optional. Creator: LinkedIn, Instagram, Facebook and TikTok each have a conditional required URL when selected; YouTube and website remain available.
+- LinkedIn accepts HTTPS linkedin.com / www.linkedin.com profile `/in/name` or company `/company/name` URLs, normalizes omitted schemes to HTTPS, rejects lookalike hosts, credentials, custom ports, HTTP, home/login/feed URLs and shorteners. URL format never establishes ownership.
+- Existing contracts only: Seller `application_payload.socialHandles.linkedin` plus top-level `linkedin`; Creator `social_handles.linkedin` plus payload. No database migration, RLS or authorization change. Live read-only inspection confirmed JSONB columns, existing owner/Admin policies, unrestricted JSON key shape and draft RPC persistence.
+- Backward compatibility: nested-only saved social links resume and display on Review; explicit top-level cleared fields take precedence. Seller Admin detail uses the same merge rule. Creator Admin details continue reading authoritative `social_handles`.
+- Final update suite: **485 tests / 43 files passed**, including 31 added cases. TypeScript, production build, ESLint and `git diff --check` passed. Existing bundle-size warning unchanged.
+- New isolated tests cover both role draft round trips, exact RPC payload and owner-scoped read, submission-to-Admin mapping, denied Admin access, permission-error propagation, URL validation, conditional fields, selected-only persistence and Review. These use memory adapters, not a live Supabase write.
+- Both onboarding layouts checked at 1440, 1280, 1024, 768, 430, 390 and 360px. No document overflow. Browser confirmed invalid LinkedIn host error, corrected draft save, Review values and safe Admin links. No real submission or decision performed.
+- New screenshot files use `linkedin-*-isolated*.jpg` in the private evidence folder. They show actual components with synthetic fixtures, not authenticated production proof. Required deployed onboarding/Review/Admin screenshots remain blocked by absent authorized Partner/Admin sessions and controlled real test records. Supabase dashboard authentication is not application authentication.
+- Previous real-account acceptance and separate Storage/security blockers below remain unchanged. APK repository and DNS remain untouched.
 
 ## Automated and browser evidence
 

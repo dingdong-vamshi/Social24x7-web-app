@@ -1,9 +1,9 @@
-export const creatorPlatforms = ['instagram', 'facebook', 'tiktok', 'youtube', 'website'] as const
-export const sellerPlatforms = ['website', 'instagram', 'facebook', 'googleMaps'] as const
+export const creatorPlatforms = ['linkedin', 'instagram', 'facebook', 'tiktok', 'youtube', 'website'] as const
+export const sellerPlatforms = ['website', 'linkedin', 'instagram', 'facebook', 'googleMaps'] as const
 export type SocialPlatform = typeof creatorPlatforms[number] | 'googleMaps'
-export const platformLabels: Record<SocialPlatform, string> = { website: 'Business website', instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube', googleMaps: 'Google Maps business link' }
+export const platformLabels: Record<SocialPlatform, string> = { website: 'Business website', linkedin: 'LinkedIn', instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube', googleMaps: 'Google Maps business link' }
 const hosts: Partial<Record<SocialPlatform, string[]>> = {
-  instagram: ['instagram.com'], facebook: ['facebook.com', 'fb.com'], tiktok: ['tiktok.com'], youtube: ['youtube.com'], googleMaps: ['google.com', 'maps.google.com', 'maps.app.goo.gl', 'goo.gl'],
+  linkedin: ['linkedin.com'], instagram: ['instagram.com'], facebook: ['facebook.com', 'fb.com'], tiktok: ['tiktok.com'], youtube: ['youtube.com'], googleMaps: ['google.com', 'maps.google.com', 'maps.app.goo.gl', 'goo.gl'],
 }
 export function socialUrl(value: string, platform: SocialPlatform): string {
   const trimmed = value.trim()
@@ -15,6 +15,7 @@ export function socialUrl(value: string, platform: SocialPlatform): string {
   const domain = url.hostname.toLowerCase().replace(/^www\./, '')
   if (hosts[platform] && !hosts[platform]!.includes(domain)) throw new Error(`Use an official ${platformLabels[platform]} URL.`)
   if (platform !== 'website' && (url.pathname === '/' || !url.pathname)) throw new Error(`Enter your actual ${platformLabels[platform]} profile link.`)
+  if (platform === 'linkedin' && !/^\/(in|company)\/[^/]+\/?$/.test(url.pathname)) throw new Error('Use a LinkedIn profile or company URL (linkedin.com/in/name or linkedin.com/company/name).')
   if (platform === 'googleMaps' && domain === 'google.com' && !url.pathname.startsWith('/maps')) throw new Error('Use a Google Maps business/place link.')
   if (platform === 'googleMaps' && domain === 'goo.gl' && !url.pathname.startsWith('/maps/')) throw new Error('Use a Google Maps business/place link.')
   url.hash = ''
@@ -39,4 +40,15 @@ export function formatBusinessText(value: string, field: string) {
 export function applicationSocialLinks(form: Record<string, unknown>, role: 'seller' | 'creator') {
   const selected = Array.isArray(form.selectedPlatforms) ? form.selectedPlatforms : null
   return Object.fromEntries((role === 'seller' ? sellerPlatforms : creatorPlatforms).map(platform => [platform, role === 'creator' && selected && !selected.includes(platform) ? '' : socialUrl(typeof form[platform] === 'string' ? form[platform] as string : '', platform)]))
+}
+
+// Older drafts may contain only nested socialHandles. Explicit top-level values
+// (including a cleared field) take precedence over that backward-compatible form.
+export function savedSocialFields(payload: Record<string, unknown>) {
+  const nested = payload.socialHandles
+  const source = nested && typeof nested === 'object' && !Array.isArray(nested) ? nested as Record<string, unknown> : {}
+  return Object.fromEntries((Object.keys(platformLabels) as SocialPlatform[]).flatMap(key => {
+    const value = typeof payload[key] === 'string' ? payload[key] : source[key]
+    return typeof value === 'string' ? [[key, value]] : []
+  }))
 }

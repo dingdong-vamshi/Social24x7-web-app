@@ -10,7 +10,7 @@ import { requireSupabase } from '../lib/supabase'
 import { creatorCategories, creatorSpecializationsFor, creatorRequiresProfessionalVerification, credentialRuleFor, selectCreatorSpecialization, sellerOnboardingSteps } from '../auth/onboardingRules'
 import { getMyCreatorApplication, getMySellerApplication, getMyProfessionalRequest, saveCommerceOnboardingDraft, submitSellerApplication, submitCreatorApplication, submitProfessionalVerification, uploadCommerceEvidence, type ApplicationKind } from '../auth/onboardingRepository'
 import { selectedSpecializations, validateOnboardingStep, valueOf, type OnboardingData } from '../auth/onboardingValidation'
-import { applicationSocialLinks, creatorPlatforms, sellerPlatforms, platformLabels, socialUrl, normalizePan, validPan, formatBusinessText, type SocialPlatform } from '../auth/applicationFields'
+import { applicationSocialLinks, savedSocialFields, creatorPlatforms, sellerPlatforms, platformLabels, socialUrl, normalizePan, validPan, formatBusinessText, type SocialPlatform } from '../auth/applicationFields'
 import { audienceTierLabels, type AudienceTier } from '../auth/onboardingRules'
 import './auth.css'
 
@@ -69,7 +69,7 @@ function ConnectedOnboarding({role}:{role:'seller'|'creator'}) {
       if(application && lockedStatuses.includes(application.status)){navigate(`/application?role=${role}`,{replace:true});return}
       let data:OnboardingData={sellerType:'gst',macroCategory:'Content & Digital Media',specializations:[],audienceTier:'Nano'}
       if(application){
-        data={...data,...application,...application.applicationPayload}
+        data={...data,...application,...application.applicationPayload,...savedSocialFields(application.applicationPayload)}
         if('legalName' in application && application.legalName==='Seller applicant') data.legalName=''
         if('storefrontName' in application && application.storefrontName==='Draft store') data.storefrontName=''
         if('socialHandles' in application) data={...data,...application.socialHandles}

@@ -3,7 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { PasswordInput } from '../components/PasswordInput'
 import { validNewPassword } from '../auth/passwordPolicy'
-import { applicationSocialLinks, formatBusinessText, normalizePan, socialUrl, validPan } from '../auth/applicationFields'
+import { applicationSocialLinks, formatBusinessText, normalizePan, savedSocialFields, socialUrl, validPan } from '../auth/applicationFields'
+import { validateOnboardingStep } from '../auth/onboardingValidation'
 import { audienceTierLabels } from '../auth/onboardingRules'
 import { safeApplicationLink } from '../repositories/admin'
 
@@ -41,6 +42,27 @@ describe('field-aware onboarding normalization', () => {
   it('keeps Seller links optional and drops unselected Creator links', () => {
     expect(Object.values(applicationSocialLinks({},'seller')).every(value=>value==='')).toBe(true)
     expect(applicationSocialLinks({selectedPlatforms:['youtube'],youtube:'youtube.com/@test',instagram:'javascript:bad'},'creator')).toMatchObject({youtube:'https://youtube.com/@test',instagram:''})
+  })
+  it.each(['linkedin.com/in/synthetic-person', 'https://www.linkedin.com/company/synthetic-business/', 'https://linkedin.com/in/synthetic-person?trk=profile'])('accepts an HTTPS LinkedIn profile or company link: %s', value => {
+    expect(socialUrl(value, 'linkedin')).toMatch(/^https:\/\/(www\.)?linkedin.com\/(in|company)\//)
+  })
+  it.each(['http://linkedin.com/in/test', 'https://linkedin.com.evil.test/in/test', 'https://evil-linkedin.com/in/test', 'https://linkedin.com@evil.test/in/test', 'https://user:secret@linkedin.com/in/test', 'javascript:alert(1)', 'https://linkedin.com', 'https://linkedin.com/feed/', 'https://linkedin.com/company/', 'https://linkedin.com/login', 'https://lnkd.in/test', 'https://linkedin.com:8443/in/test'])('rejects invalid LinkedIn link: %s', value => {
+    expect(() => socialUrl(value, 'linkedin')).toThrow()
+    expect(safeApplicationLink('Social · LinkedIn', value)).toBeNull()
+  })
+  it('validates only selected Creator platforms and keeps Seller LinkedIn optional', () => {
+    expect(validateOnboardingStep('seller', 4, {businessVerificationVideoPath:'synthetic/video.mp4'}, false)).toBeNull()
+    expect(validateOnboardingStep('creator', 1, {selectedPlatforms:['linkedin','instagram'],instagram:'https://instagram.com/synthetic'}, false)).toMatch(/each selected platform/)
+    expect(validateOnboardingStep('creator', 1, {selectedPlatforms:['linkedin'],linkedin:'https://linkedin.com/in/synthetic'}, false)).toBeNull()
+    expect(applicationSocialLinks({selectedPlatforms:['instagram'],instagram:'instagram.com/synthetic',linkedin:'javascript:bad'},'creator').linkedin).toBe('')
+  })
+  it('restores nested-only legacy links without resurrecting explicitly cleared links', () => {
+    expect(savedSocialFields({socialHandles:{linkedin:'https://linkedin.com/company/synthetic',instagram:'https://instagram.com/synthetic'}})).toMatchObject({linkedin:'https://linkedin.com/company/synthetic'})
+    expect(savedSocialFields({linkedin:'',socialHandles:{linkedin:'https://linkedin.com/company/old'}}).linkedin).toBe('')
+    expect(savedSocialFields({socialHandles:['invalid']})).toEqual({})
+  })
+  it.each(['Social · LinkedIn','Social · linkedin'])('safely links LinkedIn in Seller and Creator Admin labels: %s', label => {
+    expect(safeApplicationLink(label,'https://www.linkedin.com/in/synthetic')).toBe('https://www.linkedin.com/in/synthetic')
   })
   it('only turns valid submitted social URLs into external Admin links', () => {
     expect(safeApplicationLink('Social · Instagram','https://instagram.com/test')).toBe('https://instagram.com/test')
