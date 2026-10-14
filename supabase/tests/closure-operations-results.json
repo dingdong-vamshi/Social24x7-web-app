@@ -1,0 +1,195 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "Invitation denies cross-store owner",
+      "pass": true
+    },
+    {
+      "name": "Invitation denies foreign role",
+      "pass": true
+    },
+    {
+      "name": "Invitation rejects unknown permissions",
+      "pass": true
+    },
+    {
+      "name": "Owner creates not-activated invitation and audit; code is stored only hashed",
+      "pass": true
+    },
+    {
+      "name": "Approval before activation denied",
+      "pass": true
+    },
+    {
+      "name": "Incorrect activation code produces no claim and increments attempt count",
+      "pass": true
+    },
+    {
+      "name": "Activation claim validates the existing code",
+      "pass": true
+    },
+    {
+      "name": "Activation denies a mismatched Work identity",
+      "pass": true
+    },
+    {
+      "name": "Activation consumes the claim and moves only to awaiting approval",
+      "pass": true
+    },
+    {
+      "name": "Consumed claim cannot activate twice",
+      "pass": true
+    },
+    {
+      "name": "Another store owner cannot approve",
+      "pass": true
+    },
+    {
+      "name": "Owner approval enables role permissions and preserves activation audit",
+      "pass": true
+    },
+    {
+      "name": "Member override takes precedence over role permission",
+      "pass": true
+    },
+    {
+      "name": "Cross-store owner and ordinary employee cannot assign",
+      "pass": true
+    },
+    {
+      "name": "Owner assignment adds exactly one assignee participant",
+      "pass": true
+    },
+    {
+      "name": "Duplicate assignment is idempotent without duplicate audit",
+      "pass": true
+    },
+    {
+      "name": "Reassignment removes old participant, adds new and retains owner/customer",
+      "pass": true
+    },
+    {
+      "name": "History attribution and assignment audit survive reassignment",
+      "pass": true
+    },
+    {
+      "name": "Suspension removes assignment and participant but preserves audit/history",
+      "pass": true
+    },
+    {
+      "name": "Suspended member cannot receive reassignment",
+      "pass": true
+    },
+    {
+      "name": "Only authorized owner can reactivate",
+      "pass": true
+    },
+    {
+      "name": "Removal revokes permission and cannot be silently reactivated",
+      "pass": true
+    },
+    {
+      "name": "Anonymous and unapproved identity cannot save products",
+      "pass": true
+    },
+    {
+      "name": "Draft create and readback retain the sole authorized store",
+      "pass": true
+    },
+    {
+      "name": "Draft saving updates existing record without duplication",
+      "pass": true
+    },
+    {
+      "name": "Category CHECK rejects unsupported category",
+      "pass": true
+    },
+    {
+      "name": "Other owner cannot edit existing product",
+      "pass": true
+    },
+    {
+      "name": "Current production unique-owner contract prevents ambiguous multi-store save",
+      "pass": true
+    },
+    {
+      "name": "Publishing requires an image",
+      "pass": true
+    },
+    {
+      "name": "Publishing requires available inventory",
+      "pass": true
+    },
+    {
+      "name": "Cross-store publishing denied",
+      "pass": true
+    },
+    {
+      "name": "Publication transitions only isolated product and preserves ownership",
+      "pass": true
+    },
+    {
+      "name": "Fulfillment denies cross-store and anonymous calls",
+      "pass": true
+    },
+    {
+      "name": "Fulfillment rejects skipped states",
+      "pass": true
+    },
+    {
+      "name": "Uncaptured online payment blocks fulfillment",
+      "pass": true
+    },
+    {
+      "name": "Allowed fulfillment transition and readback confirmed",
+      "pass": true
+    },
+    {
+      "name": "Allowed fulfillment transition and readback processing",
+      "pass": true
+    },
+    {
+      "name": "Allowed fulfillment transition and readback shipped",
+      "pass": true
+    },
+    {
+      "name": "Allowed fulfillment transition and readback out_for_delivery",
+      "pass": true
+    },
+    {
+      "name": "Allowed fulfillment transition and readback delivered",
+      "pass": true
+    },
+    {
+      "name": "Tracking is trimmed and persisted in one fulfillment record",
+      "pass": true
+    },
+    {
+      "name": "Delivery reconciles stock/reservation once and rejects duplicate delivery",
+      "pass": true
+    },
+    {
+      "name": "Return review denies other store and anonymous identity",
+      "pass": true
+    },
+    {
+      "name": "Return review validates decision enum",
+      "pass": true
+    },
+    {
+      "name": "Under-review state persists without refund decision",
+      "pass": true
+    },
+    {
+      "name": "Isolated approval records pending external refund, not an actual payment",
+      "pass": true
+    },
+    {
+      "name": "Duplicate return decision is denied and creates no second refund request",
+      "pass": true
+    }
+  ],
+  "postgres": "14.19 (Homebrew)",
+  "scope": "Exact captured RPC bodies and selected CHECK/PK/UNIQUE constraints, synthetic local PostgreSQL data. No production mutations. Excludes complete RLS, trigger, HTTP Auth, Storage upload and external payment pipelines."
+}

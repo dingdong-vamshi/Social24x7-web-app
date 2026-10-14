@@ -1,0 +1,423 @@
+{
+  "environment": "Disposable local PostgreSQL 14.19; production is 17.6",
+  "productionWrites": 0,
+  "checks": [
+    {
+      "name": "Pre-fix defect reproduced: cross-store INSERT on synthetic records only",
+      "pass": true
+    },
+    {
+      "name": "Pre-fix defect reproduced: cross-store UPDATE on synthetic records only",
+      "pass": true
+    },
+    {
+      "name": "Pre-fix defect reproduced: cross-store DELETE on synthetic records only",
+      "pass": true
+    },
+    {
+      "name": "Only reviewed generic baseline and product UPDATE source differ from historic snapshot",
+      "pass": true
+    },
+    {
+      "name": "Owner can INSERT new own branding logo",
+      "pass": true
+    },
+    {
+      "name": "Owner can INSERT new own branding cover",
+      "pass": true
+    },
+    {
+      "name": "Cross-store branding INSERT denied",
+      "pass": true
+    },
+    {
+      "name": "Employee identity cannot INSERT owner branding",
+      "pass": true
+    },
+    {
+      "name": "Anonymous branding INSERT denied",
+      "pass": true
+    },
+    {
+      "name": "Authenticated role without user identity denied",
+      "pass": true
+    },
+    {
+      "name": "Spoofed object owner denied",
+      "pass": true
+    },
+    {
+      "name": "Malformed/unapproved branding path denied: new.png",
+      "pass": true
+    },
+    {
+      "name": "Malformed/unapproved branding path denied: 00000000-0000-0000-0000-000000000001/new.png",
+      "pass": true
+    },
+    {
+      "name": "Malformed/unapproved branding path denied: 00000000-0000-0000-0000-000000000001/branding/new.png",
+      "pass": true
+    },
+    {
+      "name": "Malformed/unapproved branding path denied: 00000000-0000-0000-0000-000000000001/branding/other/new.png",
+      "pass": true
+    },
+    {
+      "name": "Malformed/unapproved branding path denied: 00000000-0000-0000-0000-000000000001/unknown/new.png",
+      "pass": true
+    },
+    {
+      "name": "Other bucket denied",
+      "pass": true
+    },
+    {
+      "name": "Cross-store UPDATE denied",
+      "pass": true
+    },
+    {
+      "name": "Cross-store DELETE denied",
+      "pass": true
+    },
+    {
+      "name": "Own branding overwrite not granted",
+      "pass": true
+    },
+    {
+      "name": "Own branding delete not granted",
+      "pass": true
+    },
+    {
+      "name": "Product INSERT rule preserved: draft",
+      "pass": true
+    },
+    {
+      "name": "Product UPDATE rule preserved: draft",
+      "pass": true
+    },
+    {
+      "name": "Product DELETE rule preserved: draft",
+      "pass": true
+    },
+    {
+      "name": "Product INSERT rule preserved: changes_required",
+      "pass": true
+    },
+    {
+      "name": "Product UPDATE rule preserved: changes_required",
+      "pass": true
+    },
+    {
+      "name": "Product DELETE rule preserved: changes_required",
+      "pass": true
+    },
+    {
+      "name": "Product INSERT rule preserved: rejected",
+      "pass": true
+    },
+    {
+      "name": "Product UPDATE rule preserved: rejected",
+      "pass": true
+    },
+    {
+      "name": "Product DELETE rule preserved: rejected",
+      "pass": true
+    },
+    {
+      "name": "Product INSERT rule preserved: approved",
+      "pass": true
+    },
+    {
+      "name": "Product UPDATE rule preserved: approved",
+      "pass": true
+    },
+    {
+      "name": "Product DELETE rule preserved: approved",
+      "pass": true
+    },
+    {
+      "name": "Product INSERT rule preserved: under_review",
+      "pass": true
+    },
+    {
+      "name": "Product UPDATE rule preserved: under_review",
+      "pass": true
+    },
+    {
+      "name": "Product DELETE rule preserved: under_review",
+      "pass": true
+    },
+    {
+      "name": "Product INSERT rule preserved: suspended",
+      "pass": true
+    },
+    {
+      "name": "Product UPDATE rule preserved: suspended",
+      "pass": true
+    },
+    {
+      "name": "Product DELETE rule preserved: suspended",
+      "pass": true
+    },
+    {
+      "name": "Product INSERT rule preserved: archived",
+      "pass": true
+    },
+    {
+      "name": "Product UPDATE rule preserved: archived",
+      "pass": true
+    },
+    {
+      "name": "Product DELETE rule preserved: archived",
+      "pass": true
+    },
+    {
+      "name": "Other Seller product INSERT denied",
+      "pass": true
+    },
+    {
+      "name": "Other Seller product UPDATE denied",
+      "pass": true
+    },
+    {
+      "name": "Other Seller product DELETE denied",
+      "pass": true
+    },
+    {
+      "name": "UPDATE cannot change product object owner",
+      "pass": true
+    },
+    {
+      "name": "UPDATE cannot move product to another storefront",
+      "pass": true
+    },
+    {
+      "name": "Public image SELECT retains all ten fixture rows",
+      "pass": true
+    },
+    {
+      "name": "Branding source to product move denied",
+      "pass": true
+    },
+    {
+      "name": "Review-pending source move denied",
+      "pass": true
+    },
+    {
+      "name": "Source matrix draft -> draft",
+      "pass": true
+    },
+    {
+      "name": "Source matrix draft -> changes_required",
+      "pass": true
+    },
+    {
+      "name": "Source matrix draft -> rejected",
+      "pass": true
+    },
+    {
+      "name": "Source matrix draft -> approved",
+      "pass": true
+    },
+    {
+      "name": "Source matrix changes_required -> draft",
+      "pass": true
+    },
+    {
+      "name": "Source matrix changes_required -> changes_required",
+      "pass": true
+    },
+    {
+      "name": "Source matrix changes_required -> rejected",
+      "pass": true
+    },
+    {
+      "name": "Source matrix changes_required -> approved",
+      "pass": true
+    },
+    {
+      "name": "Source matrix rejected -> draft",
+      "pass": true
+    },
+    {
+      "name": "Source matrix rejected -> changes_required",
+      "pass": true
+    },
+    {
+      "name": "Source matrix rejected -> rejected",
+      "pass": true
+    },
+    {
+      "name": "Source matrix rejected -> approved",
+      "pass": true
+    },
+    {
+      "name": "Source matrix approved -> draft",
+      "pass": true
+    },
+    {
+      "name": "Source matrix approved -> changes_required",
+      "pass": true
+    },
+    {
+      "name": "Source matrix approved -> rejected",
+      "pass": true
+    },
+    {
+      "name": "Source matrix approved -> approved",
+      "pass": true
+    },
+    {
+      "name": "Source matrix under_review -> draft",
+      "pass": true
+    },
+    {
+      "name": "Source matrix under_review -> changes_required",
+      "pass": true
+    },
+    {
+      "name": "Source matrix under_review -> rejected",
+      "pass": true
+    },
+    {
+      "name": "Source matrix under_review -> approved",
+      "pass": true
+    },
+    {
+      "name": "Source matrix suspended -> draft",
+      "pass": true
+    },
+    {
+      "name": "Source matrix suspended -> changes_required",
+      "pass": true
+    },
+    {
+      "name": "Source matrix suspended -> rejected",
+      "pass": true
+    },
+    {
+      "name": "Source matrix suspended -> approved",
+      "pass": true
+    },
+    {
+      "name": "Source matrix archived -> draft",
+      "pass": true
+    },
+    {
+      "name": "Source matrix archived -> changes_required",
+      "pass": true
+    },
+    {
+      "name": "Source matrix archived -> rejected",
+      "pass": true
+    },
+    {
+      "name": "Source matrix archived -> approved",
+      "pass": true
+    },
+    {
+      "name": "Destination state denied under_review",
+      "pass": true
+    },
+    {
+      "name": "Destination state denied suspended",
+      "pass": true
+    },
+    {
+      "name": "Destination state denied archived",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor UPDATE {\"user\":\"00000000-0000-0000-0000-000000000012\"}",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor DELETE {\"user\":\"00000000-0000-0000-0000-000000000012\"}",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor UPDATE {\"user\":\"00000000-0000-0000-0000-000000000013\"}",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor DELETE {\"user\":\"00000000-0000-0000-0000-000000000013\"}",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor UPDATE {\"user\":\"\",\"role\":\"anon\"}",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor DELETE {\"user\":\"\",\"role\":\"anon\"}",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor UPDATE {\"user\":\"\"}",
+      "pass": true
+    },
+    {
+      "name": "Unauthorized actor DELETE {\"user\":\"\"}",
+      "pass": true
+    },
+    {
+      "name": "Seller B own product update",
+      "pass": true
+    },
+    {
+      "name": "Seller B own product insert",
+      "pass": true
+    },
+    {
+      "name": "Seller B own product delete",
+      "pass": true
+    },
+    {
+      "name": "Invalid source ownership/product 00000000-0000-0000-0000-000000000002/products/00000000-0000-0000-0000-000000000201/uploader-a.png",
+      "pass": true
+    },
+    {
+      "name": "Invalid source ownership/product 00000000-0000-0000-0000-000000000001/products/00000000-0000-0000-0000-000000000201/mismatch.png",
+      "pass": true
+    },
+    {
+      "name": "Invalid destination 00000000-0000-0000-0000-000000000001/branding/logo/move.png",
+      "pass": true
+    },
+    {
+      "name": "Invalid destination malformed.png",
+      "pass": true
+    },
+    {
+      "name": "Invalid destination 00000000-0000-0000-0000-000000000001/products/00000000-0000-0000-0000-000000000201/move.png",
+      "pass": true
+    },
+    {
+      "name": "Cross-bucket update rejected",
+      "pass": true
+    },
+    {
+      "name": "Repeated application rejects drift",
+      "pass": true
+    },
+    {
+      "name": "Rollback drift guard",
+      "pass": true
+    },
+    {
+      "name": "Rollback restores exact prior production policy snapshot",
+      "pass": true
+    },
+    {
+      "name": "Forward drift guard",
+      "pass": true
+    },
+    {
+      "name": "Reapply matches repaired snapshot",
+      "pass": true
+    },
+    {
+      "name": "Other 33 policies unchanged",
+      "pass": true
+    }
+  ],
+  "status": "PASS"
+}

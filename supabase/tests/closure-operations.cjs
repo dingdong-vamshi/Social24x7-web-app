@@ -1,0 +1,113 @@
+// Execute only after closure-operations-fixture.sql in a fresh disposable LOCAL database.
+const { execFileSync } = require('node:child_process');
+const { strict: assert } = require('node:assert');
+const { writeFileSync } = require('node:fs');
+const path = require('node:path');
+const socket = process.argv[2], database = process.argv[3];
+if (!/^\/tmp\/social-storage-policy-qa\.[A-Za-z0-9]+$/.test(socket || '') || !/^closure_operations_[a-z0-9]+$/.test(database || '')) throw Error('Explicit isolated local socket and database required');
+const sql = query => execFileSync('/opt/homebrew/bin/psql', ['-X','-qAt','-v','ON_ERROR_STOP=1','-h',socket,'-p','55439','-d',database,'-f','-'], { input: query, encoding:'utf8', stdio:['pipe','pipe','pipe'] }).trim();
+const id = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+const as = (n, query) => sql(`set role authenticated;set request.jwt.claim.sub='${n ? id(n) : ''}';${query}`);
+const checks = [];
+function check(name, run) { run(); checks.push({ name, pass:true }); console.log('PASS '+name); }
+const denied = (run, pattern) => assert.throws(run, error => pattern.test(String(error.stderr || error.message)));
+const literal = value => "'"+String(value).replaceAll("'","''")+"'";
+sql(`insert into storefronts(id,owner_id,name,slug) values('${id(10)}','${id(1)}','Fixture A','fixture-a'),('${id(20)}','${id(2)}','Fixture B','fixture-b');
+insert into creator_commerce_access(user_id,seller_status) values('${id(1)}','approved'),('${id(2)}','approved');
+insert into storefront_team_permissions(code,label,description) values('business_chat_reply','Reply','Fixture'),('business_team_manage','Manage','Fixture'),('business_chat_assign','Assign','Fixture');
+insert into storefront_team_roles(id,storefront_id,name) values('${id(30)}','${id(10)}','Agent'),('${id(31)}','${id(20)}','Other Agent');
+insert into storefront_team_role_permissions(role_id,permission_code) values('${id(30)}','business_chat_reply'),('${id(31)}','business_chat_reply');`);
+const invite = (actor,login,role=30,permissions='null') => JSON.parse(as(actor,`select row_to_json(x) from create_storefront_team_invitation('${id(10)}','Synthetic Employee','${login}@example.invalid','${login}','from Fixture A','Support',null,'Support','${id(role)}',${permissions}) x`));
+let first, second, claim;
+check('Invitation denies cross-store owner',()=>denied(()=>invite(2,'cross-store'),/permission required/));
+check('Invitation denies foreign role',()=>denied(()=>invite(1,'foreign-role',31),/role is unavailable/));
+check('Invitation rejects unknown permissions',()=>denied(()=>invite(1,'bad-permission',30,"array['unknown']"),/Unknown permission/));
+check('Owner creates not-activated invitation and audit; code is stored only hashed',()=>{
+ first=invite(1,'fixture-first');
+ assert.equal(sql(`select status from storefront_team_memberships where id='${first.membership_id}'`),'not_activated');
+ assert.notEqual(sql(`select code_hash from storefront_team_invitations where membership_id='${first.membership_id}'`),first.activation_code);
+ assert.equal(sql("select count(*) from storefront_team_audit_events where event_type='invited'"),'1');
+});
+check('Approval before activation denied',()=>denied(()=>as(1,`select approve_storefront_team_member('${first.membership_id}')`),/activate before approval/));
+check('Incorrect activation code produces no claim and increments attempt count',()=>{
+ assert.equal(sql("select count(*) from claim_business_team_activation('fixture-first','wrong-fixture-code')"),'0');
+ assert.equal(sql(`select attempts from storefront_team_invitations where membership_id='${first.membership_id}'`),'1');
+});
+check('Activation claim validates the existing code',()=>{claim=JSON.parse(sql(`select row_to_json(x) from claim_business_team_activation('fixture-first',${literal(first.activation_code)}) x`));assert.equal(claim.membership_id,first.membership_id)});
+check('Activation denies a mismatched Work identity',()=>denied(()=>sql(`select complete_business_team_activation('${first.membership_id}','${id(3)}',${literal(claim.claim_token)})`),/does not match/));
+check('Activation consumes the claim and moves only to awaiting approval',()=>{
+ sql(`insert into auth.users values('${id(3)}',jsonb_build_object('account_type','business_employee','membership_id','${first.membership_id}','storefront_id','${id(10)}'));select complete_business_team_activation('${first.membership_id}','${id(3)}',${literal(claim.claim_token)});`);
+ assert.equal(sql(`select status from storefront_team_memberships where id='${first.membership_id}'`),'awaiting_approval');
+ assert.equal(sql(`select private.storefront_team_member_permission('${first.membership_id}','business_chat_reply')`),'f');
+});
+check('Consumed claim cannot activate twice',()=>denied(()=>sql(`select complete_business_team_activation('${first.membership_id}','${id(3)}',${literal(claim.claim_token)})`),/invalid or expired/));
+check('Another store owner cannot approve',()=>denied(()=>as(2,`select approve_storefront_team_member('${first.membership_id}')`),/permission required/));
+check('Owner approval enables role permissions and preserves activation audit',()=>{
+ as(1,`select approve_storefront_team_member('${first.membership_id}')`);
+ assert.equal(sql(`select status||':'||private.storefront_team_member_permission(id,'business_chat_reply') from storefront_team_memberships where id='${first.membership_id}'`),'verified:true');
+ assert.equal(sql(`select count(*) from storefront_team_audit_events where membership_id='${first.membership_id}'`),'3');
+});
+check('Member override takes precedence over role permission',()=>{
+ sql(`insert into storefront_team_member_permissions values('${first.membership_id}','business_chat_reply',false,null,now(),now())`);
+ assert.equal(sql(`select private.storefront_team_member_permission('${first.membership_id}','business_chat_reply')`),'f');
+ sql(`delete from storefront_team_member_permissions where membership_id='${first.membership_id}'`);
+});
+second=invite(1,'fixture-second');
+sql(`update storefront_team_memberships set auth_user_id='${id(4)}',status='awaiting_approval' where id='${second.membership_id}'`);
+as(1,`select approve_storefront_team_member('${second.membership_id}')`);
+sql(`insert into conversations(id,kind,storefront_id,created_by,business_customer_id,business_context) values('${id(50)}','business','${id(10)}','${id(1)}','${id(5)}','buyer_seller');
+insert into business_conversation_assignments(conversation_id,storefront_id) values('${id(50)}','${id(10)}');
+insert into conversation_participants(conversation_id,user_id) values('${id(50)}','${id(1)}'),('${id(50)}','${id(5)}');
+insert into messages(conversation_id,sender_id,body) values('${id(50)}','${id(3)}','Synthetic historic attribution');`);
+const assign = (actor,member) => as(actor,`select reassign_business_conversation('${id(50)}','${member}')`);
+check('Cross-store owner and ordinary employee cannot assign',()=>{denied(()=>assign(2,first.membership_id),/permission required/);denied(()=>assign(3,first.membership_id),/permission required/)});
+check('Owner assignment adds exactly one assignee participant',()=>{assign(1,first.membership_id);assert.equal(sql(`select count(*) from conversation_participants where conversation_id='${id(50)}'`),'3')});
+check('Duplicate assignment is idempotent without duplicate audit',()=>{assign(1,first.membership_id);assert.equal(sql('select count(*) from business_conversation_assignment_events'),'1')});
+check('Reassignment removes old participant, adds new and retains owner/customer',()=>{assign(1,second.membership_id);assert.equal(sql(`select string_agg(user_id::text,',' order by user_id) from conversation_participants where conversation_id='${id(50)}'`),[id(1),id(4),id(5)].join(','))});
+check('History attribution and assignment audit survive reassignment',()=>{assert.equal(sql('select sender_id from messages'),id(3));assert.equal(sql('select event_type from business_conversation_assignment_events order by created_at desc limit 1'),'reassigned')});
+check('Suspension removes assignment and participant but preserves audit/history',()=>{
+ as(1,`select transition_storefront_team_member('${second.membership_id}','suspend')`);
+ assert.equal(sql('select assignee_membership_id is null from business_conversation_assignments'),'t');
+ assert.equal(sql(`select count(*) from conversation_participants where user_id='${id(4)}'`),'0');
+ assert.equal(sql(`select private.storefront_team_member_permission('${second.membership_id}','business_chat_reply')`),'f');
+ assert.equal(sql('select count(*) from messages'),'1');
+});
+check('Suspended member cannot receive reassignment',()=>denied(()=>assign(1,second.membership_id),/active representative/));
+check('Only authorized owner can reactivate',()=>{denied(()=>as(2,`select transition_storefront_team_member('${second.membership_id}','reactivate')`),/permission required/);as(1,`select transition_storefront_team_member('${second.membership_id}','reactivate')`);assert.equal(sql(`select status from storefront_team_memberships where id='${second.membership_id}'`),'verified')});
+check('Removal revokes permission and cannot be silently reactivated',()=>{as(1,`select transition_storefront_team_member('${second.membership_id}','remove')`);denied(()=>as(1,`select transition_storefront_team_member('${second.membership_id}','reactivate')`),/Invalid member state/);assert.equal(sql(`select private.storefront_team_member_permission('${second.membership_id}','business_chat_reply')`),'f')});
+
+const save = (actor,product='null',category='Home',inventory=5) => JSON.parse(as(actor,`select row_to_json(x) from save_creator_commerce_product(${product==='null'?'null':literal(product)},'Fixture Product','fixture-product',${literal(category)},1200,null,${inventory},'FIXTURE-SKU','','',false,0,7) x`));
+let product;
+check('Anonymous and unapproved identity cannot save products',()=>{denied(()=>save(null),/Authentication required/);denied(()=>save(3),/Approved Seller/)});
+check('Draft create and readback retain the sole authorized store',()=>{product=save(1);assert.equal(product.storefront_id,id(10));assert.equal(product.status,'draft');assert.equal(sql(`select title from products where id='${product.id}'`),'Fixture Product')});
+check('Draft saving updates existing record without duplication',()=>{save(1,product.id,'Home',6);assert.equal(sql('select count(*) from products'),'1');assert.equal(sql(`select inventory from products where id='${product.id}'`),'6')});
+check('Category CHECK rejects unsupported category',()=>denied(()=>save(1,product.id,'Unsupported'),/products_category_check/));
+check('Other owner cannot edit existing product',()=>denied(()=>save(2,product.id),/access denied/));
+check('Current production unique-owner contract prevents ambiguous multi-store save',()=>denied(()=>sql(`insert into storefronts(owner_id,name,slug) values('${id(1)}','Second Fixture','second-fixture')`),/storefronts_owner_id_key/));
+const publish = (actor,productId=product.id) => as(actor,`select (publish_creator_commerce_product('${productId}')).status`);
+check('Publishing requires an image',()=>denied(()=>publish(1),/at least one Product image/));
+sql(`insert into product_media(product_id,path) values('${product.id}','isolated-fixture-only.png')`);
+check('Publishing requires available inventory',()=>{save(1,product.id,'Home',0);denied(()=>publish(1),/available inventory/);save(1,product.id,'Home',6)});
+check('Cross-store publishing denied',()=>denied(()=>publish(2),/access denied/));
+check('Publication transitions only isolated product and preserves ownership',()=>{assert.equal(publish(1),'active');assert.equal(sql(`select product_approval_status||':'||storefront_id from products where id='${product.id}'`),'approved:'+id(10))});
+
+sql(`insert into orders(id,customer_id,storefront_id,status,subtotal_minor,total_minor,payment_method,idempotency_key) values('${id(60)}','${id(5)}','${id(10)}','placed',1200,1200,'cod','${id(61)}');
+insert into order_items(id,order_id,checkout_group_id,buyer_id,storefront_id,seller_id,product_id,product_title_snapshot,product_slug_snapshot,storefront_name_snapshot,unit_price_minor,quantity,subtotal_minor) values('${id(62)}','${id(60)}','${id(63)}','${id(5)}','${id(10)}','${id(1)}','${product.id}','Fixture Product','fixture-product','Fixture A',1200,1,1200);
+update products set inventory_reserved=1 where id='${product.id}';`);
+const fulfill=(actor,status)=>as(actor,`select (seller_update_creator_commerce_fulfillment('${id(60)}','${status}',' Fixture Carrier ',' TRACK-QA ',' PACK-QA ',' Synthetic contract test ',null)).status`);
+check('Fulfillment denies cross-store and anonymous calls',()=>{denied(()=>fulfill(2,'confirmed'),/access denied/);denied(()=>fulfill(null,'confirmed'),/Authentication required/)});
+check('Fulfillment rejects skipped states',()=>denied(()=>fulfill(1,'delivered'),/Invalid fulfillment transition/));
+check('Uncaptured online payment blocks fulfillment',()=>{sql(`update orders set payment_method='external',payment_status='pending' where id='${id(60)}'`);denied(()=>fulfill(1,'confirmed'),/must be captured/);sql(`update orders set payment_method='cod' where id='${id(60)}'`)});
+for(const state of ['confirmed','processing','shipped','out_for_delivery','delivered']) check('Allowed fulfillment transition and readback '+state,()=>assert.equal(fulfill(1,state),state));
+check('Tracking is trimmed and persisted in one fulfillment record',()=>{assert.equal(sql('select carrier||\':\'||tracking_number||\':\'||package_reference from order_fulfillments'),'Fixture Carrier:TRACK-QA:PACK-QA');assert.equal(sql('select count(*) from order_fulfillments'),'1')});
+check('Delivery reconciles stock/reservation once and rejects duplicate delivery',()=>{assert.equal(sql(`select inventory||':'||inventory_reserved from products where id='${product.id}'`),'5:0');denied(()=>fulfill(1,'delivered'),/Invalid fulfillment transition/);assert.equal(sql('select count(*) from order_events'),'5')});
+sql(`insert into return_requests(id,order_item_id,order_id,buyer_id,seller_id,storefront_id,reason) values('${id(70)}','${id(62)}','${id(60)}','${id(5)}','${id(1)}','${id(10)}','Synthetic fixture damage');`);
+const review=(actor,decision)=>as(actor,`select (seller_review_creator_commerce_return('${id(70)}',${literal(decision)},' Synthetic review ')).status`);
+check('Return review denies other store and anonymous identity',()=>{denied(()=>review(2,'approved'),/Seller access required/);denied(()=>review(null,'approved'),/Authentication required/)});
+check('Return review validates decision enum',()=>denied(()=>review(1,'refunded'),/Return decision must/));
+check('Under-review state persists without refund decision',()=>{assert.equal(review(1,'under_review'),'under_review');assert.equal(sql('select count(*) from refund_requests'),'0')});
+check('Isolated approval records pending external refund, not an actual payment',()=>{assert.equal(review(1,'approved'),'approved');assert.equal(sql('select status from refund_requests'),'external_integration_pending');assert.equal(sql('select status from orders'),'return_approved')});
+check('Duplicate return decision is denied and creates no second refund request',()=>{denied(()=>review(1,'approved'),/already decided/);assert.equal(sql('select count(*) from refund_requests'),'1')});
+const report={status:'PASS',checks,postgres:sql('show server_version'),scope:'Exact captured RPC bodies and selected CHECK/PK/UNIQUE constraints, synthetic local PostgreSQL data. No production mutations. Excludes complete RLS, trigger, HTTP Auth, Storage upload and external payment pipelines.'};
+writeFileSync(path.join(__dirname,'closure-operations-results.json'),JSON.stringify(report,null,2));
+console.log(JSON.stringify({passed:checks.length,scope:report.scope}));

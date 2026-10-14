@@ -1,11 +1,12 @@
 import { lazy, Suspense, useState, type ReactNode } from 'react'
-import { BarChart3, Boxes, ChevronDown, CircleDollarSign, CircleUserRound, ClipboardCheck, Handshake, HeartPulse, LayoutDashboard, Megaphone, Menu, MessageCircle, PackageCheck, PanelLeftClose, Search, Settings2, ShieldCheck, ShoppingBag, Store, Truck, Users, Video, WalletCards, X } from 'lucide-react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { BarChart3, Boxes, CircleDollarSign, CircleUserRound, ClipboardCheck, Handshake, HeartPulse, LayoutDashboard, Megaphone, Menu, MessageCircle, PackageCheck, PanelLeftClose, Search, Settings2, ShieldCheck, ShoppingBag, Store, Truck, Users, Video, WalletCards, X } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
 import type { PartnerRole } from '../domain/models'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from './Brand'
 import { roleAction, roleDestination } from '../auth/routing'
 import { AccountMenu } from './AccountMenu'
+import { WorkspaceNavigation } from './WorkspaceNavigation'
 import '../commerce.css'
 import './workspace-navigation.css'
 const WorkspaceNotifications = lazy(() => import('../pages/Social').then(module => ({ default: module.WorkspaceNotifications })))
@@ -54,14 +55,6 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
   const [collapsed, setCollapsed] = useState(false)
   const { profile, access } = useAuth()
   const { pathname } = useLocation()
-  const storageKey = `social24.navigation.${role}.${profile?.id || 'account'}`
-  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    try { const saved: unknown = JSON.parse(localStorage.getItem(storageKey) || '{}'); return saved && typeof saved === 'object' && !Array.isArray(saved) ? Object.fromEntries(Object.entries(saved).filter(([, value]) => typeof value === 'boolean')) : {} } catch { return {} }
-  })
-  function toggleGroup(path: string, current: boolean) {
-    const next = { ...expanded, [path]: !current }; setExpanded(next)
-    try { localStorage.setItem(storageKey, JSON.stringify(next)) } catch { /* Navigation still works with storage disabled. */ }
-  }
   const name = profile?.display_name || profile?.username || 'Your account'
   const nav = role === 'seller' ? sellerNav : creatorNav
   return <div className={`workspace commerce-workspace ${collapsed ? 'nav-collapsed' : ''}`}>
@@ -70,15 +63,7 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
       <div className="workspace-switcher"><span className="avatar">{name.slice(0, 1).toUpperCase()}</span>{!collapsed && <span className="workspace-switcher-copy"><strong>{name}</strong><span>{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span></span>}</div>
       <nav aria-label={`${role} workspace`}>
         {!collapsed && <span className="nav-label">Workspace</span>}
-        {nav.map((item) => {
-          const active = item.children?.some(child => pathname === child.path || (child.path === '/partner/seller/products' && pathname.startsWith(child.path + '/edit/')))
-          const open = expanded[item.path] ?? Boolean(active)
-          if (item.children) return <div className={`workspace-nav-group ${active ? 'current-group' : ''}`} key={item.path}>
-            <button className="workspace-nav-toggle" aria-label={`${item.label} submenu`} aria-expanded={open && !collapsed} aria-controls={`nav-${item.label.toLowerCase()}`} onClick={() => { if (collapsed) setCollapsed(false); toggleGroup(item.path, collapsed ? false : open) }} title={collapsed ? item.label : undefined}>{item.icon}{!collapsed && <><span>{item.label}</span><ChevronDown size={15} className={open ? 'expanded' : ''}/></>}</button>
-            {open && !collapsed && <div className="workspace-nav-children" id={`nav-${item.label.toLowerCase()}`}>{item.children.map(child => <NavLink key={child.path} to={child.path} aria-label={child.soon ? `${child.label} Soon` : undefined} end onClick={() => setMobileOpen(false)}><span>{child.label}</span>{child.soon && <small>Soon</small>}</NavLink>)}</div>}
-          </div>
-          return <NavLink key={item.path} to={item.path} end={item.path === `/partner/${role}`} onClick={() => setMobileOpen(false)} title={collapsed ? item.label : undefined}>{item.icon}{!collapsed && <><span>{item.label}</span>{item.soon && <small className="workspace-soon">Soon</small>}</>}</NavLink>
-        })}
+        <WorkspaceNavigation key={`${role}:${profile?.id}:${pathname}:${collapsed}:${mobileOpen}`} items={nav} collapsed={collapsed} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
       </nav>
       <div className="sidebar-foot"><div className="secure-note"><ShieldCheck size={17} />{!collapsed && <span>Your connected account<br /><small>Authorized business records</small></span>}</div><button className="collapse-button" aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} onClick={() => setCollapsed(!collapsed)}><PanelLeftClose size={18} />{!collapsed && 'Collapse'}</button></div>
     </aside>

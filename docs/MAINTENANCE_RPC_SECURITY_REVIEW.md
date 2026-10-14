@@ -1,4 +1,6 @@
-# Shared-backend maintenance function access — approval pending
+# Shared-backend maintenance function access — repaired
+
+Update, 14 October 2026: explicitly authorized closure repair applied as migration `20261014175831_closure_maintenance_rpc_permissions`. Effective production grants deny `anon`/`authenticated` and retain `postgres`/`service_role`. Four guarded production denial calls passed; scheduled jobs continued to succeed after the migration. Function bodies, search paths and cron definitions are unchanged. Original audit below retained as before-state evidence. Rollback: `supabase/tests/maintenance-rollback.sql` (restores the former exposure; emergency rollback only).
 
 Read-only audit: 14 October 2026, project `kcuxyxqtfkxrbtmugjsn`. **No repair or maintenance function executed.**
 
