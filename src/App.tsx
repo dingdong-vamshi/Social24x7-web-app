@@ -11,6 +11,7 @@ import { WorkspaceShell } from './components/WorkspaceShell'
 import { Account } from './pages/Account'
 import { AuthCallback } from './pages/AuthCallback'
 import { CustomerLink } from './pages/CustomerLink'
+import { pageTitle } from './lib/pageTitle'
 const Social = lazy(() => import('./pages/Social').then(module => ({ default: module.Social })))
 
 const BusinessLogin = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessLogin })))
@@ -25,7 +26,7 @@ const AdminDashboard = lazy(() => import('./pages/Admin').then(module => ({ defa
 
 function LegacyRoute({from,to}:{from:string;to:string}){const location=useLocation();return <Navigate to={location.pathname.replace(from,to)+location.search+location.hash} replace/>}
 function Home(){return <Landing/>}
-function RouteEffects(){const {pathname}=useLocation();useEffect(()=>{window.scrollTo(0,0);document.title=`${pathname.startsWith('/partner/admin')?'Admin Dashboard':pathname.includes('/seller')?'Seller Studio':pathname.includes('/creator')?'Creator Center':pathname.startsWith('/web')?'Customer web':pathname.includes('register')?'Create your account':pathname.includes('login')?'Sign in':'People, products, possibilities'} | SOCIAL 24-7`;const robots=document.createElement('meta');robots.name='robots';robots.content='noindex, nofollow';if(pathname.startsWith('/partner/admin'))document.head.appendChild(robots);return()=>robots.remove()},[pathname]);return null}
+function RouteEffects(){const {pathname}=useLocation();useEffect(()=>{window.scrollTo(0,0);document.title=`${pageTitle(pathname)} | SOCIAL 24-7`;const robots=document.createElement('meta');robots.name='robots';robots.content='noindex, nofollow';if(pathname.startsWith('/partner/admin'))document.head.appendChild(robots);return()=>robots.remove()},[pathname]);return null}
 class AppBoundary extends Component<{children:ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return{failed:true}}render(){return this.state.failed?<main className="public-info"><h1>This page could not load.</h1><p>Refresh the page to try again. Your saved account data is still on the server.</p><button className="public-cta" onClick={()=>window.location.reload()}>Reload page</button></main>:this.props.children}}
 function NotFound(){return <div className="public-site"><PublicNav/><main id="main-content" className="public-info"><p className="public-kicker">PAGE NOT FOUND</p><h1>Let’s find your way back.</h1><p className="info-lead">This page may have moved. Your account and workspaces are available from the main navigation.</p><Link className="public-cta" to="/">Go to homepage</Link></main><PublicFooter/></div>}
 
