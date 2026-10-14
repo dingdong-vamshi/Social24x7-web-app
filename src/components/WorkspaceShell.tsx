@@ -42,7 +42,7 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
   const nav = role === 'seller' ? sellerNav : creatorNav
   return <div className={`workspace commerce-workspace ${collapsed ? 'nav-collapsed' : ''}`}>
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Workspace navigation">
-      <div className="sidebar-brand"><Brand compact={collapsed} /><button aria-label="Close navigation" className="icon-button mobile-only" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>
+      <div className="sidebar-brand"><Brand variant="sidebar" compact={collapsed} /><button aria-label="Close navigation" className="icon-button mobile-only" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>
       <div className="workspace-switcher"><span className="avatar">{name.slice(0, 1).toUpperCase()}</span>{!collapsed && <span className="workspace-switcher-copy"><strong>{name}</strong><span>{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span></span>}</div>
       <nav aria-label={`${role} workspace`}>
         {!collapsed && <span className="nav-label">Workspace</span>}

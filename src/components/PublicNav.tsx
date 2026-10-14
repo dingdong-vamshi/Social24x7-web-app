@@ -23,5 +23,5 @@ export function PublicNav() {
   </header>
 }
 export function PublicFooter() {
-  return <footer className="public-footer"><div><Brand/><p>A place for people, products, and possibilities.</p></div><div><Link to="/info/seller">For sellers</Link><Link to="/info/creator">For creators</Link><Link to="/info/partners">Partner opportunities</Link><Link to="/web">Customer web</Link></div><p>© {new Date().getFullYear()} SOCIAL 24-7</p></footer>
+  return <footer className="public-footer"><div><Brand variant="footer"/><p>A place for people, products, and possibilities.</p></div><div><Link to="/info/seller">For sellers</Link><Link to="/info/creator">For creators</Link><Link to="/info/partners">Partner opportunities</Link><Link to="/web">Customer web</Link></div><p>© {new Date().getFullYear()} SOCIAL 24-7</p></footer>
 }

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ArrowRight, CheckCircle2, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { PublicNav } from '../components/PublicNav'
+import { Brand } from '../components/Brand'
 import { Button } from '../components/Ui'
 import { requireSupabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
@@ -52,7 +53,7 @@ function AuthForm({ register = false }: { register?: boolean }) {
   if (auth.user && !auth.loading && !auth.error && !busy) return <Navigate to={next!} replace />
   return <div className="connected-auth"><PublicNav /><main id="main-content" className="auth-hero">
     <section className="auth-promotion"><div className="eyebrow">{consumer ? 'Your everyday connections' : 'SOCIAL 24-7 Partner'}</div><h1>{consumer ? <>Your conversations.<br /><em>Now on the web.</em></> : <>Your next chapter<br />starts with<br /><em>SOCIAL 24-7.</em></>}</h1><p>{consumer ? 'Continue with the account you already use on the app.' : 'Build your business presence and bring your products and creativity together.'}</p><ul>{(consumer ? ['Keep your existing account', 'Open your authorized conversations', 'Follow your order history'] : ['Manage your products and orders', 'Connect your content with commerce', 'One account across app and web']).map(item => <li key={item}><CheckCircle2 size={20} />{item}</li>)}</ul></section>
-    <section className="auth-white-card" aria-labelledby="auth-title"><div className="auth-kicker"><LockKeyhole size={16} /> {register ? 'One SOCIAL 24-7 account' : 'Your existing SOCIAL 24-7 account'}</div><h2 id="auth-title">{register ? 'Create your account' : 'Welcome back'}</h2><p>{register ? 'Already using the app? Sign in below to keep all your activity together.' : 'Use the same email, phone and password you use in the app.'}</p>
+    <section className="auth-white-card" aria-labelledby="auth-title"><div className="auth-brand"><Brand variant="full"/></div><div className="auth-kicker"><LockKeyhole size={16} /> {register ? 'One SOCIAL 24-7 account' : 'Your existing SOCIAL 24-7 account'}</div><h2 id="auth-title">{register ? 'Create your account' : 'Welcome back'}</h2><p>{register ? 'Already using the app? Sign in below to keep all your activity together.' : 'Use the same email, phone and password you use in the app.'}</p>
       {!auth.configured && <div className="form-error" role="alert">Account services are not configured for this deployment.</div>}
       {auth.error && <div className="form-error" role="alert">{auth.error}</div>}
       {auth.user && !busy && error && <div className="form-error" role="alert">{error}</div>}

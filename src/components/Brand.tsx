@@ -1,11 +1,16 @@
 import { Link } from 'react-router-dom'
-import { MessageCircle } from 'lucide-react'
 
-export function Brand({ compact = false }: { compact?: boolean }) {
+type BrandVariant = 'icon' | 'full' | 'compact' | 'sidebar' | 'footer'
+
+export function Brand({ compact = false, variant = 'compact' }: { compact?: boolean; variant?: BrandVariant }) {
+  const presentation = compact ? 'icon' : variant
+  const full = presentation === 'full'
   return (
-    <Link className="brand" to="/" aria-label="SOCIAL 24-7 home">
-      <span className="brand-mark" aria-hidden="true"><MessageCircle size={25} fill="white" color="white" /></span>
-      {!compact && <span><strong>SOCIAL 24-7</strong><small>Connect. Share. Always.</small></span>}
+    <Link className={`brand brand--${presentation}`} to="/" aria-label="SOCIAL 24-7 home">
+      <img className={full ? 'brand-full' : 'brand-mark'}
+        src={`/branding/social24-7-${full ? 'logo' : 'icon'}-v1.webp`}
+        width={full ? 724 : 419} height={full ? 680 : 433} alt="" />
+      {!full && presentation !== 'icon' && <span className="brand-wordmark"><strong>SOCIAL 24-7</strong><small>Connect. Share. Always.</small></span>}
     </Link>
   )
 }
