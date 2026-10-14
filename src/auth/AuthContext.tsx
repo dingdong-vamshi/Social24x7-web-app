@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase, supabaseConfigured, requireSupabase } from '../lib/supabase'
+import { forgetWorkspace } from './routing'
 
 export interface Profile { id: string; display_name: string; username: string; avatar_path: string | null }
 export interface CommerceAccess { user_id: string; seller_status: string; creator_status: string; professional_status: string; buyer_kyc_status: string; admin_access: boolean }
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hydrate = useCallback(async (session: Session | null, background = false) => {
     const request = ++version.current
     const sameAccount = session?.user.id === currentUserId.current
+    if (!sameAccount) forgetWorkspace(currentUserId.current)
     currentUserId.current = session?.user.id ?? null
     if (!background || !sameAccount) setLoading(true)
     if (!background || !sameAccount) setError(null)
@@ -39,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null)
       setState({ session, profile: profile.data, access: Array.isArray(access.data) ? access.data[0] ?? null : access.data, storefronts: stores.data ?? [] })
     } catch (cause) {
-      if (request === version.current) setError(cause instanceof Error ? cause.message : 'Unable to load your account permissions. Please retry.')
+      if (request === version.current) { setState({ ...empty, session }); setError(cause instanceof Error ? cause.message : 'Unable to load your account permissions. Please retry.') }
     } finally { if (request === version.current) setLoading(false) }
   }, [])
   useEffect(() => {
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     const { error } = await requireSupabase().auth.signOut()
     if (error) throw error
+    forgetWorkspace(currentUserId.current)
     version.current++; currentUserId.current = null; setState(empty); setError(null); setLoading(false)
   }, [])
   return <Context.Provider value={{ ...state, user: state.session?.user ?? null, loading, error, configured: supabaseConfigured, refreshProfile, signIn, signOut }}>{children}</Context.Provider>

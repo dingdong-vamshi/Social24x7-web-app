@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react'
-import { BarChart3, Boxes, CircleDollarSign, CircleUserRound, ClipboardCheck, Handshake, HeartPulse, LayoutDashboard, LogOut, Menu, MessageCircle, PackageCheck, PanelLeftClose, RotateCcw, Search, Settings2, ShieldCheck, ShoppingBag, Store, Truck, Users, WalletCards, X } from 'lucide-react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { BarChart3, Boxes, CircleDollarSign, CircleUserRound, ClipboardCheck, Handshake, HeartPulse, LayoutDashboard, Menu, MessageCircle, PackageCheck, PanelLeftClose, RotateCcw, Search, Settings2, ShieldCheck, ShoppingBag, Store, Truck, Users, WalletCards, X } from 'lucide-react'
+import { Link, NavLink } from 'react-router-dom'
 import type { PartnerRole } from '../domain/models'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from './Brand'
+import { AccountMenu } from './AccountMenu'
 import '../commerce.css'
 
 export interface NavItem { label: string; path: string; icon: ReactNode }
@@ -36,18 +37,9 @@ const creatorNav: NavItem[] = [
 export function WorkspaceShell({ role, children }: { role: PartnerRole; children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const [logoutError, setLogoutError] = useState('')
-  const [leaving, setLeaving] = useState(false)
-  const { profile, access, signOut } = useAuth()
-  const navigate = useNavigate()
+  const { profile } = useAuth()
   const name = profile?.display_name || profile?.username || 'Your account'
   const nav = role === 'seller' ? sellerNav : creatorNav
-  async function logout() {
-    setLeaving(true); setLogoutError('')
-    try { await signOut(); navigate('/partner/login', { replace: true }) }
-    catch (cause) { setLogoutError(cause instanceof Error ? cause.message : 'Unable to sign out. Please try again.') }
-    finally { setLeaving(false) }
-  }
   return <div className={`workspace commerce-workspace ${collapsed ? 'nav-collapsed' : ''}`}>
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Workspace navigation">
       <div className="sidebar-brand"><Brand compact={collapsed} /><button aria-label="Close navigation" className="icon-button mobile-only" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>
@@ -62,8 +54,8 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
     <div className="workspace-main"><header className="topbar">
       <button className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
       <span className="commerce-topbar-title">{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span>
-      <div className="top-actions"><label className="commerce-workspace-select"><span className="sr-only">Switch workspace</span><select value={role} onChange={(event) => navigate(event.target.value === 'consumer' ? '/web/chats' : `/partner/${event.target.value}`)}>{access?.seller_status === 'approved' && <option value="seller">Seller Studio</option>}{access?.creator_status === 'approved' && <option value="creator">Creator Center</option>}<option value="consumer">Consumer web</option></select></label><button className="icon-button" onClick={() => void logout()} disabled={leaving} aria-label={leaving ? 'Signing out' : 'Sign out'} title="Sign out"><LogOut size={19} /></button></div>
-    </header><main className="workspace-content">{logoutError && <p className="form-error" role="alert">{logoutError}</p>}{children}<footer className="commerce-footer"><Link to="/">SOCIAL 24-7</Link><span>One account. Your authorized workspaces.</span></footer></main></div>
+      <div className="top-actions"><AccountMenu/></div>
+    </header><main className="workspace-content">{children}<footer className="commerce-footer"><Link to="/">SOCIAL 24-7</Link><span>One account. Your authorized workspaces.</span></footer></main></div>
   </div>
 }
 

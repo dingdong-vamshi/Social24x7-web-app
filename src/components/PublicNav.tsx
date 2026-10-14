@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Brand } from './Brand'
+import { useAuth } from '../auth/AuthContext'
+import { AccountMenu } from './AccountMenu'
 import '../public.css'
 
 export function PublicNav() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
+  const auth = useAuth()
   return <header className="public-header">
     <a className="skip-link" href="#main-content">Skip to content</a>
     <div className="announcement">Your community. Your business. One SOCIAL 24-7 account. <Link to="/info/about">Explore the platform <ArrowUpRight size={13}/></Link></div>
@@ -14,7 +17,7 @@ export function PublicNav() {
       <button className="public-menu-toggle" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="public-links" onClick={() => setOpen(!open)}>{open ? <X/> : <Menu/>}</button>
       <div id="public-links" className={`public-links ${open ? 'is-open' : ''}`}>
         {([['Seller', '/info/seller'], ['Creator', '/info/creator'], ['Partner', '/info/partners'], ['Customer', '/web'], ['About', '/info/about']] as const).map(([label,to]) => <Link key={label} to={to} onClick={() => setOpen(false)} aria-current={location.pathname===to?'page':undefined}>{label}</Link>)}
-        <div className="public-nav-actions"><Link to="/partner/login" onClick={() => setOpen(false)}>Log in</Link><Link className="public-cta" to="/partner/register" onClick={() => setOpen(false)}>Join now <ArrowUpRight size={16}/></Link></div>
+        <div className="public-nav-actions">{auth.loading ? <span role="status">Loading account…</span> : auth.user ? <AccountMenu/> : <><Link to="/partner/login" onClick={() => setOpen(false)}>Log in</Link><Link className="public-cta" to="/partner/register" onClick={() => setOpen(false)}>Join now <ArrowUpRight size={16}/></Link></>}</div>
       </div>
     </nav>
   </header>

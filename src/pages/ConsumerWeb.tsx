@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, ArrowUpRight, Check, Download, LoaderCircle, LogOut, MessageCircle, Package, RefreshCw, Search, Send, ShieldCheck, Users } from 'lucide-react'
+import { ArrowLeft, Check, Download, LoaderCircle, MessageCircle, Package, RefreshCw, Search, Send, ShieldCheck, Users } from 'lucide-react'
 import { Link, NavLink, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { supabase } from '../lib/supabase'
 import { Brand } from '../components/Brand'
+import { AccountMenu } from '../components/AccountMenu'
 import { createChatRepository, mayCompose, mergeMessages, PAGE_SIZE, text, visibleMessages, type ChatRepository, type Conversation, type CustomerOrder, type Message } from '../features/chat/repository'
 import '../features/chat/chat.css'
 
@@ -13,10 +14,7 @@ const label = (value: string) => value.replaceAll('_', ' ')
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Unable to load this view. Please retry.'
 
 function ConsumerHeader() {
-  const { signOut } = useAuth()
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  return <><header className="consumer-header"><Brand /><nav aria-label="Consumer navigation"><NavLink to="/web/chats"><MessageCircle size={18} />Chats</NavLink><NavLink to="/web/orders"><Package size={18} />Orders</NavLink><Link to="/partner">Business<ArrowUpRight size={16} /></Link><button type="button" disabled={busy} onClick={async () => { setBusy(true); try { await signOut() } catch { setError('Sign out failed. Please try again.') } finally { setBusy(false) } }}><LogOut size={17} /><span>Sign out</span></button></nav></header>{error && <p role="alert" className="chat-alert">{error}</p>}</>
+  return <header className="consumer-header"><Brand /><nav aria-label="Consumer navigation"><NavLink to="/web/chats"><MessageCircle size={18} />Chats</NavLink><NavLink to="/web/orders"><Package size={18} />Orders</NavLink></nav><AccountMenu/></header>
 }
 
 function SessionNotice() {

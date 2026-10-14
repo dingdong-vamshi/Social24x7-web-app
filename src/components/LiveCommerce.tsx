@@ -8,7 +8,7 @@ export function useCommerce<T>(load: () => Promise<T>) {
   const [revision, setRevision] = useState(0)
   useEffect(() => {
     let active = true
-    load().then((data) => { if (active) setState({ load, data }) }).catch((cause: unknown) => { if (active) setState({ load, error: cause instanceof Error ? cause.message : 'Unable to load your records.' }) })
+    load().then((data) => { if (active) setState({ load, data }) }).catch((cause: unknown) => { if (active) setState({ load, error: cause && typeof cause === 'object' && 'message' in cause ? String(cause.message) : 'Unable to load your records.' }) })
     return () => { active = false }
   }, [load, revision])
   function refresh() { setState({ load }); setRevision((value) => value + 1) }
