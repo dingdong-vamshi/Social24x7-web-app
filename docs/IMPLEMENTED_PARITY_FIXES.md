@@ -22,6 +22,8 @@ No new backend objects. Existing Team RPCs, work Auth Edge Function/context/inbo
 
 No provider credentials exposed. No service-role impersonation. No approval policy change.
 
+Production follow-up: normal Admin/Naveen/Yogesh login and backend role resolution succeeded in isolated contexts. Old/new module comparisons, non-Admin denial, Team responsive rendering and reactivation cancel were captured. All live business mutations remain unexecuted; see PRODUCTION_PARITY_QA.md.
+
 ## Verification boundary
 
 Build/TypeScript, lint and isolated regression tests must pass before push. Browser fixture evidence validates rendered controls and responsiveness, not live successful mutations. See PRODUCTION_PARITY_QA.md for exact acceptance scope. No production team, product, order, financial or approval changes were performed to create proof.

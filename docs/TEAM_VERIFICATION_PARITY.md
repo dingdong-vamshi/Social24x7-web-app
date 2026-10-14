@@ -31,4 +31,6 @@ Recommended repair: review all mobile/web callers, correct the shared validator 
 
 ## Evidence
 
-team/parity.test.tsx, test/work-auth.test.tsx, test/business-work.test.tsx; private local browser captures in Documents/Social24-7-Parity-2026-10-14. These are explicitly fixture screenshots, not production identity proof. Production authenticated Team comparison is blocked until an authorized QA owner/employee session is supplied.
+team/parity.test.tsx, test/work-auth.test.tsx, test/business-work.test.tsx; private local browser captures in Documents/Social24-7-Parity-2026-10-14. Fixture screenshots remain distinct from production proof.
+
+Fresh deployed old/new screenshots now verify the same authorized Naveen owner context: verified Owner, suspended QA Employee B and removed QA Employee A. Owner has five open chats; both employees have zero. The new Team page exposes management controls and read-only monitoring. Reactivation confirmation was opened then cancelled; no member status changed. Seven production viewport widths passed overflow checks. Actual employee activation/login and persisted management changes remain unverified. See PRODUCTION_PARITY_QA.md.

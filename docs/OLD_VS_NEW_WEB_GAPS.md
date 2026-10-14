@@ -20,4 +20,6 @@ Recorded business verification video, employee approval, Creator professional re
 
 ## Remaining work
 
+Fresh read-only production comparisons now exist for the requested modules, using authorized Admin/Naveen identities on both deployments. Team member statuses, company verification, chat counts and Admin detection have direct result evidence. Approved onboarding status is shown instead of fresh forms. No mutation parity is inferred from those screenshots. The old ordinary Business Chat inbox and Team inbox have different scopes; further same-conversation acceptance is needed.
+
 See REMAINING_FEATURE_BLOCKERS.md. Missing frontend work is explicitly identified separately from lack of safe production acceptance. Listing real records does not establish mutation parity.
