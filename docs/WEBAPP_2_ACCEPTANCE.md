@@ -6,11 +6,11 @@ The supplied request ends at section 25; no separate client screenshot was attac
 
 | ID | Request / code | Implementation and local test | Backend / production evidence | Result |
 | --- | --- | --- | --- | --- |
-| C01 | Work link · pages/Auth.tsx | Top-right link; local seven-width and navigation checks | Existing /business-login unchanged; deployment browser proof pending | PASS — LOCAL ONLY |
+| C01 | Work link · pages/Auth.tsx | Top-right link; seven-width and navigation checks | Production click opens Work account login; screenshot production-work-login-360.jpg | PASS — PRODUCTION VERIFIED (navigation) |
 | C02 | One identifier · AuthContext.tsx | Email/phone/username + password; generic errors, ambiguous phone denied; Auth + Edge tests | Private service-only resolver + Edge v1 deployed; negative live request passed; successful controlled login unverified | IMPLEMENTED — BACKEND UNVERIFIED for successful login |
 | C03 | Recovery · PasswordRecovery.tsx, auth/recovery.ts | Generic email request, recovery-only verified exchange, no normal-session bypass, strong match check; seven tests | Exact reset allowlist saved; invalid URL local browser verified; real inbox/reset blocked | BLOCKED — real mailbox |
 | C04 | Strong policy · passwordPolicy.ts | Shared eight–128 character signup/reset validation; existing login preserved; Work remains ten-character | Server min eight + upper/lower/digit/symbol saved/read back; real signup/reset unverified | PASS — LOCAL ONLY; configuration verified |
-| C05 | Visibility · PasswordInput.tsx | Hidden default, keyboard button, no submit, preserved value; unit/browser tests | Deployment browser proof pending | PASS — LOCAL ONLY |
+| C05 | Visibility · PasswordInput.tsx | Hidden default, keyboard button, no submit, preserved value; unit/browser tests | Production keyboard toggle verified; signup has separate accessible confirmation toggle | PASS — PRODUCTION VERIFIED (toggle); value persistence unit-tested |
 | C06 | Casing · applicationFields.ts / Onboarding.tsx | Blur-only trade/store/city normalization; legal/acronyms/URLs preserved; draft save/back tests | Existing authoritative draft RPC source traced; genuine records untouched | PASS — LOCAL ONLY |
 | C07 | PAN · applicationFields.ts / Onboarding.tsx | Uppercase/trim/format errors, normalized save, masked review test; not verification | Existing Seller draft/server normalization traced; no genuine PAN changed | PASS — LOCAL ONLY |
 | C08 | Seller links · Onboarding.tsx | Four optional HTTPS/domain-validated links, review and draft mapping | Existing application_payload.socialHandles; source and memory integration tested; no production submission | PASS — LOCAL ONLY |
@@ -28,7 +28,7 @@ The supplied request ends at section 25; no separate client screenshot was attac
 - Browser widths: 1440, 1280, 1024, 768, 430, 390, 360. Login/recovery, isolated Seller/Creator, Admin and New Chat have no document overflow. A discovered Creator 768px overflow was fixed and all seven widths retested.
 - Browser: Work navigation, keyboard show/hide, missing-reset authorization rejection, conditional Creator fields, isolated Seller save and chat pending state verified.
 - Authenticated workspace, account switching, logout, Business Chat and permissions have automated regression coverage; that does not replace new live role-session testing.
-- Production release/browser verification is recorded separately; do not treat this pre-release section as deployment proof.
+- Production release/browser verification is recorded in WEBAPP_2_PRODUCTION_RECEIPT.md. Authenticated application screenshots remain isolated, not production proof.
 
 Private screenshot folder: /Users/vamshipendyala/Documents/Social24-7-Webapp2-2026-10-14/
 
@@ -37,7 +37,7 @@ Private screenshot folder: /Users/vamshipendyala/Documents/Social24-7-Webapp2-20
 | supabase-redirects.jpg / supabase-password-policy.jpg | Live saved dashboard configuration |
 | local-login-{width}.jpg | Local production-component login at seven widths |
 | local-forgot-360.jpg / local-invalid-reset-360.jpg | Local recovery UI, no mail sent |
-| isolated-creator-{1440,768,390}.jpg | Conditional social profiles + audience, synthetic data |
+| isolated-creator-final-390.jpg | Final conditional social profiles + audience, synthetic data; supersedes earlier mobile sticky-action screenshot |
 | isolated-seller-{1440,390}.jpg | Optional business links, synthetic data |
 | isolated-admin-{1440,390}.jpg | Manual social review + safe external links, synthetic record |
 | isolated-chat-390.jpg | Consent pending, synthetic repository |
