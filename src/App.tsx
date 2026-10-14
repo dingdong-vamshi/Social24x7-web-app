@@ -9,6 +9,9 @@ import { RequireAuth } from './auth/RequireAuth'
 import { PublicNav, PublicFooter } from './components/PublicNav'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import { Account } from './pages/Account'
+import { AuthCallback } from './pages/AuthCallback'
+import { CustomerLink } from './pages/CustomerLink'
+const Social = lazy(() => import('./pages/Social').then(module => ({ default: module.Social })))
 
 const BusinessLogin = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessLogin })))
 const BusinessWork = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessWork })))
@@ -28,16 +31,18 @@ function NotFound(){return <div className="public-site"><PublicNav/><main id="ma
 export default function App(){return <AppBoundary><AuthProvider><RouteEffects/><Suspense fallback={<div className="route-loading" role="status">Loading your workspace…</div>}><Routes>
   <Route path="/business-login" element={<BusinessLogin/>}/><Route path="/business-activate" element={<BusinessLogin activate/>}/><Route path="/business-workspace" element={<BusinessWork/>}/>
   <Route path="/" element={<Home/>}/><Route path="/info/:kind" element={<InformationPage/>}/><Route path="/partner" element={<PartnerEntry/>}/>
-  <Route path="/partner/login" element={<Login/>}/><Route path="/partner/register" element={<Register/>}/><Route path="/web/login" element={<Login/>}/><Route path="/web/register" element={<Register/>}/>
+  <Route path="/auth/callback/:intent" element={<AuthCallback/>}/><Route path="/web" element={<CustomerLink/>}/><Route path="/web/app/*" element={<CustomerLink/>}/>
+  <Route path="/partner/login" element={<Login/>}/><Route path="/partner/register" element={<Register/>}/><Route path="/web/login" element={<Navigate to="/web" replace/>}/><Route path="/web/register" element={<Navigate to="/web" replace/>}/>
   <Route path="/login" element={<LegacyRoute from="/login" to="/partner/login"/>}/><Route path="/register" element={<LegacyRoute from="/register" to="/partner/register"/>}/>
   <Route element={<RequireAuth/>}>
     <Route path="/account" element={<Account/>}/>
     <Route path="/onboarding" element={<RoleSelection/>}/><Route path="/onboarding/:role" element={<OnboardingFlow/>}/><Route path="/partner/onboarding" element={<RoleSelection/>}/><Route path="/partner/onboarding/:role" element={<OnboardingFlow/>}/>
     <Route path="/application" element={<ApplicationStatusPage/>}/><Route path="/partner/application" element={<ApplicationStatusPage/>}/>
-    <Route path="/web" element={<Navigate to="/web/chats" replace/>}/><Route path="/web/chats" element={<ConsumerWeb/>}/><Route path="/web/chat/:id" element={<ConsumerWeb/>}/><Route path="/web/orders" element={<ConsumerOrders/>}/>
+    <Route path="/account/chats" element={<ConsumerWeb/>}/><Route path="/account/chat/:id" element={<ConsumerWeb/>}/><Route path="/account/orders" element={<ConsumerOrders/>}/><Route path="/account/social/*" element={<Social/>}/>
+    <Route path="/web/chats" element={<Navigate to="/account/chats" replace/>}/><Route path="/web/chat/:id" element={<LegacyRoute from="/web/chat/" to="/account/chat/"/>}/><Route path="/web/orders" element={<Navigate to="/account/orders" replace/>}/>
   </Route>
   <Route element={<RequireAuth role="admin"/>}><Route path="/partner/admin" element={<AdminDashboard/>}/><Route path="/partner/admin/application/:kind/:id" element={<AdminDashboard/>}/><Route path="/partner/admin/*" element={<AdminDashboard/>}/></Route>
-  <Route element={<RequireAuth role="seller"/>}><Route path="/partner/seller/chat" element={<WorkspaceShell role="seller"><BusinessChat/></WorkspaceShell>}/><Route path="/partner/seller/*" element={<SellerStudio/>}/></Route>
+  <Route element={<RequireAuth role="seller"/>}><Route path="/partner/seller/social/*" element={<WorkspaceShell role="seller"><Social seller/></WorkspaceShell>}/><Route path="/partner/seller/chat" element={<WorkspaceShell role="seller"><BusinessChat/></WorkspaceShell>}/><Route path="/partner/seller/*" element={<SellerStudio/>}/></Route>
   <Route element={<RequireAuth role="creator"/>}><Route path="/partner/creator/chat" element={<WorkspaceShell role="creator"><BusinessChat/></WorkspaceShell>}/><Route path="/partner/creator/*" element={<CreatorCenter/>}/></Route>
   <Route path="/seller/*" element={<LegacyRoute from="/seller" to="/partner/seller"/>}/><Route path="/creator/*" element={<LegacyRoute from="/creator" to="/partner/creator"/>}/>
   <Route path="*" element={<NotFound/>}/>

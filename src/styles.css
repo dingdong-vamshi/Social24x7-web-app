@@ -38,7 +38,7 @@ h1, h2, h3, .brand strong { font-family: 'Manrope', sans-serif; }
 .preview-toast { position: fixed; right: 24px; bottom: 24px; z-index: 100; max-width: min(420px, calc(100vw - 32px)); padding: 14px 18px; border-radius: 12px; background: var(--green-950); color: white; box-shadow: 0 16px 42px rgba(9,45,33,.28); font-size: 13px; font-weight: 700; line-height: 1.45; }
 
 .brand { display: inline-flex; gap: 11px; align-items: center; color: var(--ink); }
-.brand-mark { display: block; width: 39px; height: auto; flex-shrink: 0; }
+.brand-mark { border-radius: 22%; overflow: hidden; display: block; width: 39px; height: auto; flex-shrink: 0; }
 .brand-wordmark { display: grid; line-height: 1.05; }
 .brand-full { display: block; width: 144px; max-width: 100%; height: auto; }
 .brand--full { max-width: 100%; }

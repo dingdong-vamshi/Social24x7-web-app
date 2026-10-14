@@ -29,10 +29,10 @@ describe('account navigation',()=>{
   it('hides private content on failed role refresh',()=>{mock.state.user={id:'qa'};mock.state.access.admin_access=true;mock.state.error='Permission refresh failed';mount(<RequireAuth role="admin"><h1>Private queue</h1></RequireAuth>);expect(screen.queryByText('Private queue')).not.toBeInTheDocument()})
 })
 describe('destination resolution',()=>{
-  it('makes Admin default while allowing explicit consumer navigation',()=>{expect(defaultDestination('qa',{admin_access:true})).toBe('/partner/admin');expect(loginDestination('qa',{admin_access:true},'/web/chats')).toBe('/web/chats')})
+  it('makes Admin the post-login destination; explicit account navigation remains available in the menu',()=>{expect(defaultDestination('qa',{admin_access:true})).toBe('/partner/admin');expect(loginDestination('qa',{admin_access:true},'/account/chats')).toBe('/partner/admin')})
   it('restores only still-authorized preferences',()=>{rememberWorkspace('qa','seller');expect(defaultDestination('qa',{seller_status:'approved',creator_status:'approved'})).toBe('/partner/seller');expect(defaultDestination('qa',{seller_status:'not_applied',creator_status:'approved'})).toBe('/partner/creator')})
-  it('resolves sole, dual, ordinary and pending accounts',()=>{expect(defaultDestination('qa',{seller_status:'approved'})).toBe('/partner/seller');expect(defaultDestination('qa',{creator_status:'approved'})).toBe('/partner/creator');expect(defaultDestination('qa',{seller_status:'approved',creator_status:'approved'})).toBe('/onboarding');expect(defaultDestination('qa',null)).toBe('/web/chats');expect(defaultDestination('qa',{seller_status:'under_review'})).toBe('/application?role=seller')})
-  it('rejects unauthorized or external return destinations',()=>{expect(loginDestination('qa',null,'/partner/admin')).toBe('/web/chats');expect(loginDestination('qa',null,'//evil.example')).toBe('/web/chats')})
+  it('resolves sole, dual, ordinary and pending accounts',()=>{expect(defaultDestination('qa',{seller_status:'approved'})).toBe('/partner/seller');expect(defaultDestination('qa',{creator_status:'approved'})).toBe('/partner/creator');expect(defaultDestination('qa',{seller_status:'approved',creator_status:'approved'})).toBe('/partner/seller');expect(defaultDestination('qa',null)).toBe('/partner');expect(defaultDestination('qa',{seller_status:'under_review'})).toBe('/application?role=seller')})
+  it('rejects unauthorized or external return destinations',()=>{expect(loginDestination('qa',null,'/partner/admin')).toBe('/partner');expect(loginDestination('qa',null,'//evil.example')).toBe('/partner')})
 })
 describe('connected Admin UI',()=>{
   beforeEach(()=>{mock.state.user={id:'qa'};mock.state.access.admin_access=true})

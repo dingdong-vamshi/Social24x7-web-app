@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, LogOut } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { allowedWorkspace, rememberWorkspace, workspacePath, type Workspace } from '../auth/routing'
+import { allowedWorkspace, roleAction, roleDestination, rememberWorkspace, workspacePath, type Workspace } from '../auth/routing'
 import './account.css'
 
 export function AccountMenu() {
@@ -35,10 +35,10 @@ function UserMenu() {
   return <div className="account-menu" ref={root}>
     <button ref={trigger} className="account-trigger" aria-label={`Account menu for ${name}`} aria-expanded={open} aria-controls="account-options" onClick={() => setOpen(!open)}><span className="avatar">{name.slice(0, 1)}</span><span className="account-name">{name}</span><ChevronDown size={16}/></button>
     {open && <nav id="account-options" className="account-options" aria-label="Account and workspaces" key={location.pathname} onClick={event => { if ((event.target as HTMLElement).closest('a')) setOpen(false) }}>
-      <strong>{name}</strong><Link to="/account">My account</Link><Link to="/onboarding">My workspaces</Link>
+      <strong>{name}</strong><Link to="/account">My account</Link><Link to="/account/social">Social</Link><Link to="/web">Customer device linking</Link><Link to="/onboarding">My workspaces</Link>
       {!loading && !accessError && workspaces.filter(([key]) => allowedWorkspace(key, access)).map(([key, label]) => <Link key={key} to={workspacePath(key)} onClick={() => rememberWorkspace(user!.id, key)}>{label}</Link>)}
-      <Link to="/web/orders">My Orders</Link>
-      {!loading && !accessError && !access?.admin_access && (['seller', 'creator'] as const).filter(role => access?.[`${role}_status`] !== 'approved').map(role => <Link key={role} to={`/partner/onboarding/${role}`}>{access?.[`${role}_status`] === 'not_applied' ? `Become a ${role === 'seller' ? 'Seller' : 'Creator'}` : `${role === 'seller' ? 'Seller' : 'Creator'} application`}</Link>)}
+      <Link to="/account/orders">My Orders</Link>
+      {!loading && !accessError && !access?.admin_access && (['seller', 'creator'] as const).filter(role => access?.[`${role}_status`] !== 'approved').map(role => <Link key={role} to={roleDestination(role, access)}>{roleAction(role, access)}</Link>)}
       <Link to="/">Visit website</Link><button disabled={busy} onClick={() => void logout(true)}>Use another account</button><button disabled={busy} onClick={() => void logout()}><LogOut size={16}/>{busy ? 'Logging out…' : 'Log out'}</button>
       {error && <p role="alert">{error}</p>}
     </nav>}

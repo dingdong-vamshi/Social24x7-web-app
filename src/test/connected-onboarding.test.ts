@@ -6,8 +6,8 @@ import { validateCommerceEvidence } from '../auth/onboardingRepository'
 
 describe('existing account routing', () => {
   it('rejects external and auth-loop redirect targets', () => {
-    for (const path of ['https://example.com','//example.com','/\\example.com','/login','/partner/login?next=/','/web/register']) expect(safeNext(path)).toBe('/onboarding')
-    expect(safeNext('/web/chat/conversation?from=list')).toBe('/web/chat/conversation?from=list')
+    for (const path of ['https://example.com','//example.com','/\\example.com','/login','/partner/login?next=/','/web/register']) expect(safeNext(path)).toBe('/partner')
+    expect(safeNext('/account/chat/conversation?from=list')).toBe('/account/chat/conversation?from=list')
   })
   it('preserves mobile phone normalization', () => {
     expect(normalizePhone('98765 43210')).toBe('+919876543210')

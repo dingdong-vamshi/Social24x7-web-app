@@ -4,6 +4,7 @@ import { Link, NavLink } from 'react-router-dom'
 import type { PartnerRole } from '../domain/models'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from './Brand'
+import { roleAction, roleDestination } from '../auth/routing'
 import { AccountMenu } from './AccountMenu'
 import '../commerce.css'
 
@@ -16,6 +17,7 @@ const sellerNav: NavItem[] = [
   { label: 'Logistics', path: '/partner/seller/logistics', icon: <Truck size={19} /> },
   { label: 'Finance', path: '/partner/seller/finance', icon: <WalletCards size={19} /> },
   { label: 'Business Chat', path: '/partner/seller/chat', icon: <MessageCircle size={19} /> },
+  { label: 'Social', path: '/partner/seller/social', icon: <Users size={19} /> },
   { label: 'Team & verification', path: '/partner/seller/team', icon: <Users size={19} /> },
   { label: 'Affiliate & creators', path: '/partner/seller/affiliate', icon: <Handshake size={19} /> },
   { label: 'Analytics', path: '/partner/seller/analytics', icon: <BarChart3 size={19} /> },
@@ -37,7 +39,7 @@ const creatorNav: NavItem[] = [
 export function WorkspaceShell({ role, children }: { role: PartnerRole; children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const { profile } = useAuth()
+  const { profile, access } = useAuth()
   const name = profile?.display_name || profile?.username || 'Your account'
   const nav = role === 'seller' ? sellerNav : creatorNav
   return <div className={`workspace commerce-workspace ${collapsed ? 'nav-collapsed' : ''}`}>
@@ -54,7 +56,7 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
     <div className="workspace-main"><header className="topbar">
       <button className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
       <span className="commerce-topbar-title">{role === 'seller' ? 'Seller Studio' : 'Creator Center'}</span>
-      <div className="top-actions"><AccountMenu/></div>
+      <div className="top-actions"><Link className="workspace-role-action" to={roleDestination(role === 'seller' ? 'creator' : 'seller', access)}>{roleAction(role === 'seller' ? 'creator' : 'seller', access)}</Link><AccountMenu/></div>
     </header><main className="workspace-content">{children}<footer className="commerce-footer"><Link to="/">SOCIAL 24-7</Link><span>One account. Your authorized workspaces.</span></footer></main></div>
   </div>
 }

@@ -34,19 +34,20 @@ describe('public navigation and real-account boundaries',()=>{
   })
   it.each(['/partner/seller/products','/seller/finance','/partner/creator/earnings','/creator/discover','/onboarding/seller','/application?role=creator'])('protects %s from anonymous access',async(path)=>{
     renderAt(path)
-    expect(await screen.findByRole('heading',{name:'Welcome back'})).toBeInTheDocument()
+    expect(await screen.findByRole('heading',{name:/Welcome back|Sign in to your Seller account/})).toBeInTheDocument()
     expect(screen.getByLabelText('Password')).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:/Preview approved/})).not.toBeInTheDocument()
   })
-  it.each(['/web/chats','/web/chat/00000000-0000-0000-0000-000000000000','/web/orders'])('protects consumer route %s',async(path)=>{
+  it.each(['/web','/web/login','/web/register','/web/app/chats','/web/chats','/web/chat/00000000-0000-0000-0000-000000000000','/web/orders'])('requires real pairing rather than a password or forged local state at %s',async(path)=>{
+    localStorage.setItem('customer-paired','true')
     renderAt(path)
-    expect(await screen.findByRole('heading',{name:'Welcome back'})).toBeInTheDocument()
-    expect(screen.getByText('Your everyday connections')).toBeInTheDocument()
+    expect(await screen.findByRole('heading',{name:'Device linking is not available yet'})).toBeInTheDocument()
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
   })
   it('does not accept a forged local preview approval',async()=>{
     localStorage.setItem('social24:session',JSON.stringify({role:'seller',applicationStatus:'approved'}))
     renderAt('/seller?approved=true')
-    expect(await screen.findByRole('heading',{name:'Welcome back'})).toBeInTheDocument()
+    expect(await screen.findByRole('heading',{name:/Welcome back|Sign in to your Seller account/})).toBeInTheDocument()
   })
   it('exposes genuine registration inputs and no unsupported SMS or OAuth buttons',()=>{
     renderAt('/partner/register')

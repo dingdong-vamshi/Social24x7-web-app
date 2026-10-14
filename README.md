@@ -1,6 +1,6 @@
 # SOCIAL 24-7 Web
 
-The React + TypeScript + Vite application contains three connected web surfaces: the public product website, Seller/Creator Partner Web, and consumer conversations/order history. It reuses the existing SOCIAL 24-7 Supabase project and account model; it does not create a parallel identity or commerce backend.
+The React + TypeScript + Vite application provides the public website and Seller/Creator Partner Web. Customer Web is now intended to reproduce the mobile consumer experience through secure QR device linking; that linking is not implemented yet. Existing authorized account Chats, Social and Orders remain available within the account experience. It reuses the existing SOCIAL 24-7 Supabase project and account model; it does not create a parallel identity or commerce backend.
 
 This repository is separate from the mobile/APK application. The mobile repository is a read-only implementation reference and must not be changed or deployed as part of this project's release.
 
@@ -12,9 +12,10 @@ This repository is separate from the mobile/APK application. The mobile reposito
 | Partner | `/partner`, `/partner/login`, `/partner/register`, `/partner/onboarding/:role` | Existing-account authentication and Seller/Creator applications |
 | Seller Studio | `/partner/seller/*` | Approved Seller access; owned-store catalog, orders, returns, logistics, recorded finance, team visibility and promotions |
 | Creator Center | `/partner/creator/*` | Approved Creator access; discovery, promotions, affiliate links, recorded earnings and profile |
-| Consumer | `/web/login`, `/web/register`, `/web/chats`, `/web/chat/:id`, `/web/orders` | Authorized conversations, text messaging and order history |
+| Own account | `/account/chats`, `/account/chat/:id`, `/account/orders`, `/account/social` | Existing authorized conversations, Social and orders; not QR-linked proof |
+| Customer linking | `/web`, `/web/app/*` | Explicitly unavailable until secure server handoff and APK approval exist; no password form or fake QR |
 
-Intended hostnames: `www.social24-7.com`, `partner.social24-7.com` and `web.social24-7.com`. Hostname-aware entry routing is implemented; custom DNS/domain bindings were not changed. All surfaces are accessible by path on the existing Vercel URL. Legacy sign-in, onboarding and workspace paths remain compatible.
+Ownership-unverified target hostnames: `www.social24-7.com`, `partner.social24-7.com` and `web.social24-7.com`. Hostname-aware entry routing is implemented; custom DNS/domain bindings were not changed. Implemented pages are accessible by path on the existing Vercel URL; Customer pairing is not. Legacy sign-in, onboarding and workspace paths remain compatible.
 
 ## Live data, explicit limits
 
@@ -23,8 +24,8 @@ Production routes use Supabase Auth, existing authorized tables/RPCs and Realtim
 - Authentication uses existing email/password and the registered-phone consistency check. Phone OTP and OAuth are unavailable in the current project configuration. New registration requires email confirmation; delivery/callback verification is tracked separately.
 - Seller/Creator approval comes from backend capabilities, not a browser role picker. Drafts and private onboarding evidence use existing contracts; live submission/upload verification remains separately tracked.
 - Existing product save/publish/media and Creator promotion APIs are integrated. Successful dashboard reads do not prove these writes; see the QA matrix for tested cases.
-- Finance displays recorded data. This client does not execute payments, subscriptions, refunds, payouts, courier booking or new settlement rules. Employee activation, team-permission mutations and the full Business Work workspace are not implemented.
-- Messaging supports existing personal/group text conversations and authorized business-conversation views. Business ownership does not bypass assigned-worker reply restrictions. Attachment uploads, voice recording, group administration and the complete mobile super-app are not reproduced.
+- Finance displays recorded data. This client does not execute payments, subscriptions, refunds, payouts, courier booking or new settlement rules. Business Work and team actions reuse existing contracts; read-tested pages do not establish that all employee/permission mutations have been live-tested.
+- Messaging supports existing personal/group text conversations and authorized business-conversation views. Business ownership does not bypass assigned-worker reply restrictions. Existing browser attachments and group controls remain; the complete mobile super-app and native voice/push parity are not reproduced.
 - Messages use the shared backend, not manual device-to-device copying. True E2EE and encrypted offline history are not implemented. Two-browser-client synchronization must not be described as installed-APK testing.
 - The informational Partner page does not create an agency/Partner backend role.
 
@@ -75,6 +76,16 @@ The build includes TypeScript and writes `dist/`. Vitest and Testing Library cov
 No database schema, RLS, Auth-provider, Storage-bucket, Realtime-publication or Edge Function changes are included in this frontend integration.
 
 ## Documentation
+
+The latest requirements and release limitations supersede historical scope descriptions:
+
+- [New client web flow](docs/NEW_CLIENT_WEB_FLOW.md)
+- [Seller/Creator Auth redirect and configuration blockers](docs/SELLER_CREATOR_AUTH_REDIRECT.md)
+- [QR pairing architecture and APK dependencies](docs/CUSTOMER_QR_PAIRING_ARCHITECTURE.md)
+- [35-area consumer parity inventory](docs/CUSTOMER_WEB_APK_PARITY.md)
+- [Partner Social contracts and verification](docs/PARTNER_SOCIAL_MODULE.md)
+- [Domain ownership and DNS checklist](docs/DOMAIN_AND_DNS_SETUP.md)
+- [Current production QA](docs/PRODUCTION_QA.md)
 
 - [Web platform architecture](docs/WEB_PLATFORM_ARCHITECTURE.md)
 - [Actual roles and onboarding field mapping](docs/ACTUAL_SOCIAL24_ROLE_MATRIX.md)
