@@ -14,6 +14,9 @@ const mock = vi.hoisted(() => ({
     mediaUrl: vi.fn(),
     profile: vi.fn(),
     following: vi.fn(),
+    stories: vi.fn(),
+    follow: vi.fn(),
+    viewerId: 'qa',
   },
 }));
 vi.mock("../auth/AuthContext", () => ({
@@ -51,6 +54,7 @@ beforeEach(() => {
   mock.repo.notifications.mockResolvedValue([]);
   mock.repo.publish.mockResolvedValue("new");
   mock.repo.search.mockResolvedValue([]);
+  mock.repo.stories.mockResolvedValue([]);
 });
 describe("Social preserves existing personal boundaries", () => {
   it("loads canonical supplied feed and real empty notifications", async () => {

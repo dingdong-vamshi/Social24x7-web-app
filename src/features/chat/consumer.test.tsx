@@ -89,8 +89,8 @@ describe('consumer conversation interactions', () => {
     renderChat('/partner/seller/chat?conversation=qa-conversation', true)
     expect(await screen.findByText(/This conversation is read-only here/)).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Message' })).not.toBeInTheDocument()
-    expect(mocks.listConversations).toHaveBeenCalledWith(true, 0)
-    expect(mocks.getConversation).toHaveBeenCalledWith('qa-conversation', true)
+    expect(mocks.listConversations).toHaveBeenCalledWith(true, 0, undefined)
+    expect(mocks.getConversation).toHaveBeenCalledWith('qa-conversation', true, undefined)
   })
   it('removes an expiring message locally without waiting for another network response', async () => {
     mocks.reconcile.mockResolvedValue([{ ...message, expires_at: new Date(Date.now() + 300).toISOString() }])

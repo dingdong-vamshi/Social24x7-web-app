@@ -2,7 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createOperationsRepository, fulfillmentNext } from './operations'
-import { FulfillmentEditor, ReturnReview } from '../pages/CommerceOperations'
+import { CounterpartyDirectory, FulfillmentEditor, ReturnReview } from '../pages/CommerceOperations'
+import { MemoryRouter } from 'react-router-dom'
 import type { Order } from './commerce'
 const mocks=vi.hoisted(()=>({rpc:vi.fn(),from:vi.fn()}))
 vi.mock('../lib/supabase',()=>({requireSupabase:()=>mocks}))
@@ -10,6 +11,15 @@ vi.mock('../auth/AuthContext',()=>({useAuth:()=>({user:{id:'owner'}})}))
 const repo=()=>createOperationsRepository(mocks as unknown as SupabaseClient)
 beforeEach(()=>{vi.clearAllMocks();mocks.rpc.mockResolvedValue({data:[],error:null});const q={select:vi.fn(),eq:vi.fn(),order:vi.fn(),then:(fn:(x:unknown)=>void)=>Promise.resolve({data:[],error:null}).then(fn)};q.select.mockReturnValue(q);q.eq.mockReturnValue(q);q.order.mockReturnValue(q);mocks.from.mockReturnValue(q)})
 describe('operational parity',()=>{
+  it.each([['creator','/partner/seller/creator-chat'],['seller','/partner/creator/chat']] as const)('keeps the %s counterparty in its dedicated commerce channel', async (role, path) => {
+    mocks.rpc.mockImplementation(async (name: string) => ({ data: name === 'search_creator_seller_counterparties' ? [{user_id:'counterparty',display_name:'QA',username:'qa'}] : 'conversation-id', error:null }))
+    render(<MemoryRouter><CounterpartyDirectory role={role}/></MemoryRouter>)
+    fireEvent.click(screen.getByText(`Find an approved ${role === 'seller' ? 'Seller' : 'Creator'}`))
+    fireEvent.change(screen.getByLabelText('Search by name'), {target:{value:'QA'}})
+    fireEvent.click(screen.getByRole('button',{name:'Search approved accounts'}))
+    fireEvent.click(await screen.findByRole('button',{name:'Open business conversation'}))
+    expect(await screen.findByRole('link',{name:'Continue to conversation'})).toHaveAttribute('href',path+'?conversation=conversation-id')
+  })
   it.each([['placed',['confirmed','cancelled']],['confirmed',['processing','cancelled']],['processing',['shipped','cancelled']],['shipped',['out_for_delivery']],['out_for_delivery',['delivered']],['delivered',[]],['cancelled',[]]] as const)('preserves %s transitions', (status,next)=>expect(fulfillmentNext({status,payment_method:'cod',payment_status:'cod_pending'})).toEqual(next))
   it('does not offer fulfillment before external payment capture',()=>expect(fulfillmentNext({status:'placed',payment_method:'external',payment_status:'pending'})).toEqual([]))
   it('uses atomic fulfillment RPC, not independent order/ledger writes',async()=>{await repo().fulfill({orderId:'order',status:'shipped',carrier:' Carrier ',trackingNumber:' QA ',packageReference:'',customerNote:'note'});expect(mocks.rpc).toHaveBeenCalledWith('seller_update_creator_commerce_fulfillment',{p_order_id:'order',p_status:'shipped',p_carrier:'Carrier',p_tracking_number:'QA',p_package_reference:'',p_customer_note:'note',p_packing_evidence_path:null});expect(mocks.from).not.toHaveBeenCalled()})

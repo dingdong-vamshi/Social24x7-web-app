@@ -24,6 +24,9 @@ import {
   type SocialRepository,
 } from "../features/social/repository";
 import "../features/social/social.css";
+import { RichProfile, ShareButton, SocialMediaPreview, Stories } from '../features/social/ExpandedSocial';
+import { validateSocialMedia } from '../features/social/extendedRepository';
+import { ShareToChat } from '../features/social/ShareToChat';
 
 const message = (e: unknown) =>
   e instanceof Error ? e.message : "Unable to load this view. Please retry.";
@@ -79,7 +82,7 @@ function LoadState({
     </>
   );
 }
-export function Social({ seller = false }: { seller?: boolean }) {
+export function Social({ seller = false, creator = false }: { seller?: boolean; creator?: boolean }) {
   const auth = useAuth();
   if (!auth.user || auth.loading) return <p role="status">Loading account…</p>;
   if (
@@ -94,11 +97,12 @@ export function Social({ seller = false }: { seller?: boolean }) {
     );
   return (
     <>
-      {!seller && <PublicNav />}
+      {!seller && !creator && <PublicNav />}
       <SocialWorkspace
         key={auth.user.id}
         viewerId={auth.user.id}
         seller={seller}
+        creator={creator}
       />
     </>
   );
@@ -106,9 +110,11 @@ export function Social({ seller = false }: { seller?: boolean }) {
 function SocialWorkspace({
   viewerId,
   seller,
+  creator,
 }: {
   viewerId: string;
   seller: boolean;
+  creator: boolean;
 }) {
   const repository = useMemo(
     () => createSocialRepository(requireSupabase(), viewerId),
@@ -116,7 +122,7 @@ function SocialWorkspace({
   );
   const [params, setParams] = useSearchParams(),
     [notifications, setNotifications] = useState(false);
-  const base = seller ? "/partner/seller/social" : "/account/social";
+  const base = seller ? "/partner/seller/social" : creator ? '/partner/creator/social' : "/account/social";
   const notificationLoad = useCallback(
     () => repository.notifications(),
     [repository],
@@ -139,11 +145,12 @@ function SocialWorkspace({
   const unread = inbox.data?.filter((n) => !n.readAt).length;
   const post = params.get("post"),
     profile = params.get("profile"),
-    discover = params.get("view") === "discover";
+    discover = params.get("view") === "discover",
+    reels = params.get('view') === 'reels';
   return (
     <section
       className={
-        seller ? "social-workspace" : "social-workspace account-social"
+        seller || creator ? "social-workspace" : "social-workspace account-social"
       }
     >
       <header className="social-heading">
@@ -169,10 +176,11 @@ function SocialWorkspace({
       <nav className="social-tabs" aria-label="Social navigation">
         <Link
           to={base}
-          aria-current={!post && !profile && !discover ? "page" : undefined}
+          aria-current={!post && !profile && !discover && !reels ? "page" : undefined}
         >
           Feed
         </Link>
+        <Link to={base + '?view=reels'} aria-current={reels ? 'page' : undefined}>Reels</Link>
         <Link
           to={base + "?view=discover"}
           aria-current={discover ? "page" : undefined}
@@ -185,7 +193,6 @@ function SocialWorkspace({
           <MessageCircle size={17} />
           My chats
         </Link>
-        <Link to="/account/orders">My orders</Link>
       </nav>
       {notifications && (
         <NotificationPanel
@@ -205,11 +212,13 @@ function SocialWorkspace({
               base={base}
             />
           ) : profile ? (
-            <Profile
+            <RichProfile
               key={profile}
               id={profile}
               viewerId={viewerId}
               repository={repository}
+              base={base}
+              renderPost={post => <PostCard key={post.id} post={post} repository={repository} base={base} />}
             />
           ) : discover ? (
             <Discovery
@@ -219,7 +228,7 @@ function SocialWorkspace({
               }
             />
           ) : (
-            <Feed repository={repository} base={base} />
+            <Feed key={reels ? 'reels' : 'feed'} repository={repository} base={base} reels={reels} />
           )}
         </main>
         <aside className="social-context">
@@ -242,9 +251,11 @@ function SocialWorkspace({
 function Feed({
   repository,
   base,
+  reels = false,
 }: {
   repository: SocialRepository;
   base: string;
+  reels?: boolean;
 }) {
   const [page, setPage] = useState(0);
   const load = useCallback(
@@ -254,6 +265,7 @@ function Feed({
   const resource = useResource(load);
   return (
     <>
+      {!reels && <Stories repository={repository} base={base} />}
       <Composer
         repository={repository}
         onPublished={() => {
@@ -262,7 +274,7 @@ function Feed({
         }}
       />
       <div className="social-list-header">
-        <h2>Your feed</h2>
+        <h2>{reels ? 'Reels' : 'Your feed'}</h2>
         <button
           type="button"
           className="button secondary"
@@ -280,7 +292,8 @@ function Feed({
           <p>Discover people or share your first update.</p>
         </div>
       )}
-      {resource.data?.map((post) => (
+      {reels && resource.data && !resource.loading && !resource.error && !resource.data.some(post => post.media_type === 'video') && <p>No reels on this feed page. Try the next page or publish a video.</p>}
+      {resource.data?.filter(post => !reels || post.media_type === 'video').map((post) => (
         <PostCard
           key={post.id + post.liked_by_viewer + post.like_count}
           post={post}
@@ -316,6 +329,8 @@ function Composer({
   onPublished: () => void;
 }) {
   const [body, setBody] = useState(""),
+    [file, setFile] = useState<File>(),
+    [inputKey, setInputKey] = useState(0),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
@@ -326,8 +341,11 @@ function Composer({
     setError("");
     setNotice("");
     try {
-      await repository.publish(body);
+      if (file) await repository.publishMedia(body, file);
+      else await repository.publish(body);
       setBody("");
+      setFile(undefined);
+      setInputKey(value => value + 1);
       setNotice("Your public post has been published.");
       onPublished();
     } catch (e) {
@@ -345,12 +363,16 @@ function Composer({
         onChange={(e) => setBody(e.target.value)}
         maxLength={5000}
         placeholder="What would you like to share?"
-        required
+        required={!file}
         disabled={busy}
       />
+      <label htmlFor="social-media">Photo or video (optional, up to 50 MB)</label>
+      <input key={inputKey} id="social-media" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" disabled={busy} onChange={event => { setError(''); const selected = event.target.files?.[0]; try { if (selected) validateSocialMedia(selected); setFile(selected); } catch (cause) { setFile(undefined); event.target.value = ''; setError(message(cause)); } }} />
+      {file && <SocialMediaPreview file={file} />}
+      {file && <button type="button" className="button secondary" disabled={busy} onClick={() => { setFile(undefined); setInputKey(value => value + 1); }}>Remove media</button>}
       <div className="social-card-actions">
-        <small>Public post · text only on web for now</small>
-        <button className="button primary" disabled={busy || !body.trim()}>
+        <small>Public post · text, photo or video</small>
+        <button className="button primary" disabled={busy || (!body.trim() && !file)}>
           {busy ? "Publishing…" : "Publish post"}
         </button>
       </div>
@@ -369,6 +391,7 @@ function PostCard({
   base: string;
 }) {
   const [liked, setLiked] = useState(Boolean(post.liked_by_viewer)),
+    [following, setFollowing] = useState(Boolean(post.following_author)),
     [count, setCount] = useState(Number(post.like_count || 0)),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -389,9 +412,9 @@ function PostCard({
   return (
     <article className="social-card social-post">
       <header>
-        <span className="avatar">
+        {post.author_avatar_url ? <img className="avatar social-author-avatar" src={post.author_avatar_url} alt="" /> : <span className="avatar">
           {post.author_display_name?.slice(0, 1) || "S"}
-        </span>
+        </span>}
         <div>
           <Link to={base + "?profile=" + post.author_id}>
             <strong>{post.author_display_name}</strong>
@@ -402,6 +425,7 @@ function PostCard({
           </small>
         </div>
       </header>
+      {repository.viewerId !== post.author_id && <button className="button secondary" disabled={busy} onClick={() => { if (busy) return; setBusy(true); setError(''); void repository.follow(post.author_id, !following).then(() => setFollowing(!following)).catch(cause => setError(message(cause))).finally(() => setBusy(false)); }}>{following ? 'Unfollow author' : 'Follow author'}</button>}
       <p className="post-body">{post.body}</p>
       {post.media_paths?.map((path) =>
         post.media_type === "video" ? (
@@ -434,6 +458,8 @@ function PostCard({
           <MessageCircle size={17} />
           Comments · {post.comment_count || 0}
         </Link>
+        <ShareButton path={base + '?post=' + post.id} title={post.author_display_name + ' on Social 24-7'} />
+        <ShareToChat post={post} viewerId={repository.viewerId} />
       </div>
       {error && <p role="alert">{error}</p>}
     </article>
@@ -576,68 +602,19 @@ function Discovery({
     </section>
   );
 }
-function Profile({
-  id,
-  viewerId,
-  repository,
-}: {
-  id: string;
-  viewerId: string;
-  repository: SocialRepository;
-}) {
-  const load = useCallback(
-      () => Promise.all([repository.profile(id), repository.following(id)]),
-      [repository, id],
-    ),
-    resource = useResource(load);
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  async function follow() {
-    if (!resource.data || busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      await repository.follow(id, !resource.data[1]);
-      resource.reload();
-    } catch (e) {
-      setError(message(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="social-card">
-      <LoadState {...resource} retry={resource.reload} />
-      {!resource.loading && !resource.error && !resource.data?.[0] && (
-        <h2>Profile unavailable</h2>
-      )}
-      {resource.data?.[0] && (
-        <>
-          <span className="avatar">
-            {resource.data[0].display_name.slice(0, 1)}
-          </span>
-          <h2>{resource.data[0].display_name}</h2>
-          <p>@{resource.data[0].username}</p>
-          {resource.data[0].verified_professional && (
-            <p>Verified professional</p>
-          )}
-          <p>{resource.data[0].bio}</p>
-          {id === viewerId ? (
-            <Link to="/account">Edit my account</Link>
-          ) : (
-            <button
-              className="button primary"
-              disabled={busy || resource.loading}
-              onClick={() => void follow()}
-            >
-              {resource.data[1] ? "Unfollow" : "Follow"}
-            </button>
-          )}
-        </>
-      )}
-      {error && <p role="alert">{error}</p>}
-    </section>
-  );
+export function WorkspaceNotifications({ base }: { base: string }) {
+  const auth = useAuth();
+  if (!auth.user || auth.loading || auth.error || auth.user.app_metadata?.account_type === 'business_employee') return null;
+  return <WorkspaceNotificationBell key={auth.user.id} viewerId={auth.user.id} base={base} />;
+}
+function WorkspaceNotificationBell({ viewerId, base }: { viewerId: string; base: string }) {
+  const repository = useMemo(() => createSocialRepository(requireSupabase(), viewerId), [viewerId]);
+  const load = useCallback(() => repository.notifications(), [repository]);
+  const inbox = useResource(load), [open, setOpen] = useState(false);
+  const reload = inbox.reload;
+  useEffect(() => repository.subscribe(reload), [repository, reload]);
+  const count = inbox.data?.filter(item => !item.readAt).length;
+  return <div className="workspace-notifications"><button className="button secondary notification-bell" aria-label={'Notifications' + (count === undefined ? '' : ', ' + count + ' unread in recent activity')} aria-expanded={open} onClick={() => setOpen(!open)}><Bell size={20} />{count !== undefined && count > 0 && <span>{count}</span>}</button>{open && <NotificationPanel repository={repository} base={base} inbox={inbox} close={() => setOpen(false)} />}</div>;
 }
 function NotificationPanel({
   repository,

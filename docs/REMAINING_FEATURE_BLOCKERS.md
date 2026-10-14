@@ -1,5 +1,34 @@
 # Remaining gaps and acceptance blockers
 
+## Current recovery status — 14 October 2026
+
+**The current ledger below supersedes stale implementation/session claims in the retained historical table.** The historical section records earlier work and real earlier QA receipts; it must not be read as a list of newly failed production functions. This is not a full-parity release certificate, and local tests do not certify production writes.
+
+Current ground truth: [original action inventory](WEBAPP2_ORIGINAL_FUNCTIONAL_PARITY.md), [Social recovery](WEBAPP2_SOCIAL_FULL_PARITY.md), [Seller recovery](WEBAPP2_SELLER_FULL_PARITY.md), [Creator recovery](WEBAPP2_CREATOR_FULL_PARITY.md), and [Team recovery](WEBAPP2_TEAM_FULL_PARITY.md). Source gaps closed in these ledgers are no longer “not ported” merely because an earlier row says so. Counts in prior documents are historical bounded inventories, not an exhaustive current total.
+
+### Resolved ordinary-session claim
+
+Normal production username login using the existing authorized **Arjun QA identity succeeds**; Seller/Creator owner access is available. Authorized **Admin login and application-detail reads also worked** in the earlier authentication investigation. A previous report of “no authenticated Partner/Admin application session” did not establish an application failure: the session/credential recovery path had not been followed. Do not request a new Supabase account or label the entire release blocked on that obsolete assertion.
+
+### Exact remaining acceptance conditions
+
+| Area | Exact current condition | Next safe step / release impact |
+| --- | --- | --- |
+| Employee Work session | Two QA B identities have VERIFIED memberships and linked confirmed Auth users. Their historical temporary credentials were deleted; exported password fields are redaction placeholders. One placeholder was mistakenly submitted and rejected. This is **not evidence that a valid password or Supabase Auth failed**, nor an RLS/routing rejection. Suspended/removed same-name identities are different accounts. | Existing authorized controlled Work session or approved private current credential source is required for employee live acceptance. Do not guess, reactivate, reset roles or create new users for proof. Owner/Creator/Admin QA proceeds independently. Exact IDs/statuses: Team ledger. |
+| New recovery mutations | UI/repository contracts and isolated tests cover Social media/story/interactions/share, Seller catalog/affiliate/fulfillment/returns, Creator promotions and Team lifecycle. No fresh real business mutation is claimed by this pass. | Controlled data and appropriate authority are needed before genuine writes. Read-only production UI/screenshots can proceed. Do not submit real applications, approve employees/applications, send customer messages or move money just for QA. |
+| Submitted LinkedIn and editable onboarding evidence | Existing approved QA identities correctly enter locked status/approved workspaces. No submitted LinkedIn application record was found in the prior read-only audit. | Separate test-data condition from browser login. Use existing authorized editable draft identity if available; otherwise retain isolated persistence/review/Admin mapping tests and accurately mark live submitted-record proof unavailable. No forced status changes. |
+| Private evidence/media references | Some historical QA evidence/product records point to missing Storage objects. A successful authorized read/signing path cannot recreate absent objects. | Use existing valid controlled evidence for read verification; report missing objects precisely. Do not invent media or claim Admin approval evidence from nonexistent files. |
+| Shared Storage residual | Approved generic branding INSERT and disabled generic UPDATE/DELETE repair is intact. Product-specific `creator_commerce_shop_media_seller_update` still has a weaker source `USING` condition than destination `WITH CHECK`. | Small reviewed repair/rollback and explicit production approval remain necessary. No policy mutation in this recovery. Independent frontend QA is not stopped by this policy review. |
+| Admin decisions/audit history | Real Admin authentication/reads are available. Genuine decisions are not authorized as QA. Existing return-decision repeat/state safety and absent append-only full application audit history remain distinct backend limitations. | Preserve read-only Admin access and isolated decision/error tests. Review backend changes separately; do not fabricate historical events or execute refunds. |
+| Product/money boundaries | Multi-store product save RPC selects an account storefront; unsafe ambiguous mutations remain disabled. Product save + metadata + media is a multi-step original contract, with explicit partial-success handling. Finance/Creator totals are estimates or recorded ledger statuses, not payouts. | Respect owner/version checks, currency separation and incomplete-data warnings. No unpublish/variant/provider/refund system is invented. |
+| Full deployed acceptance | Current source recovery and automated checks do not prove every role/action or every responsive state in production. | Coordinator records the real SHA/deployment, safe read-only browser results and old/new screenshots. Upgrade only the exact verified action; keep live writes separately unverified. |
+
+Original **Soon/placeholder** items are not current implementation failures: Seller Marketing/ratings/bundles/accelerator/opportunities/warehouses/managed fulfillment/automations/LIVE/Growth/Apps & Partners; persisted Social Highlights and dedicated repost/bookmark/edit/delete actions absent from the inspected UI; Creator campaign invitation/completion, payment collection and paid badge purchase. The module ledgers contain the exact source traces. Games/Wallet/Nearby/full buyer commerce remain outside the requested Partner recovery; Social is now explicitly in scope and recovered, not excluded with them.
+
+Current coordinator-reported aggregate: **583 tests / 49 files passed; TypeScript, lint and production build passed.** Recovered Seller includes dispatch/customer details, return category/value/count reporting, initial product metadata, draft resume, affiliate controls, real analytics charts/payment mix and finance estimates. Creator and Team display/functional gaps are reconciled in their ledgers. No new production write acceptance is inferred from these automated results.
+
+## Historical sprint gaps — retained receipt, not current status
+
 This is not a full-parity release certificate. “Not ported” means unfinished implementation, not an external blocker.
 
 | Feature | Remaining issue | Type / next action | Severity |

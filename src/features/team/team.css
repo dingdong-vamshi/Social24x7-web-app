@@ -40,6 +40,9 @@
 .team-management .section-card {
   overflow-wrap: anywhere;
 }
+.team-lifecycle { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:16px; margin:18px 0; }
+.team-lifecycle dt { font-weight:600; }
+.team-lifecycle dd { margin:6px 0 0; color:#476354; }
 .work-auth-page { max-width: 580px; margin: 64px auto; padding: 28px; background: white; border: 1px solid #dce5df; border-radius: 20px; }
 .work-auth-page h1 { margin: 24px 0 12px; font-size: 30px; }
 .work-auth-page > p { margin: 18px 0; color: #476354; line-height: 1.6; }

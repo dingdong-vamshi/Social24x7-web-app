@@ -43,6 +43,7 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
   const result = useCommerce(load);
   const [editor, setEditor] = useState("");
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [action, setAction] = useState<Action | null>(null);
   const [activation, setActivation] = useState<
     (TeamInvitationResult & { loginId: string }) | null
@@ -210,6 +211,11 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
               />
             )}
             <h2>Team members</h2>
+            <p>Invite → employee activates → owner approves → verified work access. Suspension or removal disables work access without erasing history.</p>
+            <label>
+              Find team member
+              <input type="search" value={search} placeholder="Name, Work login, employee ID or role" onChange={(event) => setSearch(event.target.value)} />
+            </label>
             <label>
               Member status
               <select
@@ -231,7 +237,7 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
               </select>
             </label>
             {dashboard.members
-              .filter((m) => filter === "all" || m.status === filter)
+              .filter((m) => matchesMember(m, filter, search))
               .map((member) => {
                 const metric = metrics.find(
                   (m) => m.membershipId === member.id,
@@ -250,7 +256,7 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                     </p>
                     <p>
                       {metric
-                        ? `${metric.openChats} open · ${metric.resolvedChats} resolved · ${metric.waitingForReply} waiting for reply`
+                        ? `${metric.openChats} open · ${metric.resolvedChats} resolved · ${metric.lifetimeChats} lifetime · ${metric.waitingForReply} waiting for reply`
                         : "Chat metrics unavailable"}
                     </p>
                     <details>
@@ -261,6 +267,14 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                         {member.workEmail}
                       </p>
                       <p>Role: {member.roleName}</p>
+                      <p>Employee ID: {member.employeeId || "Not assigned"}</p>
+                      <p>{member.identityKind === "owner_personal" ? "Owner access follows the protected personal owner identity." : member.status === "verified" && dashboard.storefront.verified ? "Work access enabled for the configured permissions and assigned conversations only." : "Work access disabled. Configured permissions below do not override membership or business verification status."}</p>
+                      <dl className="team-lifecycle">
+                        <div><dt>Invited / created</dt><dd>{member.createdAt ? dateTime(member.createdAt) : "Not recorded"}</dd></div>
+                        <div><dt>Work activation</dt><dd>{member.activatedAt ? dateTime(member.activatedAt) : "Not activated"}</dd></div>
+                        <div><dt>Owner approval</dt><dd>{member.approvedAt ? dateTime(member.approvedAt) : "Not approved"}</dd></div>
+                      </dl>
+                      {!member.permissions.length && <p>No permissions configured.</p>}
                       <ul>
                         {member.permissions.map((permission) => (
                           <li key={permission}>
@@ -391,7 +405,7 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                 );
               })}
             {!dashboard.members.some(
-              (m) => filter === "all" || m.status === filter,
+              (m) => matchesMember(m, filter, search),
             ) && <CommerceEmpty title="No matching members" />}
             <SectionCard title="Roles & permissions">
               <div className="commerce-row-actions">
@@ -446,7 +460,7 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
               {dashboard.auditEvents.length ? (
                 dashboard.auditEvents.map((event) => (
                   <p key={event.id}>
-                    {label(event.eventType)} · {dateTime(event.createdAt)}
+                    {label(event.eventType)} · {event.membershipId ? dashboard.members.find((member) => member.id === event.membershipId)?.fullName || "Historical member" : "Storefront team"} · {dateTime(event.createdAt)}
                   </p>
                 ))
               ) : (
@@ -458,6 +472,12 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
       </CommerceResult>
     </div>
   );
+}
+
+function matchesMember(member: TeamMember, status: string, search: string) {
+  return (status === "all" || member.status === status) &&
+    [member.fullName, member.loginId, member.employeeId, member.roleName, member.department]
+      .some((value) => (value || "").toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
 }
 
 function Permissions({

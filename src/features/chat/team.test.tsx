@@ -28,6 +28,7 @@ describe('supervised customer chats', () => {
     render(<MemoryRouter><TeamChatMonitor storefrontId="store-a" members={[{id:'member-a',fullName:'QA Employee',roleName:'Support',status:'verified',identityKind:'work',permissions:[],jobTitle:'Agent'},{id:'removed',fullName:'Removed employee',roleName:'Support',status:'removed',identityKind:'work',permissions:[],jobTitle:'Agent'}]}/></MemoryRouter>)
     fireEvent.click(await screen.findByRole('button',{name:/QA Customer/}))
     expect(await screen.findByText('QA business message')).toBeInTheDocument()
+    expect(screen.getByText('Verified representative · recorded sender identity')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Employee'),{target:{value:'removed'}})
     expect(screen.queryByText('QA business message')).not.toBeInTheDocument()

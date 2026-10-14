@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { verifiedDisplayNames } from '../../auth/publicIdentity';
+import { extendedSocialRepository } from './extendedRepository';
 export interface SocialProfile {
   id: string;
   username: string;
@@ -13,6 +14,8 @@ export interface Post {
   author_id: string;
   author_username: string;
   author_display_name: string;
+  author_avatar_path?: string | null;
+  author_avatar_url?: string | null;
   body: string;
   media_paths: string[] | null;
   media_type: string | null;
@@ -74,7 +77,9 @@ export function createSocialRepository(
         "Your personal account session changed. Reload before continuing.",
       );
   };
+  const extended = extendedSocialRepository(client, viewerId, check);
   return {
+    ...extended,
     async feed(offset = 0): Promise<Post[]> {
       const result = await client.rpc("get_social_feed", {
         page_size: 20,
@@ -83,7 +88,11 @@ export function createSocialRepository(
       if (result.error) throw result.error;
       const rows = (result.data || []) as Post[];
       const names = await verifiedDisplayNames(client, rows.map(row => row.author_id));
-      return rows.map(row => ({ ...row, author_display_name: names[row.author_id] || row.author_display_name }));
+      const avatars = new Map<string, Promise<string | null>>();
+      return Promise.all(rows.map(async row => {
+        if (!avatars.has(row.author_id)) avatars.set(row.author_id, extended.avatar(row.author_avatar_path));
+        return { ...row, author_display_name: names[row.author_id] || row.author_display_name, author_avatar_url: await avatars.get(row.author_id) };
+      }));
     },
     async post(id: string): Promise<Post> {
       if (!uuid(id)) throw new Error("Invalid post link.");
@@ -93,7 +102,7 @@ export function createSocialRepository(
         .eq("id", id)
         .single();
       if (result.error) throw result.error;
-      const [profiles, likes, comments, ownLike] = await Promise.all([
+      const [profiles, likes, comments, ownLike, following] = await Promise.all([
         client.rpc("get_public_social_profiles", {
           target_ids: [result.data.author_id],
         }),
@@ -111,8 +120,9 @@ export function createSocialRepository(
           .eq("post_id", id)
           .eq("user_id", viewerId)
           .maybeSingle(),
+        client.from('follows').select('following_id').eq('follower_id', viewerId).eq('following_id', result.data.author_id).maybeSingle(),
       ]);
-      for (const r of [profiles, likes, comments, ownLike])
+      for (const r of [profiles, likes, comments, ownLike, following])
         if (r.error) throw r.error;
       const profile = profiles.data?.[0];
       const names = await verifiedDisplayNames(client, [result.data.author_id]);
@@ -120,10 +130,11 @@ export function createSocialRepository(
         ...result.data,
         author_username: profile?.username || "",
         author_display_name: names[result.data.author_id] || profile?.display_name || "Social member",
+        author_avatar_url: await extended.avatar(profile?.avatar_path),
         like_count: likes.count || 0,
         comment_count: comments.count || 0,
         liked_by_viewer: Boolean(ownLike.data),
-        following_author: false,
+        following_author: Boolean(following.data),
       };
     },
     mediaUrl(path: string) {

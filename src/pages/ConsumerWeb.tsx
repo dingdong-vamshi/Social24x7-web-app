@@ -11,6 +11,7 @@ import { createChatRepository, mayCompose, mergeMessages, PAGE_SIZE, text, visib
 import '../features/chat/chat.css'
 import { AttachmentComposer, GroupMembers, NewGroup } from '../features/chat/ConsumerChatTools'
 import { NewPersonalChat } from '../features/chat/NewPersonalChat'
+import { SharedPostMessage } from '../features/social/ShareToChat'
 
 const displayDate = (value: string) => new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 const displayTime = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -37,10 +38,11 @@ export function BusinessChat() {
   const { user, loading } = useAuth()
   const { pathname } = useLocation()
   const [params] = useSearchParams()
-  return loading || !user || !supabase ? <SessionNotice /> : <><CounterpartyDirectory role={pathname.startsWith('/partner/creator') ? 'seller' : 'creator'}/><ChatWorkspace key={`${user.id}:${params.get('conversation') || ''}`} businessOnly /></>
+  const creatorChannel = pathname.startsWith('/partner/creator') || pathname.endsWith('/creator-chat')
+  return loading || !user || !supabase ? <SessionNotice /> : <><CounterpartyDirectory role={pathname.startsWith('/partner/creator') ? 'seller' : 'creator'}/><ChatWorkspace key={`${user.id}:${creatorChannel}:${params.get('conversation') || ''}`} businessOnly businessContext={creatorChannel ? 'creator_seller' : undefined} /></>
 }
 
-function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
+function ChatWorkspace({ businessOnly = false, businessContext }: { businessOnly?: boolean; businessContext?: 'creator_seller' }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [newGroup, setNewGroup] = useState(false)
@@ -100,8 +102,8 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
     async function load() {
       try {
         const [pages, selected] = await Promise.all([
-          Promise.all(Array.from({ length: listPage + 1 }, (_, page) => repository.listConversations(businessOnly, page))),
-          selectedId ? repository.getConversation(selectedId, businessOnly) : Promise.resolve(null),
+          Promise.all(Array.from({ length: listPage + 1 }, (_, page) => repository.listConversations(businessOnly, page, businessContext))),
+          selectedId ? repository.getConversation(selectedId, businessOnly, businessContext) : Promise.resolve(null),
         ])
         if (!alive) return
         const firstLoad = messagesRef.current.length === 0
@@ -123,7 +125,7 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
     }
     void load()
     return () => { alive = false }
-  }, [repository, selectedId, businessOnly, refresh, listPage])
+  }, [repository, selectedId, businessOnly, businessContext, refresh, listPage])
   const showing = conversations.filter(row => (filter === 'all' || row.kind === filter) && row.name.toLowerCase().includes(search.trim().toLowerCase()))
   async function loadOlder() {
     if (!conversation || !messages[0]) return
@@ -138,7 +140,7 @@ function ChatWorkspace({ businessOnly = false }: { businessOnly?: boolean }) {
   const selected = Boolean(selectedId)
   return <main className={`chat-workspace ${selected ? 'has-selection' : ''} ${businessOnly ? 'business-chat' : ''} ${newGroup || newChat ? 'creating-group' : ''}`}>
     <aside className="chat-sidebar" aria-label="Conversations">
-      <div className="chat-sidebar-title"><div><span className="eyebrow">{businessOnly ? 'Business workspace' : 'Your conversations'}</span><h1>{businessOnly ? 'Business Chat' : 'Chats'}</h1></div><button className="chat-icon-button" type="button" onClick={tick} aria-label="Refresh conversations"><RefreshCw size={19} /></button></div>
+      <div className="chat-sidebar-title"><div><span className="eyebrow">{businessOnly ? 'Business workspace' : 'Your conversations'}</span><h1>{businessContext ? 'Creator · Seller Chats' : businessOnly ? 'Business Chat' : 'Chats'}</h1></div><button className="chat-icon-button" type="button" onClick={tick} aria-label="Refresh conversations"><RefreshCw size={19} /></button></div>
       <p className={`chat-connection ${online && connected ? 'connected' : ''}`} role="status"><i />{!online ? 'Offline · reconnect to receive updates' : connected ? 'Connected' : 'Connecting · checking for updates'}</p>
       <label className="chat-search"><Search size={17} /><span className="sr-only">Search your conversations</span><input placeholder="Search conversations" value={search} onChange={event => setSearch(event.target.value)} /></label>
       {!businessOnly && <div className="chat-filters" aria-label="Filter conversations">{['all', 'personal', 'group', 'business'].map(value => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'All' : label(value)}</button>)}</div>}
@@ -209,7 +211,7 @@ function MessageBody({ message, repository }: { message: Message; repository: Ch
     try { const result = await repository.openAttachment(message.conversation_id, attachmentId); setAttachmentUrl(result.url) }
     catch (error) { setError(errorText(error)) } finally { setBusy(false) }
   }
-  return <>{message.body && <p className="chat-message-body">{message.body}</p>}{attachmentId ? <div className="chat-attachment"><Download size={17} /><span>{text(message.payload?.filename) || 'Attachment'}</span>{attachmentUrl ? <a href={attachmentUrl} target="_blank" rel="noreferrer">Open file</a> : <button type="button" disabled={busy} onClick={open}>{busy ? 'Preparing…' : 'Get secure link'}</button>}{error && <small role="alert">{error}</small>}</div> : message.kind !== 'text' && <p className="chat-content-note">{label(message.kind)} · Open in the mobile app for full details.</p>}</>
+  return <>{message.body && <p className="chat-message-body">{message.body}</p>}{attachmentId ? <div className="chat-attachment"><Download size={17} /><span>{text(message.payload?.filename) || 'Attachment'}</span>{attachmentUrl ? <a href={attachmentUrl} target="_blank" rel="noreferrer">Open file</a> : <button type="button" disabled={busy} onClick={open}>{busy ? 'Preparing…' : 'Get secure link'}</button>}{error && <small role="alert">{error}</small>}</div> : message.kind === 'product' && message.payload?.post ? <SharedPostMessage payload={message.payload}/> : message.kind !== 'text' && <p className="chat-content-note">{label(message.kind)} · Open in the mobile app for full details.</p>}</>
 }
 
 export function ConsumerOrders() {

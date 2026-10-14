@@ -1,0 +1,10 @@
+.workspace-nav-group { display: grid; gap: 3px; }
+.workspace-nav-toggle { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: transparent; padding: 11px 13px; border-radius: 10px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.workspace-nav-toggle span { flex: 1; }
+.workspace-nav-toggle:hover, .workspace-nav-group.current-group > .workspace-nav-toggle { background: #eaf5ed; color: #17633b; }
+.workspace-nav-toggle:focus-visible { outline: 2px solid #237947; outline-offset: 2px; }
+.workspace-nav-toggle .expanded { transform: rotate(180deg); }
+.workspace-nav-children { display: grid; gap: 3px; margin: 0 0 6px 21px; padding-left: 8px; border-left: 1px solid #cddfd2; }
+.commerce-workspace .sidebar nav .workspace-nav-children a { padding: 9px 10px; font-size: 12px; line-height: 1.4; min-width: 0; }
+.workspace-nav-children a span { flex: 1; }
+.workspace-nav-children small, .workspace-soon { font-size: 10px; color: #647269; border: 1px solid #d9e3dc; border-radius: 5px; padding: 1px 4px; margin-left: auto; }

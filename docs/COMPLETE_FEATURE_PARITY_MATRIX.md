@@ -1,5 +1,36 @@
 # Complete feature parity matrix
 
+## Current recovery checkpoint — 14 October 2026
+
+**Read this section first. Everything under “Historical sprint receipt” below is a retained earlier snapshot, not the current implementation or authentication state.** In particular, its 164-row counts and the phrase “Current counts” refer to that earlier checkpoint. They must not be added to, or presented as, an exhaustive action count for today's recovery.
+
+The current action-level source of truth is [WEBAPP2_ORIGINAL_FUNCTIONAL_PARITY.md](WEBAPP2_ORIGINAL_FUNCTIONAL_PARITY.md) and the four module ledgers: [Social](WEBAPP2_SOCIAL_FULL_PARITY.md), [Seller](WEBAPP2_SELLER_FULL_PARITY.md), [Creator](WEBAPP2_CREATOR_FULL_PARITY.md), [Team](WEBAPP2_TEAM_FULL_PARITY.md). Each preserves its pre-implementation inventory and records the recovered actions and exact verification boundary. A recovered source implementation is not automatically a production-tested mutation.
+
+### Authentication correction
+
+- Ordinary Partner authentication is **not blocked**: normal production username login with the existing authorized Arjun QA identity succeeded in the coordinator's current pass. Approved Seller/Creator access works. Authorized Admin login and application-detail reads also succeeded in the earlier authentication investigation. An earlier missing-browser-session statement was a QA continuity issue, not proof of an application or Supabase Auth failure.
+- Employee Work authentication is a **separate, specific acceptance gap**. Two QA B memberships are currently VERIFIED, with linked confirmed Auth identities and activation/owner-approval metadata. The historical temporary credentials were deleted; the recovered export's password fields contain redaction placeholders, not usable passwords. One normal Work login mistakenly submitted a placeholder and received `Invalid login credentials`. No valid historical credential was tested by that attempt, so it does not prove broken Auth, changed passwords, RLS denial, or revoked membership. No password variations were attempted. See the Team ledger for exact identities and lifecycle status.
+- Supabase dashboard login does not authenticate the Partner site. Neither that distinction nor the employee-specific credential gap blocks ordinary owner/Creator/Admin QA or the entire release.
+
+### Recovered source status (not a live-write certificate)
+
+| Area | Current recovered functionality / qualification | Current status | Evidence |
+| --- | --- | --- | --- |
+| Social | Media post composer, Stories create/view/navigation/expiry, rich shared-identity profile, followers/following, profile tabs, recommendations/community feedback, Reels, author interactions, native share/copy and explicit personal-chat share | IMPLEMENTED BUT NOT LIVE VERIFIED for unexercised writes; coordinator owns deployed read/screenshot acceptance | Social ledger; existing tables/RPCs and isolation tests |
+| Social unsupported original actions | Persisted Highlights and dedicated repost/bookmark/post-edit/delete actions were not implemented in the inspected original UI/contracts | ORIGINAL APP PLACEHOLDER ONLY | Original component/repository trace in Social ledger; no invented writes |
+| Seller | Expanded original destinations, Add Product and text-draft resume, initial Brand/Tags/Keywords/search metadata, Return Settings, support Operations, affiliate controls, logistics status summaries | IMPLEMENTED BUT NOT LIVE VERIFIED for mutations | Seller ledger; partial-save/retry and ownership tests |
+| Seller Orders/Returns | Customer display fields, earliest dispatch event/date range, payment-aware queues, return category/date/value/customer/product filters and details, returned-product counts | IMPLEMENTED BUT NOT LIVE VERIFIED at module source checkpoint; safe live reads are coordinator-owned | Original relationships retained; declared latest-500 filter limit |
+| Seller Analytics/Finance | Real daily charts and exact data table, payment-method mix, original gross/delivered/commission/approved-return estimate with separate currencies and incomplete-data errors | IMPLEMENTED BUT NOT LIVE VERIFIED at module source checkpoint | Seller ledger; no transfers, refunds or invented settlement balance |
+| Seller Soon modules | Original ratings/bundle/accelerator/opportunities, warehouse/managed fulfillment, Marketing modules, affiliate automations, LIVE & Video, Growth and Apps & Partners | ORIGINAL APP PLACEHOLDER ONLY | Original navigation explicitly marks Soon; existing real web Account Health overview preserved |
+| Creator | Six periods, discovery sorting/orders, attributable earnings, Collab relationships, provider-neutral Payments view, expanded own profile and verification states | IMPLEMENTED BUT NOT LIVE VERIFIED for unexercised writes | Creator ledger: 9 existing inventory gaps closed; 21 implemented rows and 3 original placeholders within that bounded inventory, not an exhaustive product count |
+| Team | Employee identity/lifecycle details, exact roster search, effective permissions, lifetime metrics, audit membership attribution, historical verified-representative display; existing invitation/roles/approval/monitoring controls retained | IMPLEMENTED BUT NOT LIVE VERIFIED for lifecycle mutations; employee acceptance separately BLOCKED BY AUTHORIZED TEST DATA | Team ledger: 31 bounded action rows; no invitations, reassignments or membership transitions performed |
+| Existing Webapp 2 client changes | Identifier login/recovery/password rules, Work login, casing/PAN, Seller/Creator social links including LinkedIn, review/Admin mapping, username chat and professional presentation retained | Preserved; exact production and isolated evidence remains in dedicated client/deployment receipts | No genuine application submitted or approved for this recovery |
+| Shared Storage | Approved generic three-policy repair remains intact; distinct product-specific UPDATE source-path weakness remains under review | BLOCKED BY BACKEND for that residual security repair, not a blanket missing frontend implementation | Social ledger read-only policy inspection; no new live policy change |
+
+Coordinator-reported current aggregate gate: **583 tests / 49 files passed; TypeScript, lint and production build passed.** These are automated/local gates, not proof that 583 live actions were executed. No new production business writes are claimed by this checkpoint. The coordinator maintains the actual deployment SHA, website observations and inline screenshot evidence separately.
+
+## Historical sprint receipt — preserved, superseded where noted above
+
 Audit snapshot: 2026-10-14. Baseline web aa6ef66; read-only old app e207f75. 164 action rows inventoried. This is **partial parity**, not an exhaustive live acceptance certificate. No row is marked VERIFIED PARITY without fresh source + backend + result evidence.
 
 Sprint update: 14 October 2026. PARTIAL includes named functional or acceptance limitations. IMPLEMENTED — LIVE MUTATION UNVERIFIED is not a production certificate. BLOCKED subtypes distinguish access, policy and backend dependencies; NOT IMPLEMENTED means unfinished work. Tests using fake responses are not production proof.

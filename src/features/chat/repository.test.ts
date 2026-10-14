@@ -52,6 +52,17 @@ describe('canonical chat history', () => {
 })
 
 describe('message sending and authorization', () => {
+  it('constrains Creator Chats to their canonical business channel even for a mismatched deep link', async () => {
+    const { client, query } = clientWith([{ data: { ...conversation, kind: 'business', business_context: 'buyer_seller' }, error: null }])
+    await expect(createChatRepository(client, viewer).getConversation(conversationId, true, 'creator_seller')).resolves.toBeNull()
+    expect(query.eq).toHaveBeenCalledWith('kind', 'business')
+    expect(query.eq).toHaveBeenCalledWith('business_context', 'creator_seller')
+  })
+  it('does not decorate or expose personal/customer rows in Creator Chat listing', async () => {
+    const { client, query } = clientWith([{ data: [conversation, { ...conversation, kind: 'business', business_context: 'buyer_seller' }], error: null }])
+    await expect(createChatRepository(client, viewer).listConversations(true, 0, 'creator_seller')).resolves.toEqual([])
+    expect(query.eq).toHaveBeenCalledWith('business_context', 'creator_seller')
+  })
   it('identifies the customer in an owner business inbox instead of naming every row after their store', async () => {
     const customer = '44444444-4444-4444-8444-444444444444'
     const store = '55555555-5555-4555-8555-555555555555'

@@ -543,7 +543,7 @@ export function CounterpartyDirectory({
     try {
       const conversation = await repository.openCounterparty(id, role);
       setLink(
-        `/partner/${role === "seller" ? "creator" : "seller"}/chat?conversation=${encodeURIComponent(conversation)}`,
+        `/partner/${role === "seller" ? "creator/chat" : "seller/creator-chat"}?conversation=${encodeURIComponent(conversation)}`,
       );
     } catch (cause) {
       setError(
