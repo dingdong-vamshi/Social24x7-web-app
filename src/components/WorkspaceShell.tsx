@@ -57,6 +57,9 @@ export function WorkspaceShell({ role, children }: { role: PartnerRole; children
   const { pathname } = useLocation()
   const name = profile?.display_name || profile?.username || 'Your account'
   const nav = role === 'seller' ? sellerNav : creatorNav
+  // Social deliberately opens as its own application surface. Other workspaces
+  // keep their existing shell, flyouts, account menu and notification ownership.
+  if (pathname === `/partner/${role}/social` || pathname.startsWith(`/partner/${role}/social/`)) return <main className="partner-social-surface">{children}</main>
   return <div className={`workspace commerce-workspace ${collapsed ? 'nav-collapsed' : ''}`}>
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Workspace navigation">
       <div className="sidebar-brand"><Brand variant="sidebar" compact={collapsed} /><button aria-label="Close navigation" className="icon-button mobile-only" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>

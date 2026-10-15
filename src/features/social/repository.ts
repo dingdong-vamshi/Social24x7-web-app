@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { verifiedDisplayNames } from '../../auth/publicIdentity';
-import { extendedSocialRepository } from './extendedRepository';
+import { verifiedDisplayNames } from "../../auth/publicIdentity";
+import { extendedSocialRepository } from "./extendedRepository";
 export interface SocialProfile {
   id: string;
   username: string;
@@ -16,8 +16,10 @@ export interface Post {
   author_display_name: string;
   author_avatar_path?: string | null;
   author_avatar_url?: string | null;
+  author_verified_professional?: boolean;
   body: string;
   media_paths: string[] | null;
+  thumbnail_path?: string | null;
   media_type: string | null;
   created_at: string;
   like_count: number;
@@ -32,6 +34,9 @@ export interface SearchResult {
   username: string;
   display_name: string;
   body: string | null;
+  avatar_path?: string | null;
+  avatar_url?: string | null;
+  verified_professional?: boolean;
 }
 export interface Comment {
   id: string;
@@ -87,12 +92,36 @@ export function createSocialRepository(
       });
       if (result.error) throw result.error;
       const rows = (result.data || []) as Post[];
-      const names = await verifiedDisplayNames(client, rows.map(row => row.author_id));
+      const profiles = rows.length
+        ? await client.rpc("get_public_social_profiles", {
+            target_ids: [...new Set(rows.map((row) => row.author_id))],
+          })
+        : null;
+      const verifiedIds = new Set<string>(
+        (!profiles?.error && Array.isArray(profiles?.data) ? profiles.data : [])
+          .filter(
+            (profile: SocialProfile) => profile.verified_professional === true,
+          )
+          .map((profile: SocialProfile) => profile.id),
+      );
+      const names = await verifiedDisplayNames(
+        client,
+        rows.map((row) => row.author_id),
+      );
       const avatars = new Map<string, Promise<string | null>>();
-      return Promise.all(rows.map(async row => {
-        if (!avatars.has(row.author_id)) avatars.set(row.author_id, extended.avatar(row.author_avatar_path));
-        return { ...row, author_display_name: names[row.author_id] || row.author_display_name, author_avatar_url: await avatars.get(row.author_id) };
-      }));
+      return Promise.all(
+        rows.map(async (row) => {
+          if (!avatars.has(row.author_id))
+            avatars.set(row.author_id, extended.avatar(row.author_avatar_path));
+          return {
+            ...row,
+            author_verified_professional: verifiedIds.has(row.author_id),
+            author_display_name:
+              names[row.author_id] || row.author_display_name,
+            author_avatar_url: await avatars.get(row.author_id),
+          };
+        }),
+      );
     },
     async post(id: string): Promise<Post> {
       if (!uuid(id)) throw new Error("Invalid post link.");
@@ -102,26 +131,33 @@ export function createSocialRepository(
         .eq("id", id)
         .single();
       if (result.error) throw result.error;
-      const [profiles, likes, comments, ownLike, following] = await Promise.all([
-        client.rpc("get_public_social_profiles", {
-          target_ids: [result.data.author_id],
-        }),
-        client
-          .from("post_likes")
-          .select("*", { count: "exact", head: true })
-          .eq("post_id", id),
-        client
-          .from("post_comments")
-          .select("*", { count: "exact", head: true })
-          .eq("post_id", id),
-        client
-          .from("post_likes")
-          .select("post_id")
-          .eq("post_id", id)
-          .eq("user_id", viewerId)
-          .maybeSingle(),
-        client.from('follows').select('following_id').eq('follower_id', viewerId).eq('following_id', result.data.author_id).maybeSingle(),
-      ]);
+      const [profiles, likes, comments, ownLike, following] = await Promise.all(
+        [
+          client.rpc("get_public_social_profiles", {
+            target_ids: [result.data.author_id],
+          }),
+          client
+            .from("post_likes")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", id),
+          client
+            .from("post_comments")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", id),
+          client
+            .from("post_likes")
+            .select("post_id")
+            .eq("post_id", id)
+            .eq("user_id", viewerId)
+            .maybeSingle(),
+          client
+            .from("follows")
+            .select("following_id")
+            .eq("follower_id", viewerId)
+            .eq("following_id", result.data.author_id)
+            .maybeSingle(),
+        ],
+      );
       for (const r of [profiles, likes, comments, ownLike, following])
         if (r.error) throw r.error;
       const profile = profiles.data?.[0];
@@ -129,8 +165,12 @@ export function createSocialRepository(
       return {
         ...result.data,
         author_username: profile?.username || "",
-        author_display_name: names[result.data.author_id] || profile?.display_name || "Social member",
+        author_display_name:
+          names[result.data.author_id] ||
+          profile?.display_name ||
+          "Social member",
         author_avatar_url: await extended.avatar(profile?.avatar_path),
+        author_verified_professional: profile?.verified_professional === true,
         like_count: likes.count || 0,
         comment_count: comments.count || 0,
         liked_by_viewer: Boolean(ownLike.data),
@@ -149,7 +189,9 @@ export function createSocialRepository(
       if (result.error) throw result.error;
       const profile = result.data?.[0] as SocialProfile | undefined;
       const names = profile ? await verifiedDisplayNames(client, [id]) : {};
-      return profile ? { ...profile, display_name: names[id] || profile.display_name } : null;
+      return profile
+        ? { ...profile, display_name: names[id] || profile.display_name }
+        : null;
     },
     async search(query: string): Promise<SearchResult[]> {
       if (!query.trim()) return [];
@@ -159,8 +201,22 @@ export function createSocialRepository(
       });
       if (result.error) throw result.error;
       const rows = (result.data || []) as SearchResult[];
-      const names = await verifiedDisplayNames(client, rows.map(row => row.entity_kind === 'profile' ? row.entity_id : row.author_id));
-      return rows.map(row => ({ ...row, display_name: names[row.entity_kind === 'profile' ? row.entity_id : row.author_id] || row.display_name }));
+      const names = await verifiedDisplayNames(
+        client,
+        rows.map((row) =>
+          row.entity_kind === "profile" ? row.entity_id : row.author_id,
+        ),
+      );
+      return Promise.all(
+        rows.map(async (row) => ({
+          ...row,
+          avatar_url: await extended.avatar(row.avatar_path),
+          display_name:
+            names[
+              row.entity_kind === "profile" ? row.entity_id : row.author_id
+            ] || row.display_name,
+        })),
+      );
     },
     async publish(body: string) {
       await check();
@@ -241,8 +297,19 @@ export function createSocialRepository(
           ? row.profiles[0] || null
           : row.profiles,
       }));
-      const names = await verifiedDisplayNames(client, comments.flatMap(row => row.profiles ? [row.profiles.id] : []));
-      return comments.map(row => ({ ...row, profiles: row.profiles ? { ...row.profiles, display_name: names[row.profiles.id] || row.profiles.display_name } : null }));
+      const names = await verifiedDisplayNames(
+        client,
+        comments.flatMap((row) => (row.profiles ? [row.profiles.id] : [])),
+      );
+      return comments.map((row) => ({
+        ...row,
+        profiles: row.profiles
+          ? {
+              ...row.profiles,
+              display_name: names[row.profiles.id] || row.profiles.display_name,
+            }
+          : null,
+      }));
     },
     async comment(id: string, body: string) {
       await check();
@@ -299,6 +366,19 @@ export function createSocialRepository(
         .eq("recipient_id", viewerId);
       if (result.error) throw result.error;
     },
+    async markAllRead() {
+      await check();
+      const results = await Promise.all(
+        ["chat", "commerce", "social"].map((source) =>
+          client
+            .from(source + "_notifications")
+            .update({ read_at: new Date().toISOString() })
+            .eq("recipient_id", viewerId)
+            .is("read_at", null),
+        ),
+      );
+      for (const result of results) if (result.error) throw result.error;
+    },
     subscribe(listener: () => void) {
       const channel = client.channel(
         "social-notifications:" + viewerId + ":" + crypto.randomUUID(),
@@ -314,7 +394,9 @@ export function createSocialRepository(
           },
           listener,
         );
-      channel.subscribe((status) => { if (status === "SUBSCRIBED") listener(); });
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") listener();
+      });
       return () => {
         void client.removeChannel(channel);
       };

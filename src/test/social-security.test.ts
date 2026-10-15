@@ -10,6 +10,7 @@ function fixture(id = "qa", work = false) {
   for (const key of [
     "select",
     "eq",
+    "is",
     "order",
     "limit",
     "update",
@@ -44,6 +45,24 @@ function fixture(id = "qa", work = false) {
   };
 }
 describe("Social authorization contracts", () => {
+  it('marks all read only for the authenticated recipient and only previously unread rows', async () => {
+    const f = fixture(); await f.repo.markAllRead();
+    expect(f.query.eq).toHaveBeenCalledTimes(3); expect(f.query.is).toHaveBeenCalledTimes(3);
+    for (const call of f.query.eq.mock.calls) expect(call).toEqual(['recipient_id','qa']);
+    for (const call of f.query.is.mock.calls) expect(call).toEqual(['read_at',null]);
+    const denied=fixture('other'); await expect(denied.repo.markAllRead()).rejects.toThrow('personal account session'); expect(denied.client.from).not.toHaveBeenCalled();
+  });
+  it.each([true, false])('only displays professional verification from the authorized public profile RPC: %s', async verified => {
+    const rpc = vi.fn(async (name: string) => ({ data: name === 'get_social_feed' ? [{id:'post',author_id:'qa',author_verified_professional:true}] : name === 'get_public_social_profiles' ? [{id:'qa',verified_professional:verified}] : [], error:null }));
+    const repo = createSocialRepository({rpc} as unknown as SupabaseClient,'qa');
+    expect((await repo.feed())[0].author_verified_professional).toBe(verified);
+    expect(rpc).toHaveBeenCalledWith('get_public_social_profiles',{target_ids:['qa']});
+  });
+  it('does not promote an author when verification lookup fails', async () => {
+    const rpc = vi.fn(async (name: string) => ({ data: name === 'get_social_feed' ? [{id:'post',author_id:'qa',author_verified_professional:true}] : [], error:name === 'get_public_social_profiles' ? {message:'Unavailable'} : null }));
+    const repo = createSocialRepository({rpc} as unknown as SupabaseClient,'qa');
+    expect((await repo.feed())[0].author_verified_professional).toBe(false);
+  });
   it.each([
     ["other", false],
     ["qa", true],

@@ -28,7 +28,7 @@ vi.mock("../features/social/repository", async (original) => ({
   createSocialRepository: () => mock.repo,
 }));
 vi.mock("../components/PublicNav", () => ({ PublicNav: () => null }));
-import { Social, WorkspaceNotifications } from "../pages/Social";
+import { Social } from "../pages/Social";
 const mount = (path = "/partner/seller/social", standalone = false) =>
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -67,9 +67,9 @@ describe("Social preserves existing personal boundaries", () => {
     expect(mock.repo.markRead).not.toHaveBeenCalled();
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
-  it.each(['seller', 'creator'] as const)('uses one shell notification bell and no nested main for embedded %s Social', async role => {
+  it.each(['seller', 'creator'] as const)('owns one notification bell and no nested main on the distinct %s Social surface', async role => {
     const base = '/partner/' + role + '/social';
-    render(<MemoryRouter initialEntries={[base]}><header><WorkspaceNotifications base={base} /></header><main><Social seller={role === 'seller'} creator={role === 'creator'} /></main></MemoryRouter>);
+    render(<MemoryRouter initialEntries={[base]}><main><Social seller={role === 'seller'} creator={role === 'creator'} /></main></MemoryRouter>);
     expect(await screen.findByText('Authorized test post')).toBeInTheDocument();
     expect(screen.getAllByRole('main')).toHaveLength(1);
     expect(screen.getByRole('region', { name: 'Social content' })).toBeInTheDocument();
@@ -91,6 +91,7 @@ describe("Social preserves existing personal boundaries", () => {
       .mockRejectedValueOnce(new Error("Post not saved"))
       .mockResolvedValue("new");
     mount();
+    fireEvent.click(screen.getByRole("button", { name: "Create a new post" }));
     fireEvent.change(screen.getByLabelText("Share an update"), {
       target: { value: "QA draft" },
     });

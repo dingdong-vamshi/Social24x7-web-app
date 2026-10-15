@@ -11,7 +11,14 @@ import {
   MessageCircle,
   RefreshCw,
   Search,
+  ArrowLeft,
+  Bookmark,
+  MoreHorizontal,
+  Plus,
+  UserPlus,
+  Play,
   Users,
+  Send,
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -24,10 +31,20 @@ import {
   type SocialRepository,
 } from "../features/social/repository";
 import "../features/social/social.css";
-import { RichProfile, ShareButton, SocialMediaPreview, Stories } from '../features/social/ExpandedSocial';
-import { validateSocialMedia } from '../features/social/extendedRepository';
-import { ShareToChat } from '../features/social/ShareToChat';
-import { AvailableMedia, SocialAvatar } from '../features/social/AvailableMedia';
+import {
+  RichProfile,
+  ShareButton,
+  SocialMediaPreview,
+  Stories,
+} from "../features/social/ExpandedSocial";
+import { validateSocialMedia } from "../features/social/extendedRepository";
+import { ShareToChat } from "../features/social/ShareToChat";
+import {
+  AvailableMedia,
+  SocialAvatar,
+} from "../features/social/AvailableMedia";
+import { SocialDialog } from "../features/social/SocialDialog";
+import "../features/social/original-social.css";
 
 const message = (e: unknown) =>
   e instanceof Error ? e.message : "Unable to load this view. Please retry.";
@@ -83,7 +100,13 @@ function LoadState({
     </>
   );
 }
-export function Social({ seller = false, creator = false }: { seller?: boolean; creator?: boolean }) {
+export function Social({
+  seller = false,
+  creator = false,
+}: {
+  seller?: boolean;
+  creator?: boolean;
+}) {
   const auth = useAuth();
   if (!auth.user || auth.loading) return <p role="status">Loading account…</p>;
   if (
@@ -124,16 +147,19 @@ function SocialWorkspace({
   const [params, setParams] = useSearchParams(),
     [notifications, setNotifications] = useState(false);
   const embedded = seller || creator;
-  const Content = embedded ? 'section' : 'main';
-  const base = seller ? "/partner/seller/social" : creator ? '/partner/creator/social' : "/account/social";
+  const Content = embedded ? "section" : "main";
+  const base = seller
+    ? "/partner/seller/social"
+    : creator
+      ? "/partner/creator/social"
+      : "/account/social";
   const notificationLoad = useCallback(
-    () => embedded ? Promise.resolve([]) : repository.notifications(),
-    [repository, embedded],
+    () => repository.notifications(),
+    [repository],
   );
   const inbox = useResource(notificationLoad);
   const reloadNotifications = inbox.reload;
   useEffect(() => {
-    if (embedded) return;
     const unsub = repository.subscribe(reloadNotifications);
     const refresh = () => {
       if (document.visibilityState === "visible") reloadNotifications();
@@ -145,68 +171,111 @@ function SocialWorkspace({
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("online", refresh);
     };
-  }, [repository, reloadNotifications, embedded]);
+  }, [repository, reloadNotifications]);
   const unread = inbox.data?.filter((n) => !n.readAt).length;
   const post = params.get("post"),
     profile = params.get("profile"),
     discover = params.get("view") === "discover",
-    reels = params.get('view') === 'reels';
+    reels = params.get("view") === "reels";
   return (
     <section
       className={
-        seller || creator ? "social-workspace" : "social-workspace account-social"
+        "original-social social-application" +
+        (profile ? " social-profile-screen" : "")
       }
     >
-      <header className="social-heading">
-        <div>
-          <span className="eyebrow">Your account · Your community</span>
-          <h1>Social</h1>
-          <p>
-            Your ordinary Social experience. Business conversations remain in
-            Business Chat.
-          </p>
-        </div>
-        {!embedded && <button
-          type="button"
-          className="button secondary notification-bell"
-          aria-expanded={notifications}
-          aria-label={`Notifications${unread === undefined ? "" : ", " + unread + " unread in recent activity"}`}
-          onClick={() => setNotifications((v) => !v)}
+      <nav className="social-app-navigation" aria-label="Social navigation">
+        <Link
+          to={
+            seller
+              ? "/partner/seller"
+              : creator
+                ? "/partner/creator"
+                : "/account"
+          }
+          aria-label={
+            seller
+              ? "Return to Seller Studio"
+              : creator
+                ? "Return to Creator Center"
+                : "Return to account"
+          }
         >
-          <Bell size={20} />
-          {unread !== undefined && unread > 0 && <span>{unread}</span>}
-        </button>}
-      </header>
-      <nav className="social-tabs" aria-label="Social navigation">
+          <ArrowLeft size={22} />
+          <span>
+            {seller ? "Seller Studio" : creator ? "Creator Center" : "Account"}
+          </span>
+        </Link>
         <Link
           to={base}
-          aria-current={!post && !profile && !discover && !reels ? "page" : undefined}
+          aria-current={
+            !post && !profile && !discover && !reels ? "page" : undefined
+          }
         >
-          Feed
+          <Users size={22} />
+          <span>Social</span>
         </Link>
-        <Link to={base + '?view=reels'} aria-current={reels ? 'page' : undefined}>Reels</Link>
         <Link
-          to={base + "?view=discover"}
-          aria-current={discover ? "page" : undefined}
+          to={base + "?view=reels"}
+          aria-current={reels ? "page" : undefined}
         >
-          <Search size={17} />
-          Discover
+          <Play size={22} />
+          <span>Reels</span>
         </Link>
-        <Link to={base + "?profile=" + viewerId}>My profile</Link>
+        <Link
+          to={base + "?profile=" + viewerId}
+          aria-current={profile ? "page" : undefined}
+        >
+          <Users size={22} />
+          <span>My profile</span>
+        </Link>
         <Link to="/account/chats">
-          <MessageCircle size={17} />
-          My chats
+          <MessageCircle size={22} />
+          <span>My chats</span>
         </Link>
       </nav>
-      {!embedded && notifications && (
-        <NotificationPanel
-          repository={repository}
-          base={base}
-          inbox={inbox}
-          close={() => setNotifications(false)}
-        />
-      )}
-      <div className="social-columns">
+      <div className="social-app-screen">
+        {!profile && (
+          <header className="original-social-header">
+            <Link to={base}>
+              <h1>social</h1>
+            </Link>
+            <Link
+              className="original-social-search"
+              to={base + "?view=discover"}
+              aria-label="Search social"
+            >
+              <Search size={18} />
+              <span>Search</span>
+            </Link>
+            <button
+              type="button"
+              className="social-icon notification-bell"
+              aria-expanded={notifications}
+              aria-label={`Notifications${unread === undefined ? "" : ", " + unread + " unread in recent activity"}`}
+              onClick={() => setNotifications((v) => !v)}
+            >
+              <Bell size={24} />
+              {!!unread && <span>{unread > 99 ? "99+" : unread}</span>}
+            </button>
+            <ProfileEntry repository={repository} base={base} />
+          </header>
+        )}
+        {notifications && (
+          <SocialDialog
+            title="Notifications"
+            sheet
+            close={() => setNotifications(false)}
+          >
+            <NotificationPanel
+              repository={repository}
+              base={base}
+              inbox={inbox}
+              close={() => setNotifications(false)}
+              inDialog
+            />
+          </SocialDialog>
+        )}
         <Content aria-label="Social content">
           {post ? (
             <PostDetail
@@ -222,34 +291,61 @@ function SocialWorkspace({
               viewerId={viewerId}
               repository={repository}
               base={base}
-              renderPost={post => <PostCard key={post.id} post={post} repository={repository} base={base} />}
+              renderPost={(post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  repository={repository}
+                  base={base}
+                />
+              )}
             />
           ) : discover ? (
             <Discovery
               repository={repository}
+              close={() => setParams({})}
               select={(kind, id) =>
                 setParams(kind === "post" ? { post: id } : { profile: id })
               }
             />
           ) : (
-            <Feed key={reels ? 'reels' : 'feed'} repository={repository} base={base} reels={reels} />
+            <Feed
+              key={reels ? "reels" : "feed"}
+              repository={repository}
+              base={base}
+              reels={reels}
+            />
           )}
         </Content>
-        <aside className="social-context">
-          <Users size={25} />
-          <h2>One account, separate permissions</h2>
-          <p>
-            Posts, profiles and notifications come from the same Social services
-            used by the app.
-          </p>
-          <p>
-            You can access only your authorized conversations. Seller access
-            does not reveal a customer’s or employee’s personal chats.
-          </p>
-          <Link to="/account">Manage my account</Link>
-        </aside>
       </div>
     </section>
+  );
+}
+function ProfileEntry({
+  repository,
+  base,
+}: {
+  repository: SocialRepository;
+  base: string;
+}) {
+  const load = useCallback(async () => {
+    const profile = await repository.profile(repository.viewerId);
+    return profile
+      ? { profile, avatar: await repository.avatar(profile.avatar_path) }
+      : null;
+  }, [repository]);
+  const resource = useResource(load);
+  return (
+    <Link
+      to={base + "?profile=" + repository.viewerId}
+      aria-label="Open my social profile"
+    >
+      <SocialAvatar
+        className="original-header-avatar"
+        src={resource.data?.avatar}
+        name={resource.data?.profile.display_name || "My profile"}
+      />
+    </Link>
   );
 }
 function Feed({
@@ -261,7 +357,9 @@ function Feed({
   base: string;
   reels?: boolean;
 }) {
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(0),
+    [composing, setComposing] = useState(false),
+    [publishing, setPublishing] = useState(false);
   const load = useCallback(
     () => repository.feed(page * 20),
     [repository, page],
@@ -270,15 +368,33 @@ function Feed({
   return (
     <>
       {!reels && <Stories repository={repository} base={base} />}
-      <Composer
-        repository={repository}
-        onPublished={() => {
-          setPage(0);
-          resource.reload();
-        }}
-      />
-      <div className="social-list-header">
-        <h2>{reels ? 'Reels' : 'Your feed'}</h2>
+      <button
+        type="button"
+        className="original-social-fab"
+        aria-label="Create a new post"
+        onClick={() => setComposing(true)}
+      >
+        <Plus size={26} />
+      </button>
+      {composing && (
+        <SocialDialog
+          title="New post"
+          close={() => {
+            if (!publishing) setComposing(false);
+          }}
+        >
+          <Composer
+            repository={repository}
+            onBusyChange={setPublishing}
+            onPublished={() => {
+              setPage(0);
+              resource.reload();
+            }}
+          />
+        </SocialDialog>
+      )}
+      <div className="original-feed-tools">
+        {reels && <h2>Reels</h2>}
         <button
           type="button"
           className="button secondary"
@@ -286,7 +402,7 @@ function Feed({
           disabled={resource.loading}
         >
           <RefreshCw size={16} />
-          Refresh
+          <span className="sr-only">Refresh feed</span>
         </button>
       </div>
       <LoadState {...resource} retry={resource.reload} />
@@ -296,15 +412,25 @@ function Feed({
           <p>Discover people or share your first update.</p>
         </div>
       )}
-      {reels && resource.data && !resource.loading && !resource.error && !resource.data.some(post => post.media_type === 'video') && <p>No reels on this feed page. Try the next page or publish a video.</p>}
-      {resource.data?.filter(post => !reels || post.media_type === 'video').map((post) => (
-        <PostCard
-          key={post.id + post.liked_by_viewer + post.like_count}
-          post={post}
-          repository={repository}
-          base={base}
-        />
-      ))}
+      {reels &&
+        resource.data &&
+        !resource.loading &&
+        !resource.error &&
+        !resource.data.some((post) => post.media_type === "video") && (
+          <p>
+            No reels on this feed page. Try the next page or publish a video.
+          </p>
+        )}
+      {resource.data
+        ?.filter((post) => !reels || post.media_type === "video")
+        .map((post) => (
+          <PostCard
+            key={post.id + post.liked_by_viewer + post.like_count}
+            post={post}
+            repository={repository}
+            base={base}
+          />
+        ))}
       <div className="social-pagination">
         <button
           className="button secondary"
@@ -328,9 +454,11 @@ function Feed({
 function Composer({
   repository,
   onPublished,
+  onBusyChange,
 }: {
   repository: SocialRepository;
   onPublished: () => void;
+  onBusyChange: (busy: boolean) => void;
 }) {
   const [body, setBody] = useState(""),
     [file, setFile] = useState<File>(),
@@ -342,6 +470,7 @@ function Composer({
     e.preventDefault();
     if (busy) return;
     setBusy(true);
+    onBusyChange(true);
     setError("");
     setNotice("");
     try {
@@ -349,13 +478,14 @@ function Composer({
       else await repository.publish(body);
       setBody("");
       setFile(undefined);
-      setInputKey(value => value + 1);
+      setInputKey((value) => value + 1);
       setNotice("Your public post has been published.");
       onPublished();
     } catch (e) {
       setError(message(e));
     } finally {
       setBusy(false);
+      onBusyChange(false);
     }
   }
   return (
@@ -370,13 +500,48 @@ function Composer({
         required={!file}
         disabled={busy}
       />
-      <label htmlFor="social-media">Photo or video (optional, up to 50 MB)</label>
-      <input key={inputKey} id="social-media" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" disabled={busy} onChange={event => { setError(''); const selected = event.target.files?.[0]; try { if (selected) validateSocialMedia(selected); setFile(selected); } catch (cause) { setFile(undefined); event.target.value = ''; setError(message(cause)); } }} />
+      <label htmlFor="social-media">
+        Photo or video (optional, up to 50 MB)
+      </label>
+      <input
+        key={inputKey}
+        id="social-media"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+        disabled={busy}
+        onChange={(event) => {
+          setError("");
+          const selected = event.target.files?.[0];
+          try {
+            if (selected) validateSocialMedia(selected);
+            setFile(selected);
+          } catch (cause) {
+            setFile(undefined);
+            event.target.value = "";
+            setError(message(cause));
+          }
+        }}
+      />
       {file && <SocialMediaPreview file={file} />}
-      {file && <button type="button" className="button secondary" disabled={busy} onClick={() => { setFile(undefined); setInputKey(value => value + 1); }}>Remove media</button>}
+      {file && (
+        <button
+          type="button"
+          className="button secondary"
+          disabled={busy}
+          onClick={() => {
+            setFile(undefined);
+            setInputKey((value) => value + 1);
+          }}
+        >
+          Remove media
+        </button>
+      )}
       <div className="social-card-actions">
         <small>Public post · text, photo or video</small>
-        <button className="button primary" disabled={busy || (!body.trim() && !file)}>
+        <button
+          className="button primary"
+          disabled={busy || (!body.trim() && !file)}
+        >
           {busy ? "Publishing…" : "Publish post"}
         </button>
       </div>
@@ -398,7 +563,8 @@ function PostCard({
     [following, setFollowing] = useState(Boolean(post.following_author)),
     [count, setCount] = useState(Number(post.like_count || 0)),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [more, setMore] = useState(false);
   async function like() {
     if (busy) return;
     setBusy(true);
@@ -414,42 +580,139 @@ function PostCard({
     }
   }
   return (
-    <article className="social-card social-post">
+    <article
+      className="social-card social-post"
+      aria-label={"Post by " + post.author_display_name}
+    >
       <header>
-        <SocialAvatar src={post.author_avatar_url} name={post.author_display_name || 'Social member'} />
+        <SocialAvatar
+          src={post.author_avatar_url}
+          name={post.author_display_name || "Social member"}
+        />
         <div>
           <Link to={base + "?profile=" + post.author_id}>
-            <strong>{post.author_display_name}</strong>
+            <strong>{post.author_username}</strong>
+            {post.author_verified_professional && (
+              <span
+                className="original-verified"
+                aria-label="Verified professional"
+              >
+                ✓
+              </span>
+            )}
           </Link>
-          <small>
-            @{post.author_username} ·{" "}
-            {new Date(post.created_at).toLocaleDateString()}
-          </small>
+          <small>{post.author_display_name}</small>
         </div>
+        {repository.viewerId !== post.author_id && (
+          <button
+            className={"original-follow" + (following ? " following" : "")}
+            aria-label={following ? "Unfollow author" : "Follow author"}
+            disabled={busy}
+            onClick={() => {
+              if (busy) return;
+              setBusy(true);
+              setError("");
+              void repository
+                .follow(post.author_id, !following)
+                .then(() => setFollowing(!following))
+                .catch((cause) => setError(message(cause)))
+                .finally(() => setBusy(false));
+            }}
+          >
+            <UserPlus size={15} />
+            {following ? "Following" : "Follow"}
+          </button>
+        )}
+        <button
+          className="social-icon"
+          aria-label="Post options"
+          aria-expanded={more}
+          onClick={() => setMore(!more)}
+        >
+          <MoreHorizontal size={25} />
+        </button>
       </header>
-      {repository.viewerId !== post.author_id && <button className="button secondary" disabled={busy} onClick={() => { if (busy) return; setBusy(true); setError(''); void repository.follow(post.author_id, !following).then(() => setFollowing(!following)).catch(cause => setError(message(cause))).finally(() => setBusy(false)); }}>{following ? 'Unfollow author' : 'Follow author'}</button>}
-      <p className="post-body">{post.body}</p>
-      {post.media_paths?.map(path => <AvailableMedia key={path} src={repository.mediaUrl(path)} video={post.media_type === 'video'} alt="Post attachment" />)}
+      {more && (
+        <div className="original-post-options">
+          <ShareButton
+            path={base + "?post=" + post.id}
+            title={post.author_display_name + " on Social 24-7"}
+          />
+          <p>
+            Post editing and saving are not supported by the original Social
+            workflow.
+          </p>
+        </div>
+      )}
+      {post.media_paths?.map((path) => (
+        <div className="original-post-media" key={path}>
+          <AvailableMedia
+            src={repository.mediaUrl(path)}
+            video={post.media_type === "video"}
+            alt="Post attachment"
+          />
+        </div>
+      ))}
       <div className="social-card-actions">
         <button
-          className="button secondary"
+          className="social-icon"
+          aria-label={(liked ? "Unlike" : "Like") + " · " + count}
           aria-pressed={liked}
           disabled={busy}
           onClick={() => void like()}
         >
-          <Heart size={17} />
-          {liked ? "Unlike" : "Like"} · {count}
+          <Heart
+            size={28}
+            color={liked ? "#E7374F" : undefined}
+            fill={liked ? "#E7374F" : "none"}
+          />
         </button>
-        <Link to={base + "?post=" + post.id}>
-          <MessageCircle size={17} />
-          Comments · {post.comment_count || 0}
+        <Link
+          className="social-icon"
+          to={base + "?post=" + post.id}
+          aria-label={"Comments · " + (post.comment_count || 0)}
+        >
+          <MessageCircle size={28} />
         </Link>
-        <ShareButton path={base + '?post=' + post.id} title={post.author_display_name + ' on Social 24-7'} />
         <ShareToChat post={post} viewerId={repository.viewerId} />
+        <span
+          className="original-bookmark"
+          title="Saved posts are not implemented in the original app"
+          aria-label="Saved posts unavailable"
+        >
+          <Bookmark size={27} />
+        </span>
       </div>
+      <p className="original-post-likes">{count} likes</p>
+      {post.body && (
+        <p className="post-body">
+          <strong>{post.author_username} </strong>
+          <span>{post.body}</span>
+        </p>
+      )}
+      <Link
+        className="original-comments-preview"
+        to={base + "?post=" + post.id}
+      >
+        View all {post.comment_count || 0} comments
+      </Link>
+      <time className="original-post-time" dateTime={post.created_at}>
+        {socialAgo(post.created_at).toUpperCase()} AGO
+      </time>
       {error && <p role="alert">{error}</p>}
     </article>
   );
+}
+function socialAgo(iso: string) {
+  const minutes = Math.max(
+    1,
+    Math.round((Date.now() - new Date(iso).getTime()) / 60000),
+  );
+  return minutes < 60
+    ? `${minutes}m`
+    : minutes < 1440
+      ? `${Math.round(minutes / 60)}h`
+      : `${Math.round(minutes / 1440)}d`;
 }
 function PostDetail({
   id,
@@ -467,7 +730,8 @@ function PostDetail({
     resource = useResource(load);
   const [body, setBody] = useState(""),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [commentsOpen, setCommentsOpen] = useState(true);
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
@@ -494,35 +758,65 @@ function PostDetail({
             repository={repository}
             base={base}
           />
-          <section className="social-card">
-            <h2>Comments</h2>
-            {resource.data[1].length === 0 && <p>No comments yet.</p>}
-            {resource.data[1].map((c) => (
-              <article className="social-comment" key={c.id}>
-                <strong>{c.profiles?.display_name || "Social member"}</strong>
-                <p>{c.body}</p>
-              </article>
-            ))}
-            <small>Showing up to 100 comments.</small>
-            <form onSubmit={submit}>
-              <label htmlFor="social-comment">Add a comment</label>
-              <textarea
-                id="social-comment"
-                required
-                maxLength={2000}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                disabled={busy}
-              />
-              <button
-                className="button primary"
-                disabled={busy || !body.trim()}
-              >
-                {busy ? "Sending…" : "Post comment"}
-              </button>
-              {error && <p role="alert">{error}</p>}
-            </form>
-          </section>
+          <button
+            className="button secondary"
+            onClick={() => setCommentsOpen(true)}
+          >
+            Open comments
+          </button>
+          {commentsOpen && (
+            <SocialDialog
+              title="Comments"
+              close={() => setCommentsOpen(false)}
+              className="original-comments-dialog"
+            >
+              <section className="original-comments-list">
+                {resource.data[1].length === 0 && (
+                  <p className="social-muted">Be the first to comment.</p>
+                )}
+                {resource.data[1].map((c) => (
+                  <article className="social-comment" key={c.id}>
+                    <SocialAvatar
+                      name={c.profiles?.display_name || "Social member"}
+                      className="original-comment-avatar"
+                    />
+                    <div>
+                      <strong>
+                        {c.profiles?.display_name || "Social member"}
+                      </strong>
+                      <small className="original-comment-time">
+                        {" "}
+                        {socialAgo(c.created_at)}
+                      </small>
+                      <p>{c.body}</p>
+                    </div>
+                  </article>
+                ))}
+              </section>
+              <form className="original-comment-composer" onSubmit={submit}>
+                <label className="sr-only" htmlFor="social-comment">
+                  Add a comment
+                </label>
+                <input
+                  id="social-comment"
+                  placeholder="Add a comment…"
+                  required
+                  maxLength={2000}
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  disabled={busy}
+                />
+                <button
+                  className="social-icon"
+                  aria-label="Post comment"
+                  disabled={busy || !body.trim()}
+                >
+                  <Send size={23} />
+                </button>
+                {error && <p role="alert">{error}</p>}
+              </form>
+            </SocialDialog>
+          )}
         </>
       )}
     </>
@@ -531,9 +825,11 @@ function PostDetail({
 function Discovery({
   repository,
   select,
+  close,
 }: {
   repository: SocialRepository;
   select: (kind: "profile" | "post", id: string) => void;
+  close: () => void;
 }) {
   const [query, setQuery] = useState(""),
     [submitted, setSubmitted] = useState("");
@@ -542,29 +838,33 @@ function Discovery({
       [repository, submitted],
     ),
     resource = useResource(load);
+  useEffect(() => {
+    const timer = setTimeout(() => setSubmitted(query.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [query]);
   return (
-    <section className="social-card">
-      <h2>Discover people & posts</h2>
-      <p>
-        Search the existing Social community. Other Discover services remain in
-        the app.
-      </p>
+    <SocialDialog title="Search social" close={close}>
       <form
-        className="social-search"
+        className="original-search-form"
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitted(query.trim());
         }}
       >
-        <label htmlFor="social-search">Search Social</label>
+        <Search size={19} />
+        <label className="sr-only" htmlFor="social-search">
+          Search Social
+        </label>
         <input
           id="social-search"
+          placeholder="Search people and posts"
           value={query}
           maxLength={120}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button className="button primary" disabled={!query.trim()}>
-          Search
+        <button className="social-icon" disabled={!query.trim()}>
+          <span className="sr-only">Search</span>
+          <Search size={19} />
         </button>
       </form>
       <LoadState {...resource} retry={resource.reload} />
@@ -572,41 +872,106 @@ function Discovery({
         !resource.loading &&
         !resource.error &&
         resource.data?.length === 0 && <p>No matching people or posts.</p>}
-      {resource.data?.map((item) => (
-        <button
-          className="social-result"
-          key={item.entity_kind + item.entity_id}
-          onClick={() => select(item.entity_kind, item.entity_id)}
-        >
-          <strong>{item.display_name}</strong>
-          <small>
-            @{item.username} · {item.entity_kind}
-          </small>
-          <p>{item.body}</p>
-        </button>
-      ))}
-    </section>
+      <div className="original-search-results">
+        {resource.data?.map((item) => (
+          <button
+            className="social-result"
+            key={item.entity_kind + item.entity_id}
+            onClick={() => select(item.entity_kind, item.entity_id)}
+          >
+            <SocialAvatar
+              src={item.avatar_url}
+              name={item.display_name}
+              className="original-search-avatar"
+            />
+            <div>
+              <strong>{item.display_name}</strong>
+              {item.verified_professional === true && (
+                <span
+                  className="original-verified"
+                  aria-label="Verified professional"
+                >
+                  ✓
+                </span>
+              )}
+              <small>
+                @{item.username} · {item.entity_kind}
+              </small>
+              <p>{item.body}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </SocialDialog>
   );
 }
 export function WorkspaceNotifications({ base }: { base: string }) {
   const auth = useAuth();
-  if (!auth.user || auth.loading || auth.error || auth.user.app_metadata?.account_type === 'business_employee') return null;
-  return <WorkspaceNotificationBell key={auth.user.id} viewerId={auth.user.id} base={base} />;
+  if (
+    !auth.user ||
+    auth.loading ||
+    auth.error ||
+    auth.user.app_metadata?.account_type === "business_employee"
+  )
+    return null;
+  return (
+    <WorkspaceNotificationBell
+      key={auth.user.id}
+      viewerId={auth.user.id}
+      base={base}
+    />
+  );
 }
-function WorkspaceNotificationBell({ viewerId, base }: { viewerId: string; base: string }) {
-  const repository = useMemo(() => createSocialRepository(requireSupabase(), viewerId), [viewerId]);
+function WorkspaceNotificationBell({
+  viewerId,
+  base,
+}: {
+  viewerId: string;
+  base: string;
+}) {
+  const repository = useMemo(
+    () => createSocialRepository(requireSupabase(), viewerId),
+    [viewerId],
+  );
   const load = useCallback(() => repository.notifications(), [repository]);
-  const inbox = useResource(load), [open, setOpen] = useState(false);
+  const inbox = useResource(load),
+    [open, setOpen] = useState(false);
   const reload = inbox.reload;
   useEffect(() => repository.subscribe(reload), [repository, reload]);
-  const count = inbox.data?.filter(item => !item.readAt).length;
-  return <div className="workspace-notifications"><button className="button secondary notification-bell" aria-label={'Notifications' + (count === undefined ? '' : ', ' + count + ' unread in recent activity')} aria-expanded={open} onClick={() => setOpen(!open)}><Bell size={20} />{count !== undefined && count > 0 && <span>{count}</span>}</button>{open && <NotificationPanel repository={repository} base={base} inbox={inbox} close={() => setOpen(false)} />}</div>;
+  const count = inbox.data?.filter((item) => !item.readAt).length;
+  return (
+    <div className="workspace-notifications">
+      <button
+        className="button secondary notification-bell"
+        aria-label={
+          "Notifications" +
+          (count === undefined
+            ? ""
+            : ", " + count + " unread in recent activity")
+        }
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <Bell size={20} />
+        {count !== undefined && count > 0 && <span>{count}</span>}
+      </button>
+      {open && (
+        <NotificationPanel
+          repository={repository}
+          base={base}
+          inbox={inbox}
+          close={() => setOpen(false)}
+        />
+      )}
+    </div>
+  );
 }
 function NotificationPanel({
   repository,
   base,
   inbox,
   close,
+  inDialog = false,
 }: {
   repository: SocialRepository;
   base: string;
@@ -614,6 +979,7 @@ function NotificationPanel({
     typeof useResource<Awaited<ReturnType<SocialRepository["notifications"]>>>
   >;
   close: () => void;
+  inDialog?: boolean;
 }) {
   const navigate = useNavigate(),
     [error, setError] = useState(""),
@@ -638,13 +1004,32 @@ function NotificationPanel({
       className="social-notifications social-card"
       aria-label="Your notifications"
     >
-      <div className="social-list-header">
-        <h2>Notifications</h2>
-        <button className="button secondary" onClick={close}>
-          Close
-        </button>
-      </div>
+      {!inDialog && (
+        <div className="social-list-header">
+          <h2>Notifications</h2>
+          <button className="button secondary" onClick={close}>
+            Close
+          </button>
+        </div>
+      )}
       <p>Recent in-app activity. Browser push is not enabled.</p>
+      {inbox.data?.some((item) => !item.readAt) && (
+        <button
+          className="button secondary"
+          disabled={Boolean(busy)}
+          onClick={() => {
+            setBusy("all");
+            setError("");
+            void repository
+              .markAllRead()
+              .then(inbox.reload)
+              .catch((cause) => setError(message(cause)))
+              .finally(() => setBusy(""));
+          }}
+        >
+          Mark all read
+        </button>
+      )}
       <LoadState {...inbox} retry={inbox.reload} />
       {error && <p role="alert">{error}</p>}
       {!inbox.loading && !inbox.error && inbox.data?.length === 0 && (

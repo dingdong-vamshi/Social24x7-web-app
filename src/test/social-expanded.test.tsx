@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { extendedSocialRepository, validateSocialMedia, type Story } from '../features/social/extendedRepository';
@@ -17,6 +17,13 @@ function fixture() {
   return { query, storage, client, check, repo: extendedSocialRepository(client as unknown as SupabaseClient, viewerId, check) };
 }
 describe('Canonical social media contracts', () => {
+  it('loads the original public storefront contract without using an owner or admin table', async () => {
+    const f = fixture(); f.client.rpc.mockResolvedValue({data:[{name:'QA Store',slug:'qa-store'}],error:null});
+    expect(await f.repo.profileStorefront(viewerId)).toEqual({name:'QA Store',slug:'qa-store'});
+    expect(f.client.rpc).toHaveBeenCalledWith('get_public_storefront_for_profile',{target_user:viewerId});
+    expect(f.client.from).not.toHaveBeenCalled();
+    await expect(f.repo.profileStorefront('bad-id')).rejects.toThrow('Invalid');
+  });
   it.each(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'])('accepts supported media %s', type => {
     expect(validateSocialMedia(new File(['media'], 'input', { type })).mediaType).toBe(type.startsWith('video') ? 'video' : 'image');
   });
@@ -80,27 +87,35 @@ describe('Canonical social media contracts', () => {
 const story: Story = { id: 'story', author_id: viewerId, content_type: 'text', text_content: 'A real test story', background_style: 'forest', media_type: null, media_path: null, mediaUrl: null, expires_at: '2099-01-01T00:00:00Z', created_at: '2026-10-14T00:00:00Z', author: { id: viewerId, display_name: 'QA author', username: 'qa' } };
 let repo: SocialRepository;
 beforeEach(() => {
-  repo = { viewerId, stories: vi.fn().mockResolvedValue([story]), createStory: vi.fn().mockResolvedValue(undefined), profile: vi.fn().mockResolvedValue(story.author), profileStats: vi.fn().mockResolvedValue({ posts: 1, followers: 2, following: 3 }), following: vi.fn().mockResolvedValue(false), avatar: vi.fn().mockResolvedValue(null), profilePosts: vi.fn().mockResolvedValue([]), recommendations: vi.fn().mockResolvedValue([]), connections: vi.fn().mockResolvedValue([]), comments: vi.fn().mockResolvedValue([]) } as unknown as SocialRepository;
+  repo = { viewerId, profileStorefront: vi.fn().mockResolvedValue(null), stories: vi.fn().mockResolvedValue([story]), createStory: vi.fn().mockResolvedValue(undefined), profile: vi.fn().mockResolvedValue(story.author), profileStats: vi.fn().mockResolvedValue({ posts: 1, followers: 2, following: 3 }), following: vi.fn().mockResolvedValue(false), avatar: vi.fn().mockResolvedValue(null), profilePosts: vi.fn().mockResolvedValue([]), recommendations: vi.fn().mockResolvedValue([]), connections: vi.fn().mockResolvedValue([]), comments: vi.fn().mockResolvedValue([]) } as unknown as SocialRepository;
 });
 describe('Expanded social UI isolated verification', () => {
+  it('keeps the approved store and actual active story previews in the original profile hierarchy', async () => {
+    vi.mocked(repo.profileStorefront).mockResolvedValue({name:'QA Store',slug:'qa-store'});
+    render(<MemoryRouter><RichProfile repository={repo} base="/partner/seller/social" id={viewerId} viewerId={viewerId}/></MemoryRouter>);
+    expect(await screen.findByRole('link',{name:/Order from Us/})).toHaveAttribute('href','https://vamshi-superapp-drchirag-social24x7.vercel.app/store/qa-store');
+    expect(await screen.findByText('A real test story')).toBeInTheDocument();
+    expect(screen.getByRole('navigation',{name:'Profile sections'})).toBeInTheDocument();
+    expect(screen.getByRole('link',{name:'Back to Social'})).toHaveAttribute('href','/partner/seller/social');
+  });
   it('opens and closes real supplied text stories without marking an unimplemented interaction', async () => {
     render(<MemoryRouter><Stories repository={repo} base="/account/social" /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: /QA author/ }));
-    expect(screen.getByText('A real test story')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog', { name: 'Story' })).getByText('A real test story')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close story' }));
     expect(screen.queryByLabelText('Story viewer')).not.toBeInTheDocument();
   });
   it('preserves story text on failed save and retries the same contract', async () => {
     vi.mocked(repo.createStory).mockRejectedValueOnce(new Error('Story not saved'));
     render(<MemoryRouter><Stories repository={repo} base="/account/social" /></MemoryRouter>);
-    fireEvent.click(screen.getByRole('button', { name: 'Add story' })); fireEvent.change(screen.getByLabelText('Story text'), { target: { value: 'Retained story' } }); fireEvent.click(screen.getByRole('button', { name: 'Publish story' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add story' })); fireEvent.click(screen.getByRole('button', { name: /Text story/ })); fireEvent.change(screen.getByLabelText('Story text'), { target: { value: 'Retained story' } }); fireEvent.click(screen.getByRole('button', { name: 'Publish story' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Story not saved'); expect(screen.getByLabelText('Story text')).toHaveValue('Retained story');
     fireEvent.click(screen.getByRole('button', { name: 'Publish story' })); expect(await screen.findByText('Your story has been published.')).toBeInTheDocument();
   });
   it('shows profile counts/connections and honest original highlight limitation', async () => {
     render(<MemoryRouter><RichProfile repository={repo} base="/account/social" id={viewerId} viewerId={viewerId} renderPost={() => null} /></MemoryRouter>);
-    fireEvent.click(await screen.findByRole('button', { name: '2 followers' })); expect(await screen.findByText('No followers yet.')).toBeInTheDocument(); expect(repo.connections).toHaveBeenCalledWith(viewerId, 'followers');
-    fireEvent.click(screen.getByRole('button', { name: 'Highlights' })); expect(screen.getByText(/Saved highlights were a preview/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'View 2 followers' })); expect(await screen.findByText('No followers yet.')).toBeInTheDocument(); expect(repo.connections).toHaveBeenCalledWith(viewerId, 'followers');
+    fireEvent.click(screen.getByRole('button', { name: 'Close followers' })); fireEvent.click(screen.getByRole('button', { name: 'New highlight information' })); expect(screen.getByText(/Saved highlights were a preview/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Edit profile' })).toHaveAttribute('href', '/account');
   });
   it('distinguishes a recommendation read failure from no recommendations', async () => {
