@@ -1,5 +1,11 @@
 # Team & Verification — video parity matrix
 
+> Latest status, 2026-10-15: the five-gap implementation and approved backend
+> activation supersede the older gap classifications below. See
+> TEAM_OPERATIONAL_RUNBOOK.md. Email delivery still needs provider/sender
+> configuration; Work live acceptance still needs an authorized Work session
+> and scoped QA permissions. This historical video ledger is not final acceptance.
+
 Source review: 2026-10-15. This is an implementation ledger, not client acceptance.
 Primary source: the recovered 268.607-second reference recording (SHA-256
 `3a6588b3886e2ef0adcbd0d48571351415b68344cca181326296a89aaaddb27f`).

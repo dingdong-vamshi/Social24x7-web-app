@@ -80,6 +80,10 @@
 .social-application {
   min-height: 100dvh;
 }
+body:has(.social-application:not(.social-embedded):not(.social-profile-screen)) .public-header { margin-left: 104px; }
+@media (max-width: 767px) {
+  body:has(.social-application:not(.social-embedded):not(.social-profile-screen)) .public-header { margin-left: 0; }
+}
 .social-embedded { min-height: 70dvh; border: 1px solid #e3e6e5; border-radius: 16px; overflow: clip; }
 .social-embedded .social-app-screen { margin-left: 0; padding-bottom: 30px; }
 .social-embedded .social-icon[aria-current="page"] { background: #e0ede4; color: #007e45; border-radius: 12px; }
@@ -89,11 +93,11 @@
 .social-embedded .chat-workspace { width: 100%; margin: 0; min-height: 540px; height: 72dvh; }
 .social-embedded .chat-workspace.has-selection { min-height: 540px; }
 @media (max-width: 520px) {
-  .social-embedded .original-social-header { gap: 6px; padding: 10px 8px; }
-  .social-embedded .original-social-header h1 { font-size: 22px; }
-  .social-embedded .original-social-search { flex: 1; padding: 0; justify-content: center; min-width: 32px; }
-  .social-embedded .original-social-search span { display: none; }
-  .social-embedded .original-social-header .social-icon { width: 32px; min-width: 32px; }
+  .social-application .original-social-header { gap: 6px; padding: 10px 8px; }
+  .social-application .original-social-header h1 { font-size: 22px; }
+  .social-application .original-social-search { flex: 1; padding: 0; justify-content: center; min-width: 32px; }
+  .social-application .original-social-search span { display: none; }
+  .social-application .original-social-header .social-icon { width: 32px; min-width: 32px; }
 }
 .social-app-navigation {
   position: fixed;
@@ -474,6 +478,11 @@ body:has(.workspace.nav-collapsed .social-embedded) .social-modal-backdrop { lef
   overflow: auto;
   outline: none;
 }
+.social-modal-backdrop:has(.social-delete-dialog) { align-items: center; padding: 20px; }
+.social-modal.social-delete-dialog { width: min(520px,100%); height: auto; max-height: 100%; border-radius: 20px; }
+.social-delete-dialog > p { padding: 0 22px; line-height: 1.6; }
+.social-delete-dialog .social-card-actions { padding: 8px 22px 22px; gap: 12px; flex-wrap: wrap; }
+.social-delete-dialog .button.danger { background: #a52c34; color: #fff; }
 .social-sheet-backdrop {
   align-items: flex-end;
 }
