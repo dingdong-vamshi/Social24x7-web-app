@@ -269,7 +269,7 @@ export function TeamManagement({ storefrontId, canMonitor = true, canAssign = tr
                         "· Verified representative"}
                     </p>
                     <MemberMetrics metric={metric}/>
-                    <p className="team-help">These counts cover conversations currently assigned to this member. Previous assignments remain in the activity history.</p>
+                    <p className="team-help">Open, resolved, currently assigned and waiting counts cover current assignments. Recorded lifetime chats also includes retained previous assignments.</p>
                     <nav className="commerce-row-actions" aria-label="Member sections">
                       <button className="button secondary" type="button" aria-pressed={memberView === 'chats'} onClick={() => setMemberView('chats')}>Customer chats</button>
                       <button className="button secondary" type="button" aria-pressed={memberView === 'profile'} onClick={() => setMemberView('profile')}>Profile & access</button>

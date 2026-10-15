@@ -531,7 +531,6 @@ function WorkThread({
                 </li>
               ))}
             </ol>
-            {conversation.workStatus === 'open' && actionPermissions.some(p => ['business_share_products_orders', 'business_returns_refunds'].includes(p)) && <WorkConversationActions key={`${conversation.conversationId}:${actionPermissions.join(',')}`} conversationId={conversation.conversationId} permissions={actionPermissions} onChanged={onChanged}/>}
             {canReply && conversation.workStatus === "open" ? (
               <form
                 className="commerce-form"
@@ -587,6 +586,8 @@ function WorkThread({
           </>
         )}
       </CommerceResult>
+      {/* Keep selection and the retry ID through read-only message refreshes. */}
+      {!result.error && conversation.workStatus === 'open' && actionPermissions.some(p => ['business_share_products_orders', 'business_returns_refunds'].includes(p)) && <WorkConversationActions key={`${conversation.conversationId}:${actionPermissions.join(',')}`} conversationId={conversation.conversationId} permissions={actionPermissions} onChanged={onChanged}/>}
       {error && <p role="alert">{error}</p>}
     </section>
   );
