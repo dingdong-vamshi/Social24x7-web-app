@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "react-router-dom";
+import { ProfileEditor } from '../../pages/ProfileEditor';
+import { DeleteSocialContent } from './DeleteSocialContent';
 import {
   ArrowLeft,
   Camera,
@@ -151,12 +153,17 @@ export function StoryViewer({
   initial,
   base,
   close,
+  repository,
+  removed,
 }: {
   stories: Story[];
   initial: number;
   base: string;
   close: () => void;
+  repository?: SocialRepository;
+  removed?: () => void;
 }) {
+  const [deleting, setDeleting] = useState(false);
   const [index, setIndex] = useState(initial),
     [now, setNow] = useState(() => Date.now()),
     [started, setStarted] = useState(() => Date.now());
@@ -167,6 +174,7 @@ export function StoryViewer({
   }, [close]);
   const move = useCallback(
     (direction: number) => {
+      if (deleting) return;
       const target = index + direction;
       if (target < 0 || target >= stories.length) closeRef.current();
       else {
@@ -174,7 +182,7 @@ export function StoryViewer({
         setStarted(Date.now());
       }
     },
-    [index, stories.length],
+    [index, stories.length, deleting],
   );
   const duration = story?.media_type === "video" ? 15000 : 7000;
   useEffect(() => {
@@ -190,9 +198,10 @@ export function StoryViewer({
     };
   }, [move]);
   useEffect(() => {
+    if (deleting) return;
     const timer = setTimeout(() => move(1), duration);
     return () => clearTimeout(timer);
-  }, [duration, move, started]);
+  }, [duration, move, started, deleting]);
   if (!story) return null;
   const expired = new Date(story.expires_at).getTime() <= now;
   return (
@@ -223,6 +232,7 @@ export function StoryViewer({
           {story.author?.display_name || "Social member"}
           <small>Expires {new Date(story.expires_at).toLocaleString()}</small>
         </Link>
+        {repository && story.author_id === repository.viewerId && <DeleteSocialContent key={story.id} kind="story" remove={() => repository.deleteStory(story.id)} removed={() => { close(); removed?.(); }} onOpenChange={setDeleting}/>}
         <div
           className={
             "story-stage story-" +
@@ -482,6 +492,8 @@ export function Stories({
       )}
       {viewer !== null && (
         <StoryViewer
+          repository={repository}
+          removed={resource.reload}
           key={viewer}
           stories={[
             ...stories.filter(
@@ -523,6 +535,7 @@ export function RichProfile({
     return { profile, stats, following, avatar };
   }, [repository, id]);
   const resource = useSocialResource(load),
+    [editing, setEditing] = useState(false),
     [tab, setTab] = useState("Posts"),
     [connections, setConnections] = useState<"followers" | "following" | null>(
       null,
@@ -565,13 +578,13 @@ export function RichProfile({
             : data?.profile.display_name || "Social Profile"}
         </h1>
         {own ? (
-          <Link
+          <button
             className="social-icon"
-            to="/account"
+            onClick={() => setEditing(true)}
             aria-label="Edit profile settings"
           >
             <UserRound size={20} />
-          </Link>
+          </button>
         ) : (
           <ShareButton
             path={base + "?profile=" + id}
@@ -585,6 +598,7 @@ export function RichProfile({
       {!resource.loading && !resource.error && !data && (
         <h2>Profile unavailable</h2>
       )}
+      {editing && own && <SocialDialog title="Edit social profile" close={() => { setEditing(false); resource.reload(); }}><ProfileEditor/></SocialDialog>}
       {data && (
         <>
           <div className="original-profile-top">
@@ -628,9 +642,9 @@ export function RichProfile({
           )}
           <div className="original-profile-actions">
             {own ? (
-              <Link className="button primary" to="/account">
+              <button className="button primary" onClick={() => setEditing(true)}>
                 Edit profile
-              </Link>
+              </button>
             ) : (
               <button
                 className="button primary"
@@ -647,7 +661,7 @@ export function RichProfile({
                 label="Share profile"
               />
             ) : (
-              <Link className="button secondary" to="/account/chats">
+              <Link className="button secondary" to={base + '?view=chats&username=' + encodeURIComponent(data.profile.username)}>
                 Message
               </Link>
             )}

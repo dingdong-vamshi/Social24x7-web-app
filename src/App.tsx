@@ -14,6 +14,7 @@ import { AuthCallback } from './pages/AuthCallback'
 import { ForgotPassword, ResetPassword } from './pages/PasswordRecovery'
 import { CustomerLink } from './pages/CustomerLink'
 import { pageTitle } from './lib/pageTitle'
+import { hostSurface } from './lib/domains'
 const Social = lazy(() => import('./pages/Social').then(module => ({ default: module.Social })))
 
 const BusinessLogin = lazy(() => import('./pages/BusinessWork').then(module => ({ default: module.BusinessLogin })))
@@ -27,7 +28,7 @@ const BusinessChat = lazy(() => import('./pages/ConsumerWeb').then(module => ({ 
 const AdminDashboard = lazy(() => import('./pages/Admin').then(module => ({ default: module.AdminDashboard })))
 
 function LegacyRoute({from,to}:{from:string;to:string}){const location=useLocation();return <Navigate to={location.pathname.replace(from,to)+location.search+location.hash} replace/>}
-function Home(){return <Landing/>}
+function Home(){return hostSurface(window.location.hostname) === 'customer' ? <CustomerLink/> : <Landing/>}
 function RouteEffects(){const {pathname}=useLocation();useEffect(()=>{window.scrollTo(0,0);document.title=`${pageTitle(pathname)} | SOCIAL 24-7`;const robots=document.createElement('meta');robots.name='robots';robots.content='noindex, nofollow';if(pathname.startsWith('/partner/admin'))document.head.appendChild(robots);return()=>robots.remove()},[pathname]);return null}
 function NotFound(){return <div className="public-site"><PublicNav/><main id="main-content" className="public-info"><p className="public-kicker">PAGE NOT FOUND</p><h1>Let’s find your way back.</h1><p className="info-lead">This page may have moved. Your account and workspaces are available from the main navigation.</p><Link className="public-cta" to="/">Go to homepage</Link></main><PublicFooter/></div>}
 
@@ -35,8 +36,8 @@ export default function App(){return <AppBoundary><AuthProvider><RouteEffects/><
   <Route path="/business-login" element={<BusinessLogin/>}/><Route path="/business-activate" element={<BusinessLogin activate/>}/><Route path="/business-workspace" element={<BusinessWork/>}/>
   <Route path="/" element={<Home/>}/><Route path="/info/:kind" element={<InformationPage/>}/><Route path="/partner" element={<PartnerEntry/>}/>
   <Route path="/auth/callback/:intent" element={<AuthCallback/>}/><Route path="/partner/forgot-password" element={<ForgotPassword/>}/><Route path="/auth/reset-password" element={<ResetPassword/>}/><Route path="/web" element={<CustomerLink/>}/><Route path="/web/app/*" element={<CustomerLink/>}/>
-  <Route path="/partner/login" element={<Login/>}/><Route path="/partner/register" element={<Register/>}/><Route path="/web/login" element={<Navigate to="/web" replace/>}/><Route path="/web/register" element={<Navigate to="/web" replace/>}/>
-  <Route path="/login" element={<LegacyRoute from="/login" to="/partner/login"/>}/><Route path="/register" element={<LegacyRoute from="/register" to="/partner/register"/>}/>
+  <Route path="/partner/login" element={<Login/>}/><Route path="/partner/register" element={<Register/>}/><Route path="/web/login" element={<Login/>}/><Route path="/web/register" element={<Navigate to="/partner/register" replace/>}/>
+  <Route path="/login" element={hostSurface(window.location.hostname) === 'customer' ? <Login/> : <LegacyRoute from="/login" to="/partner/login"/>}/><Route path="/register" element={<LegacyRoute from="/register" to="/partner/register"/>}/>
   <Route element={<RequireAuth/>}>
     <Route path="/account" element={<Account/>}/>
     <Route path="/onboarding" element={<RoleSelection/>}/><Route path="/onboarding/:role" element={<OnboardingFlow/>}/><Route path="/partner/onboarding" element={<RoleSelection/>}/><Route path="/partner/onboarding/:role" element={<OnboardingFlow/>}/>

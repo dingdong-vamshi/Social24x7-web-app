@@ -1,5 +1,9 @@
 # Customer QR status
 
+> Superseded for ordinary account access on 2026-10-15. Customer root now offers
+> password login independently of QR. See CUSTOMER_PAIRING_FOUNDATION.md for the
+> isolated-tested, unapplied pairing foundation. The notes below are historical.
+
 WEB serves the actual non-persistent Customer linking entry. It explicitly states that linking is unavailable and issues no QR. It does not expose Customer private routes based on an ordinary Partner login or local flag.
 
 Existing old mobile profile-QR and Wallet scanners are not Auth device-linking scanners. Read-only reference audit is recorded in CUSTOMER_QR_PAIRING_ARCHITECTURE.md. No compatible challenge, mobile approval, one-use exchange or linked-device grant contract has been verified in the shared backend.

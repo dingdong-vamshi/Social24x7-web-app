@@ -59,14 +59,14 @@ export function createChatRepository(client: SupabaseClient, userId: string) {
       return { ...row, names, storeName, name: row.title || (row.kind === 'business' ? businessName : null) || others.join(', ') || (row.kind === 'group' ? 'Group conversation' : 'Conversation') }
     })
   }
-  async function getConversation(id: string, businessOnly = false, businessContext?: 'creator_seller') {
+  async function getConversation(id: string, businessOnly = false, businessContext?: 'creator_seller', personalOnly = false) {
     if (!isUuid(id)) return null
-    let query = client.from('conversations').select(conversationFields).eq('id', id).in('kind', businessOnly ? ['business'] : ['personal', 'group', 'business'])
+    let query = client.from('conversations').select(conversationFields).eq('id', id).in('kind', personalOnly ? ['personal', 'group'] : businessOnly ? ['business'] : ['personal', 'group', 'business'])
     if (!businessOnly) query = query.or(`kind.neq.business,business_customer_id.eq.${userId},business_context.eq.creator_seller`)
     if (businessContext) query = query.eq('kind', 'business').eq('business_context', businessContext)
     const { data, error } = await query.maybeSingle()
     if (error) throw new Error('This conversation could not be loaded. Please retry.')
-    if (!data || (businessContext && data.business_context !== businessContext) || !data.conversation_participants.some(p => p.user_id === userId)) return null
+    if (!data || (personalOnly && !['personal','group'].includes(data.kind)) || (businessContext && data.business_context !== businessContext) || !data.conversation_participants.some(p => p.user_id === userId)) return null
     return (await decorate([data as Omit<Conversation, 'name' | 'names' | 'storeName'>]))[0]
   }
   function messageQuery(conversation: Conversation) {
@@ -90,15 +90,15 @@ export function createChatRepository(client: SupabaseClient, userId: string) {
     ...createConsumerExtensions(client, userId),
     ...createPersonalDiscovery(client),
     getConversation,
-    async listConversations(businessOnly = false, page = 0, businessContext?: 'creator_seller') {
-      let query = client.from('conversations').select(conversationFields).in('kind', businessOnly ? ['business'] : ['personal', 'group', 'business'])
+    async listConversations(businessOnly = false, page = 0, businessContext?: 'creator_seller', personalOnly = false) {
+      let query = client.from('conversations').select(conversationFields).in('kind', personalOnly ? ['personal','group'] : businessOnly ? ['business'] : ['personal', 'group', 'business'])
       if (!businessOnly) query = query.or(`kind.neq.business,business_customer_id.eq.${userId},business_context.eq.creator_seller`)
       if (businessContext) query = query.eq('kind', 'business').eq('business_context', businessContext)
       const { data, error } = await query.order('updated_at', { ascending: false }).order('id').range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
       if (error) throw new Error('Conversations could not be loaded. Please retry.')
       // RLS remains authoritative. The explicit membership filter prevents accidentally
       // rendering a differently authorized role's conversations in this consumer view.
-      return decorate(((data ?? []) as Omit<Conversation, 'name' | 'names' | 'storeName'>[]).filter(row => (!businessContext || (row.kind === 'business' && row.business_context === businessContext)) && row.conversation_participants.some(p => p.user_id === userId)))
+      return decorate(((data ?? []) as Omit<Conversation, 'name' | 'names' | 'storeName'>[]).filter(row => (!personalOnly || ['personal','group'].includes(row.kind)) && (!businessContext || (row.kind === 'business' && row.business_context === businessContext)) && row.conversation_participants.some(p => p.user_id === userId)))
     },
     listMessages,
     async reconcile(conversation: Conversation, current: Message[]) {

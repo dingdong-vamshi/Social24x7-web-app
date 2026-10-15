@@ -93,6 +93,12 @@ export function extendedSocialRepository(
   return {
     viewerId,
     avatar,
+    async deleteStory(id: string) {
+      validId(id); await check();
+      const result = await client.from('stories').delete().eq('id', id).eq('author_id', viewerId).select('id');
+      if (result.error) throw result.error;
+      if (result.data?.length !== 1) throw new Error('Story unavailable or deletion not authorized. Refresh to check its current state.');
+    },
     async profileStorefront(
       id: string,
     ): Promise<{ name: string; slug: string } | null> {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Send } from "lucide-react";
 import { SocialDialog } from "./SocialDialog";
 import { requireSupabase } from "../../lib/supabase";
@@ -13,9 +13,11 @@ import {
 export function ShareToChat({
   post,
   viewerId,
+  base = '/account/social',
 }: {
   post: Post;
   viewerId: string;
+  base?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -32,6 +34,7 @@ export function ShareToChat({
           <ConnectedSharePanel
             post={post}
             viewerId={viewerId}
+            base={base}
             close={() => setOpen(false)}
           />
         </SocialDialog>
@@ -43,25 +46,29 @@ function ConnectedSharePanel({
   post,
   viewerId,
   close,
+  base,
 }: {
   post: Post;
   viewerId: string;
   close: () => void;
+  base: string;
 }) {
   const repository = useMemo(
     () => createSocialShareRepository(requireSupabase(), viewerId),
     [viewerId],
   );
-  return <ShareToChatPanel post={post} repository={repository} close={close} />;
+  return <ShareToChatPanel post={post} repository={repository} close={close} base={base}/>;
 }
 export function ShareToChatPanel({
   post,
   repository,
   close,
+  base = '/account/social',
 }: {
   post: Post;
   repository: SocialShareRepository;
   close: () => void;
+  base?: string;
 }) {
   const [page, setPage] = useState(0),
     [revision, setRevision] = useState(0),
@@ -176,7 +183,7 @@ export function ShareToChatPanel({
           {!data.rows.length && (
             <p>
               No personal or group conversations on this page.{" "}
-              <Link to="/account/chats">Open personal chats</Link>
+              <Link to={base + '?view=chats'}>Open personal chats</Link>
             </p>
           )}
           <div className="social-pagination">
@@ -214,7 +221,7 @@ export function ShareToChatPanel({
       {sent && (
         <p role="status">
           Post shared.{" "}
-          <Link to={"/account/chat/" + selected}>Open conversation</Link>
+          <Link to={base + '?view=chats&conversation=' + selected}>Open conversation</Link>
         </p>
       )}
     </section>
@@ -223,9 +230,13 @@ export function ShareToChatPanel({
 /** The original mobile message_kind=product + payload.post contract, rendered safely on web. */
 export function SharedPostMessage({
   payload,
+  base,
 }: {
   payload: Record<string, unknown> | null;
+  base?: string;
 }) {
+  const location = useLocation();
+  const destination = base || location.pathname.match(/^\/partner\/(?:seller|creator)\/social/)?.[0] || '/account/social';
   const value = payload?.post;
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const post = value as Record<string, unknown>;
@@ -234,7 +245,7 @@ export function SharedPostMessage({
   return (
     <Link
       className="social-shared-message"
-      to={"/account/social?post=" + post.id}
+      to={destination + '?post=' + post.id}
     >
       <strong>
         Shared post{typeof post.author === "string" ? " · @" + post.author : ""}

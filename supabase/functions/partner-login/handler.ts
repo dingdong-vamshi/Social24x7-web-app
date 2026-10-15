@@ -3,7 +3,7 @@ export interface LoginDependencies {
   verify: (account: { user_id: string; email: string }, password: string) => Promise<{ access_token: string; refresh_token: string } | null>
   delay?: (milliseconds: number) => Promise<void>
 }
-const allowed = new Set(['https://partner.social24-7.com', 'https://social24x7-web-app.vercel.app'])
+const allowed = new Set(['https://partner.social24-7.com', 'https://web.social24-7.com', 'https://social24x7-web-app.vercel.app'])
 const failure = { error: 'Unable to sign in with those details. Try your email and password, or use Work login for employee accounts.' }
 export function createPartnerLoginHandler(deps: LoginDependencies) {
   return async (request: Request) => {

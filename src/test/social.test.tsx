@@ -16,6 +16,7 @@ const mock = vi.hoisted(() => ({
     following: vi.fn(),
     stories: vi.fn(),
     follow: vi.fn(),
+    post: vi.fn(), comments: vi.fn(), comment: vi.fn(),
     viewerId: 'qa',
   },
 }));
@@ -55,6 +56,7 @@ beforeEach(() => {
   mock.repo.publish.mockResolvedValue("new");
   mock.repo.search.mockResolvedValue([]);
   mock.repo.stories.mockResolvedValue([]);
+  mock.repo.post.mockResolvedValue(post); mock.repo.comments.mockResolvedValue([]);
 });
 describe("Social preserves existing personal boundaries", () => {
   it("loads canonical supplied feed and real empty notifications", async () => {
@@ -74,9 +76,19 @@ describe("Social preserves existing personal boundaries", () => {
     expect(screen.getAllByRole('main')).toHaveLength(1);
     expect(screen.getByRole('region', { name: 'Social content' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Notifications/ })).toHaveLength(1);
+    expect(screen.queryByRole('navigation', { name: 'Social navigation' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Reels' })).toHaveAttribute('href',base+'?view=reels');
+    expect(screen.getByRole('link', { name: 'Social chats' })).toHaveAttribute('href',base+'?view=chats');
     expect(mock.repo.subscribe).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: /Notifications/ }));
     expect(await screen.findByText('You’re all caught up.')).toBeInTheDocument();
+  });
+  it('reopens comments on the same post after closing the dialog', async () => {
+    mount('/partner/seller/social?post=post');
+    await screen.findByRole('dialog', { name: 'Comments' });
+    fireEvent.click(screen.getByRole('button', {name:'Close comments'}));
+    fireEvent.click(screen.getByRole('link', {name:'Comments · 0'}));
+    expect(await screen.findByRole('dialog', {name:'Comments'})).toBeInTheDocument();
   });
   it("does not treat a failed feed as an empty feed", async () => {
     mock.repo.feed.mockRejectedValue(new Error("Feed unavailable"));

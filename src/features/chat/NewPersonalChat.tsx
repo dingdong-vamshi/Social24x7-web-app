@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { ChatRepository } from './repository'
 import type { PersonalContact } from './personalDiscovery'
 
-export function NewPersonalChat({ repository, opened, close, revision }: { repository: ChatRepository; opened: (id: string) => void; close: () => void; revision: number }) {
-  const [query, setQuery] = useState('')
+export function NewPersonalChat({ repository, opened, close, revision, initialUsername = '' }: { repository: ChatRepository; opened: (id: string) => void; close: () => void; revision: number; initialUsername?: string }) {
+  const [query, setQuery] = useState(initialUsername)
   const [rows, setRows] = useState<PersonalContact[]>([])
   const [incoming, setIncoming] = useState<PersonalContact[]>([])
   const [searched, setSearched] = useState(false)

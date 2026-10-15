@@ -9,6 +9,8 @@ import { validNewPassword, passwordPolicyMessage } from '../auth/passwordPolicy'
 import { requireSupabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { confirmationUrl, loginDestination, normalizePhone, partnerIntent } from '../auth/routing'
+import { hostSurface } from '../lib/domains'
+import { customerDestination } from '../auth/customerRouting'
 import './auth.css'
 function AuthForm({ register = false }: { register?: boolean }) {
   const [email, setEmail] = useState('')
@@ -24,10 +26,10 @@ function AuthForm({ register = false }: { register?: boolean }) {
   const auth = useAuth()
   const [params] = useSearchParams()
   const location = useLocation()
-  const consumer = location.pathname.startsWith('/web')
+  const consumer = hostSurface(window.location.hostname) === 'customer' || location.pathname.startsWith('/web')
   const requestedRole = partnerIntent(params.get('role')) || partnerIntent(params.get('next')?.match(/\/onboarding\/(seller|creator)/)?.[1] || null)
   const requested = params.get('next') || (requestedRole === 'seller' || requestedRole === 'creator' ? `/partner/onboarding/${requestedRole}` : null)
-  const next = auth.user?.app_metadata?.account_type === 'business_employee' ? '/business-workspace' : auth.user ? loginDestination(auth.user.id, auth.access, requested, requestedRole) : requested
+  const next = auth.user?.app_metadata?.account_type === 'business_employee' ? '/business-workspace' : consumer ? customerDestination(requested) : auth.user ? loginDestination(auth.user.id, auth.access, requested, requestedRole) : requested
   async function submit(event: FormEvent) {
     event.preventDefault(); if (busy) return; setError(''); setNotice('')
     const normalizedPhone = normalizePhone(phone)
@@ -70,7 +72,7 @@ function AuthForm({ register = false }: { register?: boolean }) {
         {error && <div className="form-error" role="alert">{error}</div>}{notice && <div className="auth-notice" role="status">{notice}</div>}
         <Button type="submit" disabled={busy || auth.loading || !auth.configured}>{busy ? 'Please wait…' : register ? 'Create account' : 'Sign in'}<ArrowRight size={17} /></Button>
       </form>}
-      <p className="auth-alternative">{register ? 'Already have an account?' : 'New to SOCIAL 24-7?'} <Link to={`${consumer ? '/web' : '/partner'}/${register ? 'login' : 'register'}${requestedRole ? `?role=${requestedRole}` : requested ? `?next=${encodeURIComponent(requested)}` : ''}`}>{register ? 'Sign in' : 'Create account'}</Link></p><div className="auth-security"><ShieldCheck size={17} /><span>Your existing account and workspace permissions are preserved. A password is always required.</span></div>
+      <p className="auth-alternative">{consumer ? <Link to={hostSurface(window.location.hostname) === 'customer' ? '/' : '/web'}>Back to Customer Web · QR linking options</Link> : <>{register ? 'Already have an account?' : 'New to SOCIAL 24-7?'} <Link to={`/partner/${register ? 'login' : 'register'}${requestedRole ? `?role=${requestedRole}` : requested ? `?next=${encodeURIComponent(requested)}` : ''}`}>{register ? 'Sign in' : 'Create account'}</Link></>}</p><div className="auth-security"><ShieldCheck size={17} /><span>Your existing account and workspace permissions are preserved. A password is always required.</span></div>
     </section></main>
     {!consumer && <section className="auth-how"><h2>From first step to your workspace</h2><div>{['Create or sign in to your account', requestedRole ? `Continue your ${requestedRole} application` : 'Start your chosen business application', 'Submit your details for review', 'Open your approved workspace'].map((item, index) => <article key={item}><span>0{index + 1}</span><h3>{item}</h3></article>)}</div><p>Creating an account does not automatically approve a business or professional credential.</p></section>}
   </div>

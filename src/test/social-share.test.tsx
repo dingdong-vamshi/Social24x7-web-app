@@ -52,7 +52,7 @@ describe('Social shared-post contract', () => {
     expect(await screen.findByRole('button', { name: 'Send selected post' })).toBeDisabled(); expect(repository.send).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText('Send to conversation'), { target: { value: conversationId } }); expect(repository.send).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Send selected post' })); expect(await screen.findByRole('alert')).toHaveTextContent('Delivery unknown');
-    fireEvent.click(screen.getByRole('button', { name: 'Send selected post' })); expect(await screen.findByRole('link', { name: 'Open conversation' })).toHaveAttribute('href', '/account/chat/' + conversationId);
+    fireEvent.click(screen.getByRole('button', { name: 'Send selected post' })); expect(await screen.findByRole('link', { name: 'Open conversation' })).toHaveAttribute('href', '/account/social?view=chats&conversation=' + conversationId);
     expect(repository.send.mock.calls[0][2]).toBe(repository.send.mock.calls[1][2]);
   });
   it('renders the structured original message with a local validated destination', () => {

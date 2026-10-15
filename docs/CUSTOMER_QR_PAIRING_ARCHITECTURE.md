@@ -1,5 +1,9 @@
 # Customer QR pairing — design and exact blockers
 
+> Historical design, superseded by CUSTOMER_PAIRING_FOUNDATION.md on 2026-10-15.
+> Ordinary Customer password login is now independent. B/C have isolated-tested
+> implementation, not live activation; D–G remain unavailable.
+
 ## Current state
 
 NOT IMPLEMENTED end to end. /web and /web/app/* show a clearly unavailable linking page. They issue no challenge, show no fake QR, simulate no expiry, and accept no local pairing flag. Partner authentication does not unlock this surface. The design below is a proposal requiring security review and an explicitly authorized APK update; no pairing schema/function has been deployed.

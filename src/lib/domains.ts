@@ -31,6 +31,8 @@ function routeQuery(search: string) {
 export function surfaceHref(path: string, hostname = window.location.hostname): string {
   if (!path.startsWith('/') || path.startsWith('//') || /[\\\s]/.test(path)) return path
   const current = hostSurface(hostname), url = new URL(path, origins.public)
+  if (url.pathname === '/web') return current === 'customer' ? '/' : current === 'preview' ? path : origins.customer + '/'
+  if (current === 'customer' && /^\/(?:account|auth)(?:\/|$)/.test(url.pathname)) return path
   const target = pathSurface(url.pathname)
   if (current === 'preview' || current === target) return path
   // Auth codes belong to the initiating origin. Never transfer them to another.
@@ -49,8 +51,13 @@ export function hostRedirect(hostname: string, path: string): string | null {
     return origins.partner + (pathname === '/register' ? '/partner/register' : pathname) + routeQuery(new URL(path, origins.preview).search)
   }
   if (surface === 'preview') return null
-  // Customer grants are not implemented: private/legacy paths stay fail-closed.
-  if (surface === 'customer' && (pathname === '/' || /^\/(?:web|account)(?:\/|$)/.test(pathname))) return pathname === '/web' ? null : '/web'
+  // Ordinary account login is independent of QR. Keep auth callbacks on their origin.
+  if (surface === 'customer') {
+    if (pathname === '/web') return '/'
+    if (pathname === '/web/login') return '/login' + new URL(path, origins.customer).search
+    if (pathname === '/web/app' || pathname.startsWith('/web/app/')) return '/account/social'
+    if (pathname === '/' || pathname === '/login' || /^\/(?:account|auth|web)(?:\/|$)/.test(pathname)) return null
+  }
   if (pathname === '/' && surface === 'partner') return '/partner'
   const destination = surfaceHref(path, hostname)
   return destination === path ? null : destination

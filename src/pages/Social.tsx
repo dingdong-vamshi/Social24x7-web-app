@@ -44,6 +44,8 @@ import {
   SocialAvatar,
 } from "../features/social/AvailableMedia";
 import { SocialDialog } from "../features/social/SocialDialog";
+import { DeleteSocialContent } from "../features/social/DeleteSocialContent";
+import { SocialChat } from "./ConsumerWeb";
 import "../features/social/original-social.css";
 
 const message = (e: unknown) =>
@@ -176,15 +178,17 @@ function SocialWorkspace({
   const post = params.get("post"),
     profile = params.get("profile"),
     discover = params.get("view") === "discover",
-    reels = params.get("view") === "reels";
+    reels = params.get("view") === "reels",
+    chats = params.get("view") === "chats";
   return (
     <section
       className={
         "original-social social-application" +
+        (embedded ? " social-embedded" : "") +
         (profile ? " social-profile-screen" : "")
       }
     >
-      <nav className="social-app-navigation" aria-label="Social navigation">
+      {!embedded && <nav className="social-app-navigation" aria-label="Social navigation">
         <Link
           to={
             seller
@@ -229,11 +233,11 @@ function SocialWorkspace({
           <Users size={22} />
           <span>My profile</span>
         </Link>
-        <Link to="/account/chats">
+        <Link to={base + "?view=chats"}>
           <MessageCircle size={22} />
           <span>My chats</span>
         </Link>
-      </nav>
+      </nav>}
       <div className="social-app-screen">
         {!profile && (
           <header className="original-social-header">
@@ -248,6 +252,8 @@ function SocialWorkspace({
               <Search size={18} />
               <span>Search</span>
             </Link>
+            <Link className="social-icon" to={base + "?view=chats"} aria-label="Social chats" aria-current={chats ? "page" : undefined}><MessageCircle size={24}/></Link>
+            <Link className="social-icon" to={base + "?view=reels"} aria-label="Reels" aria-current={reels ? "page" : undefined}><Play size={24}/></Link>
             <button
               type="button"
               className="social-icon notification-bell"
@@ -277,7 +283,7 @@ function SocialWorkspace({
           </SocialDialog>
         )}
         <Content aria-label="Social content">
-          {post ? (
+          {chats ? <SocialChat base={base}/> : post ? (
             <PostDetail
               key={post}
               id={post}
@@ -429,6 +435,7 @@ function Feed({
             post={post}
             repository={repository}
             base={base}
+            onDeleted={resource.reload}
           />
         ))}
       <div className="social-pagination">
@@ -554,11 +561,16 @@ function PostCard({
   post,
   repository,
   base,
+  onDeleted,
+  onComments,
 }: {
   post: Post;
   repository: SocialRepository;
   base: string;
+  onDeleted?: () => void;
+  onComments?: () => void;
 }) {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(Boolean(post.liked_by_viewer)),
     [following, setFollowing] = useState(Boolean(post.following_author)),
     [count, setCount] = useState(Number(post.like_count || 0)),
@@ -638,6 +650,9 @@ function PostCard({
             path={base + "?post=" + post.id}
             title={post.author_display_name + " on Social 24-7"}
           />
+          {post.author_id === repository.viewerId && (
+            <DeleteSocialContent kind="post" remove={() => repository.deletePost(post.id)} removed={() => { if (onDeleted) onDeleted(); else navigate(base); }}/>
+          )}
           <p>
             Post editing and saving are not supported by the original Social
             workflow.
@@ -670,11 +685,12 @@ function PostCard({
         <Link
           className="social-icon"
           to={base + "?post=" + post.id}
+          onClick={onComments ? event => { event.preventDefault(); onComments(); } : undefined}
           aria-label={"Comments · " + (post.comment_count || 0)}
         >
           <MessageCircle size={28} />
         </Link>
-        <ShareToChat post={post} viewerId={repository.viewerId} />
+        <ShareToChat post={post} viewerId={repository.viewerId} base={base}/>
         <span
           className="original-bookmark"
           title="Saved posts are not implemented in the original app"
@@ -693,6 +709,7 @@ function PostCard({
       <Link
         className="original-comments-preview"
         to={base + "?post=" + post.id}
+        onClick={onComments ? event => { event.preventDefault(); onComments(); } : undefined}
       >
         View all {post.comment_count || 0} comments
       </Link>
@@ -757,6 +774,7 @@ function PostDetail({
             post={resource.data[0]}
             repository={repository}
             base={base}
+            onComments={() => setCommentsOpen(true)}
           />
           <button
             className="button secondary"
@@ -789,6 +807,7 @@ function PostDetail({
                         {socialAgo(c.created_at)}
                       </small>
                       <p>{c.body}</p>
+                      {c.author_id === repository.viewerId && <DeleteSocialContent kind="comment" remove={() => repository.deleteComment(c.id, id)} removed={resource.reload}/>}
                     </div>
                   </article>
                 ))}

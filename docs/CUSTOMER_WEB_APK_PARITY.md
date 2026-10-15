@@ -1,5 +1,10 @@
 # Customer Web / APK parity inventory
 
+> 2026-10-15 update: ordinary password-authenticated Customer access now starts
+> at web.social24-7.com/ and stays on that origin. This is independent of QR.
+> See CUSTOMER_PAIRING_FOUNDATION.md. The older inventory below does not imply
+> that ordinary Customer account login must wait for mobile linking.
+
 Audited 14 October 2026 against the read-only mobile tree at commit e207f7526f140976630b92c09782a87998f6a8c6 and the new web source. This is a source/contract inventory, not an assertion that every native module is production-ready. **35 module areas** are recorded below. P0 = access safety; P1 = primary consumer parity; P2 = subsequent port/acceptance.
 
 Customer Web is now intended to be a broader mobile-equivalent experience, not only Chats and Orders. The QR-authenticated /web/app shell is blocked. Implemented ordinary-account modules are accessible from an authorized Partner account under /account; that is not a verified linked Customer session.

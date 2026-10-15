@@ -38,11 +38,19 @@ describe('public navigation and real-account boundaries',()=>{
     expect(screen.getByLabelText('Password')).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:/Preview approved/})).not.toBeInTheDocument()
   })
-  it.each(['/web','/web/login','/web/register','/web/app/chats','/web/chats','/web/chat/00000000-0000-0000-0000-000000000000','/web/orders'])('requires real pairing rather than a password or forged local state at %s',async(path)=>{
+  it.each(['/web','/web/app/chats'])('offers password login separately while refusing forged QR state at %s',async(path)=>{
     localStorage.setItem('customer-paired','true')
     renderAt(path)
-    expect(await screen.findByRole('heading',{name:'Device linking is not available yet'})).toBeInTheDocument()
-    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
+    expect(await screen.findByRole('link',{name:/Log in with your account/})).toHaveAttribute('href','/web/login')
+    await userEvent.click(screen.getByRole('button',{name:'View QR linking options'}))
+    expect(screen.getByRole('heading',{name:'QR linking cannot be completed yet'})).toBeInTheDocument()
+    expect(screen.getByRole('button',{name:/Generate pairing QR/})).toBeDisabled()
+  })
+  it.each(['/web/login','/web/chats','/web/chat/00000000-0000-0000-0000-000000000000','/web/orders'])('requires authoritative account auth at %s',async(path)=>{
+    localStorage.setItem('customer-paired','true')
+    renderAt(path)
+    expect(await screen.findByLabelText('Password')).toBeInTheDocument()
+    expect(screen.queryByRole('log',{name:'Messages'})).not.toBeInTheDocument()
   })
   it('does not accept a forged local preview approval',async()=>{
     localStorage.setItem('social24:session',JSON.stringify({role:'seller',applicationStatus:'approved'}))

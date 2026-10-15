@@ -5,6 +5,7 @@ import { SurfaceLink as Link } from './SurfaceLink'
 import { Brand } from './Brand'
 import { useAuth } from '../auth/AuthContext'
 import { AccountMenu } from './AccountMenu'
+import { hostSurface } from '../lib/domains'
 import '../public.css'
 
 export function PublicNav() {
@@ -18,7 +19,7 @@ export function PublicNav() {
       <button className="public-menu-toggle" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="public-links" onClick={() => setOpen(!open)}>{open ? <X/> : <Menu/>}</button>
       <div id="public-links" className={`public-links ${open ? 'is-open' : ''}`}>
         {([['Seller', '/partner/register?role=seller'], ['Creator', '/partner/register?role=creator'], ['Partner', '/info/partners'], ['Customer', '/web'], ['About', '/info/about']] as const).map(([label,to]) => <Link key={label} to={to} onClick={() => setOpen(false)} aria-current={location.pathname===to?'page':undefined}>{label}</Link>)}
-        <div className="public-nav-actions">{auth.loading ? <span role="status">Loading account…</span> : auth.user ? <AccountMenu/> : <><Link to="/partner/login" onClick={() => setOpen(false)}>Log in</Link><Link className="public-cta" to="/partner" onClick={() => setOpen(false)}>Join now <ArrowUpRight size={16}/></Link></>}</div>
+        <div className="public-nav-actions">{auth.loading ? <span role="status">Loading account…</span> : auth.user ? <AccountMenu/> : <><Link to={hostSurface(window.location.hostname) === 'customer' ? '/web/login' : '/partner/login'} onClick={() => setOpen(false)}>Log in</Link><Link className="public-cta" to="/partner" onClick={() => setOpen(false)}>Join now <ArrowUpRight size={16}/></Link></>}</div>
       </div>
     </nav>
   </header>

@@ -45,6 +45,21 @@ function fixture(id = "qa", work = false) {
   };
 }
 describe("Social authorization contracts", () => {
+  const contentId = '11111111-1111-4111-8111-111111111111';
+  it.each(['deletePost', 'deleteStory'] as const)('scopes %s to the author and requires an actual affected row', async method => {
+    const f = fixture();
+    await expect(f.repo[method](contentId)).rejects.toThrow();
+    expect(f.query.eq).toHaveBeenCalledWith('id', contentId); expect(f.query.eq).toHaveBeenCalledWith('author_id', 'qa');
+    f.query.then.mockImplementation(resolve => resolve({data:[{id:contentId}],error:null}));
+    await expect(f.repo[method](contentId)).resolves.toBeUndefined();
+  });
+  it('scopes comment deletion by post, comment and author', async () => {
+    const f=fixture(); await expect(f.repo.deleteComment(contentId, contentId)).rejects.toThrow();
+    expect(f.query.eq).toHaveBeenCalledWith('post_id',contentId); expect(f.query.eq).toHaveBeenCalledWith('author_id','qa');
+  });
+  it.each(['deletePost','deleteStory'] as const)('rejects stale identity before %s', async method => {
+    const f=fixture('other'); await expect(f.repo[method](contentId)).rejects.toThrow('personal account session'); expect(f.client.from).not.toHaveBeenCalled();
+  });
   it('marks all read only for the authenticated recipient and only previously unread rows', async () => {
     const f = fixture(); await f.repo.markAllRead();
     expect(f.query.eq).toHaveBeenCalledTimes(3); expect(f.query.is).toHaveBeenCalledTimes(3);

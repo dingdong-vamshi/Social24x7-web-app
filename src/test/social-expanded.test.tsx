@@ -116,7 +116,7 @@ describe('Expanded social UI isolated verification', () => {
     render(<MemoryRouter><RichProfile repository={repo} base="/account/social" id={viewerId} viewerId={viewerId} renderPost={() => null} /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: 'View 2 followers' })); expect(await screen.findByText('No followers yet.')).toBeInTheDocument(); expect(repo.connections).toHaveBeenCalledWith(viewerId, 'followers');
     fireEvent.click(screen.getByRole('button', { name: 'Close followers' })); fireEvent.click(screen.getByRole('button', { name: 'New highlight information' })); expect(screen.getByText(/Saved highlights were a preview/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Edit profile' })).toHaveAttribute('href', '/account');
+    expect(screen.getByRole('button', { name: 'Edit profile' })).toBeInTheDocument();
   });
   it('distinguishes a recommendation read failure from no recommendations', async () => {
     vi.mocked(repo.recommendations).mockRejectedValue(new Error('Recommendations denied'));

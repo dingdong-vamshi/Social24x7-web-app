@@ -20,7 +20,7 @@ const label = (value: string) => value.replaceAll('_', ' ')
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Unable to load this view. Please retry.'
 
 function ConsumerHeader() {
-  return <header className="consumer-header"><Brand /><nav aria-label="Consumer navigation"><NavLink to="/account/chats"><MessageCircle size={18} />Chats</NavLink><NavLink to="/account/orders"><Package size={18} />Orders</NavLink></nav><AccountMenu/></header>
+  return <header className="consumer-header"><Brand /><nav aria-label="Consumer navigation"><NavLink to="/account/social"><Users size={18} />Social</NavLink><NavLink to="/account/chats"><MessageCircle size={18} />Chats</NavLink><NavLink to="/account/orders"><Package size={18} />Orders</NavLink></nav><AccountMenu/></header>
 }
 
 function SessionNotice() {
@@ -34,6 +34,13 @@ export function ConsumerWeb() {
   return <div className="consumer-page"><ConsumerHeader />{loading || !user || !supabase ? <SessionNotice /> : <ChatWorkspace key={`${user.id}:${id || ''}`} />}</div>
 }
 
+/** Personal Social conversations stay inside their host workspace, never Business Chat. */
+export function SocialChat({ base }: { base: string }) {
+  const { user, loading } = useAuth()
+  const [params] = useSearchParams()
+  return loading || !user || !supabase ? <SessionNotice/> : <ChatWorkspace key={`${user.id}:${base}:${params.get('conversation') || ''}:${params.get('username') || ''}`} socialBase={base}/>
+}
+
 /** Mount inside the approved business workspace; never includes Personal/Group Chat. */
 export function BusinessChat() {
   const { user, loading } = useAuth()
@@ -43,14 +50,16 @@ export function BusinessChat() {
   return loading || !user || !supabase ? <SessionNotice /> : <><CounterpartyDirectory role={pathname.startsWith('/partner/creator') ? 'seller' : 'creator'}/><ChatWorkspace key={`${user.id}:${creatorChannel}:${params.get('conversation') || ''}`} businessOnly businessContext={creatorChannel ? 'creator_seller' : undefined} /></>
 }
 
-function ChatWorkspace({ businessOnly = false, businessContext }: { businessOnly?: boolean; businessContext?: 'creator_seller' }) {
+function ChatWorkspace({ businessOnly = false, businessContext, socialBase }: { businessOnly?: boolean; businessContext?: 'creator_seller'; socialBase?: string }) {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [newGroup, setNewGroup] = useState(false)
-  const [newChat, setNewChat] = useState(false)
-  const { id } = useParams()
   const [params, setParams] = useSearchParams()
-  const selectedId = businessOnly ? params.get('conversation') : id
+  const [newGroup, setNewGroup] = useState(false)
+  const [newChat, setNewChat] = useState(() => Boolean(socialBase && params.get('username')))
+  const { id } = useParams()
+  const selectedId = businessOnly || socialBase ? params.get('conversation') : id
+  const chatPath = (conversation?: string) => socialBase ? `${socialBase}?view=chats${conversation ? '&conversation=' + conversation : ''}` : conversation ? `/account/chat/${conversation}` : '/account/chats'
+  const ChatContent = socialBase ? 'section' : 'main'
   const selectionRef = useRef(selectedId)
   const repository = useMemo(() => createChatRepository(supabase!, user!.id), [user])
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -102,15 +111,16 @@ function ChatWorkspace({ businessOnly = false, businessContext }: { businessOnly
     let alive = true
     async function load() {
       try {
-        const [pages, selected] = await Promise.all([
-          Promise.all(Array.from({ length: listPage + 1 }, (_, page) => repository.listConversations(businessOnly, page, businessContext))),
-          selectedId ? repository.getConversation(selectedId, businessOnly, businessContext) : Promise.resolve(null),
+        const [pages, fetched] = await Promise.all([
+          Promise.all(Array.from({ length: listPage + 1 }, (_, page) => repository.listConversations(businessOnly, page, businessContext, Boolean(socialBase)))),
+          selectedId ? repository.getConversation(selectedId, businessOnly, businessContext, Boolean(socialBase)) : Promise.resolve(null),
         ])
         if (!alive) return
+        const selected = socialBase && fetched?.kind === 'business' ? null : fetched
         const firstLoad = messagesRef.current.length === 0
         const history = selected ? await repository.reconcile(selected, messagesRef.current) : []
         if (!alive) return
-        setConversations([...new Map(pages.flat().map(row => [row.id, row])).values()])
+        setConversations([...new Map(pages.flat().filter(row => !socialBase || row.kind !== 'business').map(row => [row.id, row])).values()])
         setMoreConversations(pages.at(-1)?.length === PAGE_SIZE)
         setConversation(selected); messagesRef.current = history; setMessages(history)
         if (firstLoad) setMoreMessages(history.length === PAGE_SIZE)
@@ -126,7 +136,7 @@ function ChatWorkspace({ businessOnly = false, businessContext }: { businessOnly
     }
     void load()
     return () => { alive = false }
-  }, [repository, selectedId, businessOnly, businessContext, refresh, listPage])
+  }, [repository, selectedId, businessOnly, businessContext, socialBase, refresh, listPage])
   const showing = conversations.filter(row => (filter === 'all' || row.kind === filter) && row.name.toLowerCase().includes(search.trim().toLowerCase()))
   async function loadOlder() {
     if (!conversation || !messages[0]) return
@@ -139,29 +149,29 @@ function ChatWorkspace({ businessOnly = false, businessContext }: { businessOnly
     } catch (error) { setError(errorText(error)) } finally { setOlderBusy(false) }
   }
   const selected = Boolean(selectedId)
-  return <main className={`chat-workspace ${selected ? 'has-selection' : ''} ${businessOnly ? 'business-chat' : ''} ${newGroup || newChat ? 'creating-group' : ''}`}>
+  return <ChatContent className={`chat-workspace ${selected ? 'has-selection' : ''} ${businessOnly ? 'business-chat' : ''} ${newGroup || newChat ? 'creating-group' : ''}`}>
     <aside className="chat-sidebar" aria-label="Conversations">
       <div className="chat-sidebar-title"><div><span className="eyebrow">{businessOnly ? 'Business workspace' : 'Your conversations'}</span><h1>{businessContext ? 'Creator · Seller Chats' : businessOnly ? 'Business Chat' : 'Chats'}</h1></div><button className="chat-icon-button" type="button" onClick={tick} aria-label="Refresh conversations"><RefreshCw size={19} /></button></div>
       <p className={`chat-connection ${online && connected ? 'connected' : ''}`} role="status"><i />{!online ? 'Offline · reconnect to receive updates' : connected ? 'Connected' : 'Connecting · checking for updates'}</p>
       <label className="chat-search"><Search size={17} /><span className="sr-only">Search your conversations</span><input placeholder="Search conversations" value={search} onChange={event => setSearch(event.target.value)} /></label>
-      {!businessOnly && <div className="chat-filters" aria-label="Filter conversations">{['all', 'personal', 'group', 'business'].map(value => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'All' : label(value)}</button>)}</div>}
+      {!businessOnly && <div className="chat-filters" aria-label="Filter conversations">{(socialBase ? ['all', 'personal', 'group'] : ['all', 'personal', 'group', 'business']).map(value => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'All' : label(value)}</button>)}</div>}
       {!businessOnly && user?.app_metadata?.account_type !== 'business_employee' && <><button type="button" className="chat-tools-toggle" onClick={() => { setNewChat(true); setNewGroup(false) }}>New chat</button><button type="button" className="chat-tools-toggle" onClick={() => { setNewGroup(true); setNewChat(false) }}>New group</button></>}
       <div className="chat-conversation-list">{loading && !conversations.length ? <p className="chat-list-notice" role="status">Loading conversations…</p> : showing.length ? showing.map(row => {
         const unread = row.conversation_participants.find(p => p.user_id === user!.id)?.last_read_at
         const content = <><span className="chat-avatar">{row.kind === 'group' ? <Users size={21} /> : row.name.slice(0, 1).toUpperCase()}</span><span className="chat-row-text"><strong>{row.name}</strong><small>{row.kind === 'business' ? row.business_context === 'creator_seller' ? 'Creator · Seller' : 'Customer support' : row.kind === 'group' ? 'Group conversation' : 'Personal conversation'}</small></span><span className="chat-row-meta"><time dateTime={row.updated_at}>{new Date(row.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</time>{(!unread || row.updated_at > unread) && <span className="chat-unread" aria-label="Updated conversation" />}</span></>
-        return businessOnly ? <button key={row.id} type="button" className={`chat-row ${row.id === selectedId ? 'active' : ''}`} onClick={() => setParams({ conversation: row.id })}>{content}</button> : <Link key={row.id} className={`chat-row ${row.id === selectedId ? 'active' : ''}`} to={`/account/chat/${row.id}`} aria-current={row.id === selectedId ? 'page' : undefined}>{content}</Link>
+        return businessOnly ? <button key={row.id} type="button" className={`chat-row ${row.id === selectedId ? 'active' : ''}`} onClick={() => setParams({ conversation: row.id })}>{content}</button> : <Link key={row.id} className={`chat-row ${row.id === selectedId ? 'active' : ''}`} to={chatPath(row.id)} aria-current={row.id === selectedId ? 'page' : undefined}>{content}</Link>
       }) : <div className="chat-list-notice"><h3>{search || filter !== 'all' ? 'No matching conversations' : 'No conversations yet'}</h3><p>{search || filter !== 'all' ? 'Try another name or filter.' : 'Existing conversations from the app will appear here when this account has access.'}</p></div>}
       {moreConversations && <button className="chat-load-more" type="button" onClick={() => setListPage(value => value + 1)}>Load more conversations</button>}</div>
       <div className="chat-sidebar-foot"><ShieldCheck size={17} /><p>Signed in to your existing account. Only conversations you can access are shown.</p></div>
     </aside>
     <section className="chat-detail" aria-label="Selected conversation">
-      {newChat ? <NewPersonalChat repository={repository} revision={refresh} opened={chatId => { setNewChat(false); navigate(`/account/chat/${chatId}`); tick() }} close={() => { setNewChat(false); tick() }}/> : newGroup ? <NewGroup repository={repository} created={groupId => { setNewGroup(false); navigate(`/account/chat/${groupId}`); tick() }} close={() => { setNewGroup(false); tick() }} /> : <>
-      {selected && <div className="chat-mobile-back">{businessOnly ? <button type="button" onClick={() => setParams({})}><ArrowLeft size={18} />All conversations</button> : <Link to="/account/chats"><ArrowLeft size={18} />All conversations</Link>}</div>}
+      {newChat ? <NewPersonalChat repository={repository} revision={refresh} initialUsername={socialBase ? params.get('username') || '' : ''} opened={chatId => { setNewChat(false); navigate(chatPath(chatId)); tick() }} close={() => { setNewChat(false); tick() }}/> : newGroup ? <NewGroup repository={repository} created={groupId => { setNewGroup(false); navigate(chatPath(groupId)); tick() }} close={() => { setNewGroup(false); tick() }} /> : <>
+      {selected && <div className="chat-mobile-back">{businessOnly ? <button type="button" onClick={() => setParams({})}><ArrowLeft size={18} />All conversations</button> : <Link to={chatPath()}><ArrowLeft size={18} />All conversations</Link>}</div>}
       {error && <div className="chat-alert" role="alert">{error}<button type="button" onClick={tick}>Retry</button></div>}
       {loading && selected ? <div className="chat-state" role="status"><LoaderCircle className="spin" /><p>Loading conversation…</p></div> : conversation ? <ChatThread key={conversation.id} conversation={conversation} messages={visibleMessages(messages)} repository={repository} userId={user!.id} refresh={tick} more={moreMessages} olderBusy={olderBusy} loadOlder={loadOlder} readError={readError} /> : <div className="chat-state"><div className="chat-welcome-icon"><MessageCircle size={40} /></div><h2>{selected ? 'Conversation unavailable' : businessOnly ? 'Your customer conversations' : 'Stay in the conversation'}</h2><p>{selected ? 'Choose a conversation from the list, or refresh to check your access.' : 'Open a conversation to see the same history as your SOCIAL 24-7 app.'}</p>{!selected && <small>Messages are protected by account access controls. End-to-end encryption is not currently available.</small>}</div>}
       </>}
     </section>
-  </main>
+  </ChatContent>
 }
 
 function ChatThread({ conversation, messages, repository, userId, refresh, more, olderBusy, loadOlder, readError }: { conversation: Conversation; messages: Message[]; repository: ChatRepository; userId: string; refresh: () => void; more: boolean; olderBusy: boolean; loadOlder: () => void; readError: string }) {

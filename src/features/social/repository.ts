@@ -40,6 +40,7 @@ export interface SearchResult {
 }
 export interface Comment {
   id: string;
+  author_id: string;
   body: string;
   created_at: string;
   profiles: { id: string; display_name: string; username: string } | null;
@@ -61,7 +62,7 @@ export function uuid(value: string) {
 }
 export function notificationDestination(item: Notification, base: string) {
   if (item.source === "chat" && item.entityId && uuid(item.entityId))
-    return "/account/chat/" + item.entityId;
+    return base + "?view=chats&conversation=" + item.entityId;
   if (item.source === "social" && item.entityId && uuid(item.entityId))
     return base + "?profile=" + item.entityId;
   if (item.source === "commerce") return "/account/orders";
@@ -285,7 +286,7 @@ export function createSocialRepository(
       const result = await client
         .from("post_comments")
         .select(
-          "id,body,created_at,profiles!post_comments_author_id_fkey(id,username,display_name)",
+          "id,author_id,body,created_at,profiles!post_comments_author_id_fkey(id,username,display_name)",
         )
         .eq("post_id", id)
         .order("created_at", { ascending: true })
@@ -319,6 +320,20 @@ export function createSocialRepository(
         .from("post_comments")
         .insert({ post_id: id, author_id: viewerId, body: body.trim() });
       if (result.error) throw result.error;
+    },
+    async deletePost(id: string) {
+      await check();
+      if (!uuid(id)) throw new Error('Invalid post link.');
+      const result = await client.from('posts').delete().eq('id', id).eq('author_id', viewerId).select('id');
+      if (result.error) throw result.error;
+      if (result.data?.length !== 1) throw new Error('Post unavailable or deletion not authorized. Refresh to check its current state.');
+    },
+    async deleteComment(id: string, postId: string) {
+      await check();
+      if (!uuid(id) || !uuid(postId)) throw new Error('Invalid comment link.');
+      const result = await client.from('post_comments').delete().eq('id', id).eq('post_id', postId).eq('author_id', viewerId).select('id');
+      if (result.error) throw result.error;
+      if (result.data?.length !== 1) throw new Error('Comment unavailable or deletion not authorized. Refresh to check its current state.');
     },
     async notifications(): Promise<Notification[]> {
       const groups = await Promise.all(

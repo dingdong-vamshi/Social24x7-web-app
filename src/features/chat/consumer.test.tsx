@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { ConsumerWeb, BusinessChat } from '../../pages/ConsumerWeb'
+import { ConsumerWeb, BusinessChat, SocialChat } from '../../pages/ConsumerWeb'
 import type { Conversation, Message } from './repository'
 
 const mocks = vi.hoisted(() => ({
@@ -32,6 +32,14 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('consumer conversation interactions', () => {
+  it('keeps Social chat in the workspace and refuses Business conversations even on a deep link', async () => {
+    mocks.getConversation.mockResolvedValue({...conversation,kind:'business'}); mocks.listConversations.mockResolvedValue([{...conversation,kind:'business'}])
+    render(<MemoryRouter initialEntries={['/partner/seller/social?view=chats&conversation=qa-conversation']}><SocialChat base="/partner/seller/social"/></MemoryRouter>)
+    expect(await screen.findByRole('alert')).toHaveTextContent('do not have access')
+    expect(mocks.listConversations).toHaveBeenCalledWith(false,0,undefined,true)
+    expect(mocks.getConversation).toHaveBeenCalledWith('qa-conversation',false,undefined,true)
+    expect(mocks.reconcile).not.toHaveBeenCalled(); expect(screen.queryByText('Fictional QA contact')).not.toBeInTheDocument()
+  })
   it('renders canonical history, sends Enter through the repository and cleans up subscription', async () => {
     const view = renderChat()
     expect(await screen.findByText('Fictional QA history')).toBeInTheDocument()
@@ -89,8 +97,8 @@ describe('consumer conversation interactions', () => {
     renderChat('/partner/seller/chat?conversation=qa-conversation', true)
     expect(await screen.findByText(/This conversation is read-only here/)).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Message' })).not.toBeInTheDocument()
-    expect(mocks.listConversations).toHaveBeenCalledWith(true, 0, undefined)
-    expect(mocks.getConversation).toHaveBeenCalledWith('qa-conversation', true, undefined)
+    expect(mocks.listConversations).toHaveBeenCalledWith(true, 0, undefined, false)
+    expect(mocks.getConversation).toHaveBeenCalledWith('qa-conversation', true, undefined, false)
   })
   it('removes an expiring message locally without waiting for another network response', async () => {
     mocks.reconcile.mockResolvedValue([{ ...message, expires_at: new Date(Date.now() + 300).toISOString() }])
