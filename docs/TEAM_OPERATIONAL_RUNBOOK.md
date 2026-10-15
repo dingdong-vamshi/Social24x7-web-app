@@ -59,6 +59,10 @@ One exact login action: in the connected browser open https://partner.social24-7
 
 Use a fresh local PostgreSQL database and the guarded `/tmp/social-storage-policy-qa.*` socket on port 55439. Apply `closure-operations-fixture.sql`, `team-operations-support.sql`, then the new migration. Run `team-operations.cjs <socket> <closure_operations_database>`. Result: 49 checks. Existing `closure-operations.cjs` passed 47 separate checks. These selected catalog fixtures do not reproduce every production RLS policy, trigger, HTTP Auth or Storage pipeline.
 
-Run `npm test`, `npm run build`, `npm run lint`, and `deno check` on both new Edge entrypoints. Result: 696 tests / 56 files; all checks passed. `qa/team-operations.html` is a local-only synthetic component preview, not a production entrypoint or an authentication bypass. Verified at 390px with no horizontal overflow.
+Run `npm test`, `npm run build`, `npm run lint`, and `deno check` on both new Edge entrypoints. Result: 697 tests / 56 files; all checks passed. `qa/team-operations.html` is a local-only synthetic component preview, not a production entrypoint or an authentication bypass. Verified at 390px with no horizontal overflow.
+
+Live owner verification after backend activation: Team/member reads; historical count 1 versus current count 0 for the suspended existing QA member; a decoded private image; an existing minimal order snapshot; existing poll options and event details. Both new Edge functions reject unauthenticated requests with HTTP 401. Authenticated mail-capability and media-signing requests returned HTTP 200. Mail-capability reports configuration absent; no invitation was created/sent. Work-supervisor acceptance remains separate from this owner proof.
+
+Live verification found that periodic/visibility refreshes reset opened message content. The final frontend preserves message nodes through successful same-scope refreshes; scope changes and authorization denial still clear them. Share retry IDs and selections also survive message refreshes. Regression includes node preservation plus denied-access clearing.
 
 Migration approval, exact checksum and rollback are in `TEAM_OPERATIONAL_PRODUCTION_APPROVAL.md`. Production screenshots and final deployment SHA/URL are supplied in the final task report; do not treat local synthetic screenshots as production proof.

@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CommerceEmpty, CommerceResult, useCommerce } from '../../components/LiveCommerce'
+import { useEffect, useMemo, useState } from 'react'
+import { CommerceEmpty, CommerceResult } from '../../components/LiveCommerce'
 import { Button, StatusPill } from '../../components/Ui'
 import { requireSupabase } from '../../lib/supabase'
 import { dateTime, label, type TeamDashboard } from '../../repositories/commerce'
-import { createTeamChatRepository, type SupervisedConversation } from './teamRepository'
+import { createTeamChatRepository, type SupervisedConversation, type SupervisedMessage } from './teamRepository'
 import { createTeamRepository } from '../team/repository'
 import { BusinessSharedContent } from '../team/BusinessSharedContent'
 import './team.css'
@@ -48,8 +48,21 @@ export function TeamChatMonitor({ storefrontId, members, allowAssignment = false
 }
 
 function TeamThread({ storefrontId, memberId, conversation, repository, members, allowAssignment, onAssigned, revision }: { revision: number; members: TeamDashboard['members']; allowAssignment: boolean; onAssigned: () => void; storefrontId: string; memberId: string; conversation: SupervisedConversation; repository: ReturnType<typeof createTeamChatRepository> }) {
-  const load = useCallback(() => { void revision; return repository.messages(storefrontId, conversation.conversation_id, memberId) }, [repository, storefrontId, conversation.conversation_id, memberId, revision])
-  const result = useCommerce(load)
+  const scope = `${storefrontId}:${memberId}:${conversation.conversation_id}:${conversation.assignee_membership_id || 'unassigned'}`
+  const [retry, setRetry] = useState(0)
+  const [snapshot, setSnapshot] = useState<{ scope: string; data?: SupervisedMessage[]; error?: string }>({ scope })
+  useEffect(() => {
+    let active = true
+    repository.messages(storefrontId, conversation.conversation_id, memberId).then(data => {
+      if (active) setSnapshot({ scope, data })
+    }).catch(cause => {
+      if (active) setSnapshot({ scope, error: cause instanceof Error ? cause.message : 'Conversation access could not be confirmed.' })
+    })
+    return () => { active = false }
+  }, [repository, storefrontId, conversation.conversation_id, memberId, scope, revision, retry])
+  // Keep scoped message nodes and short-lived media during successful background reads.
+  // Scope changes hide immediately; an authorization failure clears the old content.
+  const result = { data: snapshot.scope === scope ? snapshot.data : undefined, error: snapshot.scope === scope ? snapshot.error : undefined, refresh: () => setRetry(n => n + 1) }
   return <section className="team-chat-thread" aria-label="Business conversation history"><header><h3>{conversation.customer_display_name}</h3><p>{conversation.assignee_name || 'Unassigned'} <StatusPill>{label(conversation.work_status)}</StatusPill></p></header>{allowAssignment && <Assignment conversation={conversation} members={members} onAssigned={onAssigned}/>}<CommerceResult result={result}>{messages => messages.length ? <ol>{messages.map(message => <li key={message.message_id}><strong>{message.sender_display_name || 'Business'} <small>· {label(message.sender_type)}</small></strong>{message.representative_verified && <small>Verified representative · recorded sender identity</small>}{message.sender_tagline && <small>{message.sender_tagline}</small>}<p>{message.body || 'Message without text'}</p>{message.message_kind !== 'text' && <BusinessSharedContent storefrontId={storefrontId} conversationId={conversation.conversation_id} messageId={message.message_id}/>}<time dateTime={message.created_at}>{dateTime(message.created_at)}</time></li>)}</ol> : <CommerceEmpty title="No messages yet" description="This authorized conversation has no visible messages."/>}</CommerceResult></section>
 }
 

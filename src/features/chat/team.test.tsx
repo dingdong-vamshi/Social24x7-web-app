@@ -12,6 +12,15 @@ const message = { message_id:'message-a', body:'QA business message', message_ki
 const client = () => ({ rpc: mock.rpc }) as unknown as SupabaseClient
 beforeEach(() => { mock.rows=[row]; mock.error=null; mock.rpc.mockReset(); mock.rpc.mockImplementation((name:string) => name === 'get_business_workspace_inbox' ? {eq:vi.fn().mockResolvedValue({data:mock.rows,error:mock.error})} : Promise.resolve({data:[message],error:mock.error})) })
 describe('supervised customer chats', () => {
+  it('preserves message nodes through successful background refreshes so rich content is not reset', async () => {
+    render(<MemoryRouter><TeamChatMonitor storefrontId="store-a" members={[]}/></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button',{name:/QA Customer/}))
+    const original = await screen.findByText('QA business message')
+    mock.rpc.mockClear()
+    fireEvent.click(screen.getByRole('button',{name:'Refresh chats'}))
+    await waitFor(()=>expect(mock.rpc).toHaveBeenCalledWith('get_business_workspace_messages',{target_conversation:'chat-a'}))
+    expect(screen.getByText('QA business message')).toBe(original)
+  })
   it('filters returned rows to the selected storefront', async () => {
     mock.rows=[row,{...row,storefront_id:'other-store',conversation_id:'other-chat'}]
     expect(await createTeamChatRepository(client()).conversations('store-a')).toEqual([row])
