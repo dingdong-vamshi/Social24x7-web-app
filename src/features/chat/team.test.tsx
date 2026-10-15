@@ -67,4 +67,21 @@ describe('supervised customer chats', () => {
     expect(await screen.findByText('QA business message')).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:'Send reply'})).not.toBeInTheDocument()
   })
+  it('keeps an assignment choice through revalidation, but clears it when the actual assignee changes', async () => {
+    mock.rows=[{...row,assignee_membership_id:null,assignee_name:null}]
+    render(<MemoryRouter><TeamChatMonitor storefrontId="store-a" allowAssignment members={[{id:'member-a',fullName:'QA Employee',roleName:'Agent',status:'verified',identityKind:'work',permissions:['business_chat_reply'],jobTitle:'Agent'}]}/></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button',{name:/QA Customer/}))
+    await screen.findByText('QA business message')
+    fireEvent.change(screen.getByLabelText('New assigned representative'),{target:{value:'member-a'}})
+    fireEvent.click(screen.getByRole('button',{name:'Refresh chats'}))
+    await screen.findByText('QA business message')
+    expect(screen.getByLabelText('New assigned representative')).toHaveValue('member-a')
+    fireEvent.click(screen.getByRole('button',{name:'Assign / reassign'}))
+    expect(screen.getByRole('button',{name:'Confirm reassignment'})).toBeEnabled()
+    mock.rows=[row]
+    fireEvent.click(screen.getByRole('button',{name:'Refresh chats'}))
+    await waitFor(()=>expect(screen.queryByRole('button',{name:'Confirm reassignment'})).not.toBeInTheDocument())
+    expect(screen.getByRole('button',{name:'Assign / reassign'})).toBeDisabled()
+    expect(mock.rpc.mock.calls.every(([name])=>name.startsWith('get_'))).toBe(true)
+  })
 })

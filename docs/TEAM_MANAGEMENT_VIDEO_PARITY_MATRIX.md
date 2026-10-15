@@ -141,3 +141,14 @@ Audio uncertainty: `TEAM_VIDEO_TIMESTAMPED_TRANSCRIPT.md`.
 Client steps and acceptance boundaries: `TEAM_MANAGEMENT_CLIENT_WALKTHROUGH.md`.
 Release SHA/deployment and production screenshots are recorded in the task's
 final release report, outside the private source-media repository.
+
+### Production QA repair
+
+Owner QA exposed a pre-existing refresh race: every supervision revalidation
+remounted the assignment form and discarded its selected representative. The
+follow-up repair preserves that choice when the same authorized conversation
+returns, while removing the view on denial/store change and resetting the choice
+when its actual assignee changes. Message reads still revalidate, and the final
+assignment always uses the canonical server-authorized mutation. A regression
+test covers preserve → confirmation → changed-assignee invalidation without
+performing a production reassignment.
