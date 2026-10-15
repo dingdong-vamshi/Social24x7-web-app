@@ -32,6 +32,7 @@ import { CompanyMedia } from '../features/team/CompanyMedia';
 import { TeamManagement } from '../features/team/TeamManagement';
 import { RepresentativeBadge } from '../features/team/TeamPresentation';
 import { BusinessSharedContent } from '../features/team/BusinessSharedContent';
+import { WorkConversationActions } from '../features/team/WorkConversationActions';
 import { companyProductMedia, isCompanyStoragePath } from '../features/team/companyMediaRepository';
 import "../features/team/team.css";
 import "../features/chat/team.css";
@@ -419,6 +420,7 @@ function WorkSession() {
                       }
                       repository={repository}
                       revision={revision}
+                      actionPermissions={inbox.find(row => row.conversationId === selected)?.assigneeMembershipId === context.membershipId ? context.permissions : []}
                       canReply={
                         context.permissions.includes("business_chat_reply") &&
                         inbox.find((row) => row.conversationId === selected)
@@ -443,12 +445,14 @@ function WorkThread({
   repository,
   revision,
   canReply,
+  actionPermissions,
   onChanged,
 }: {
   conversation: WorkConversation;
   repository: ReturnType<typeof createBusinessWorkspaceRepository>;
   revision: number;
   canReply: boolean;
+  actionPermissions: string[];
   onChanged: () => void;
 }) {
   const load = useCallback(async () => {
@@ -527,6 +531,7 @@ function WorkThread({
                 </li>
               ))}
             </ol>
+            {conversation.workStatus === 'open' && actionPermissions.some(p => ['business_share_products_orders', 'business_returns_refunds'].includes(p)) && <WorkConversationActions key={`${conversation.conversationId}:${actionPermissions.join(',')}`} conversationId={conversation.conversationId} permissions={actionPermissions} onChanged={onChanged}/>}
             {canReply && conversation.workStatus === "open" ? (
               <form
                 className="commerce-form"

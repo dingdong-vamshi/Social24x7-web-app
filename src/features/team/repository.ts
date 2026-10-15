@@ -59,7 +59,7 @@ export interface TeamRepository {
   getDashboard(storefrontId: string): Promise<TeamDashboard>;
   getMetrics(storefrontId: string): Promise<TeamMemberMetrics[]>;
   invite(input: TeamInvitationInput): Promise<TeamInvitationResult>;
-  resend(memberId: string): Promise<TeamInvitationResult>;
+  resend(memberId: string, emailStorefrontId?: string): Promise<TeamInvitationResult>;
   approve(memberId: string): Promise<void>;
   transition(
     memberId: string,
@@ -119,10 +119,21 @@ export function createTeamRepository(client: SupabaseClient): TeamRepository {
         "get_storefront_team_chat_metrics",
         { target_storefront: storefrontId },
       );
-      return (rows ?? []).map(numericMetrics);
+      const history = await client.rpc('get_storefront_team_recorded_history', { target_storefront: storefrontId });
+      if (history.error && !['PGRST202', '42883'].includes(history.error.code)) throw new Error(history.error.message);
+      return (rows ?? []).map(row => {
+        const metric = numericMetrics(row);
+        const recorded = Array.isArray(history.data) ? history.data.find(h => h.membership_id === metric.membershipId && h.recorded_lifetime_chats !== undefined) : null;
+        return recorded ? { ...metric, recordedLifetimeChats: Number(recorded.recorded_lifetime_chats), firstRecordedAt: recorded.first_recorded_at } : metric;
+      });
     },
-    invite: (input) =>
-      activation("create_storefront_team_invitation", {
+    invite: async (input) => {
+      if (input.emailInvitation) {
+        const result = await client.functions.invoke('team-invitation-email', { body: { action: 'invite', input } });
+        if (result.error || !result.data?.membershipId) throw new Error('Email invitation was not confirmed. Refresh the team before retrying; do not create a duplicate invitation.');
+        return result.data as TeamInvitationResult;
+      }
+      return activation("create_storefront_team_invitation", {
         target_storefront: input.storefrontId,
         p_full_name: input.fullName,
         p_work_email: input.workEmail,
@@ -133,11 +144,18 @@ export function createTeamRepository(client: SupabaseClient): TeamRepository {
         p_department: input.department,
         p_role_id: input.roleId,
         p_permissions: input.permissions ?? null,
-      }),
-    resend: (memberId) =>
-      activation("resend_storefront_team_activation", {
+      });
+    },
+    resend: async (memberId, emailStorefrontId) => {
+      if (emailStorefrontId) {
+        const result = await client.functions.invoke('team-invitation-email', { body: { action: 'resend', input: { membershipId: memberId, storefrontId: emailStorefrontId } } });
+        if (result.error || !result.data?.membershipId) throw new Error('Email replacement was not confirmed. Email configuration is required. Refresh the team before retrying.');
+        return result.data as TeamInvitationResult;
+      }
+      return activation("resend_storefront_team_activation", {
         target_member: memberId,
-      }),
+      });
+    },
     approve: (memberId) =>
       rpc(client, "approve_storefront_team_member", {
         target_member: memberId,

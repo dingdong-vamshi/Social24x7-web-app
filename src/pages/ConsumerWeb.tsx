@@ -12,6 +12,7 @@ import '../features/chat/chat.css'
 import { AttachmentComposer, GroupMembers, NewGroup } from '../features/chat/ConsumerChatTools'
 import { NewPersonalChat } from '../features/chat/NewPersonalChat'
 import { SharedPostMessage } from '../features/social/ShareToChat'
+import { SharedCommerceMessage } from '../features/chat/SharedCommerceMessage'
 
 const displayDate = (value: string) => new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 const displayTime = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -211,7 +212,7 @@ function MessageBody({ message, repository }: { message: Message; repository: Ch
     try { const result = await repository.openAttachment(message.conversation_id, attachmentId); setAttachmentUrl(result.url) }
     catch (error) { setError(errorText(error)) } finally { setBusy(false) }
   }
-  return <>{message.body && <p className="chat-message-body">{message.body}</p>}{attachmentId ? <div className="chat-attachment"><Download size={17} /><span>{text(message.payload?.filename) || 'Attachment'}</span>{attachmentUrl ? <a href={attachmentUrl} target="_blank" rel="noreferrer">Open file</a> : <button type="button" disabled={busy} onClick={open}>{busy ? 'Preparing…' : 'Get secure link'}</button>}{error && <small role="alert">{error}</small>}</div> : message.kind === 'product' && message.payload?.post ? <SharedPostMessage payload={message.payload}/> : message.kind !== 'text' && <p className="chat-content-note">{label(message.kind)} · Open in the mobile app for full details.</p>}</>
+  return <>{message.body && <p className="chat-message-body">{message.body}</p>}{attachmentId ? <div className="chat-attachment"><Download size={17} /><span>{text(message.payload?.filename) || 'Attachment'}</span>{attachmentUrl ? <a href={attachmentUrl} target="_blank" rel="noreferrer">Open file</a> : <button type="button" disabled={busy} onClick={open}>{busy ? 'Preparing…' : 'Get secure link'}</button>}{error && <small role="alert">{error}</small>}</div> : message.kind === 'product' && message.payload?.post ? <SharedPostMessage payload={message.payload}/> : ['product', 'order'].includes(message.kind) ? <SharedCommerceMessage kind={message.kind} payload={message.payload}/> : message.kind !== 'text' && <p className="chat-content-note">{label(message.kind)} · Open in the mobile app for full details.</p>}</>
 }
 
 export function ConsumerOrders() {

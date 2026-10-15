@@ -78,10 +78,12 @@ export function TeamRoster({ members, metrics, onOpen }: {
 }
 
 export function MemberMetrics({ metric }: { metric?: TeamMemberMetrics }) {
-  return <div className="team-member-metrics" aria-label="Member chat metrics">{[
+  return <><div className="team-member-metrics" aria-label="Member chat metrics">{[
     ['Open chats', metric?.openChats], ['Resolved', metric?.resolvedChats],
     ['Currently assigned total', metric?.lifetimeChats], ['Waiting for reply', metric?.waitingForReply],
+    ...(metric?.recordedLifetimeChats === undefined ? [] : [['Recorded lifetime chats', metric.recordedLifetimeChats]]),
   ].map(([name, count]) => <div key={name}><strong>{count ?? '—'}</strong><span>{name}</span></div>)}</div>
+  <small>{metric?.recordedLifetimeChats === undefined ? 'Historical totals await backend activation. Current assignments remain accurate.' : `Recorded lifetime counts distinct conversations from retained assignment history and current assignments. Unrecorded earlier assignments cannot be recovered.${metric.firstRecordedAt ? ` Earliest retained record: ${new Date(metric.firstRecordedAt).toLocaleDateString()}.` : ''}`}</small></>
 }
 
 export function CustomerIdentityPreview({ name, tagline, company, verified = false, preview = false }: {

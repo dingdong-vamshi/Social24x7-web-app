@@ -1,0 +1,202 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "Anonymous cannot list shares",
+      "pass": true
+    },
+    {
+      "name": "Unassigned employee cannot list shares",
+      "pass": true
+    },
+    {
+      "name": "Owner cannot impersonate assigned Work employee",
+      "pass": true
+    },
+    {
+      "name": "Product choices are active approved and same store",
+      "pass": true
+    },
+    {
+      "name": "Order choices are same customer and store",
+      "pass": true
+    },
+    {
+      "name": "Foreign product denied",
+      "pass": true
+    },
+    {
+      "name": "Draft product denied",
+      "pass": true
+    },
+    {
+      "name": "Other customer order denied",
+      "pass": true
+    },
+    {
+      "name": "Other store order denied",
+      "pass": true
+    },
+    {
+      "name": "Canonical product share with immutable employee attribution",
+      "pass": true
+    },
+    {
+      "name": "Identical share retry returns same message",
+      "pass": true
+    },
+    {
+      "name": "Retry identifier cannot be reused for another action",
+      "pass": true
+    },
+    {
+      "name": "Order share carries only minimal canonical customer payload",
+      "pass": true
+    },
+    {
+      "name": "Owner rich product read uses canonical data",
+      "pass": true
+    },
+    {
+      "name": "Supervisor without participant row reads scoped product",
+      "pass": true
+    },
+    {
+      "name": "Supervisor reads minimal order snapshot",
+      "pass": true
+    },
+    {
+      "name": "Other store owner cannot read content",
+      "pass": true
+    },
+    {
+      "name": "Store parameter mismatch denied",
+      "pass": true
+    },
+    {
+      "name": "Conversation parameter mismatch denied",
+      "pass": true
+    },
+    {
+      "name": "Unassigned ordinary employee cannot read rich messages",
+      "pass": true
+    },
+    {
+      "name": "Supervisor media response exposes only authorized signing metadata",
+      "pass": true
+    },
+    {
+      "name": "Unfinalized attachment denied",
+      "pass": true
+    },
+    {
+      "name": "Cross-conversation media path denied",
+      "pass": true
+    },
+    {
+      "name": "Unsafe media path denied ../x",
+      "pass": true
+    },
+    {
+      "name": "Unsafe media path denied a//b",
+      "pass": true
+    },
+    {
+      "name": "Unsafe media path denied %2e%2e/x",
+      "pass": true
+    },
+    {
+      "name": "Unsafe media path denied x?token=1",
+      "pass": true
+    },
+    {
+      "name": "Deleted messages unavailable",
+      "pass": true
+    },
+    {
+      "name": "Expired messages unavailable",
+      "pass": true
+    },
+    {
+      "name": "Share permission revocation denied immediately",
+      "pass": true
+    },
+    {
+      "name": "Sharing does not depend on reply permission",
+      "pass": true
+    },
+    {
+      "name": "Only current assigned authorized Work identity can list returns",
+      "pass": true
+    },
+    {
+      "name": "Return permission override denied",
+      "pass": true
+    },
+    {
+      "name": "Owner and cross-store actors cannot use employee return API",
+      "pass": true
+    },
+    {
+      "name": "Return API cannot mark paid/refunded",
+      "pass": true
+    },
+    {
+      "name": "Under-review decision does not queue a refund",
+      "pass": true
+    },
+    {
+      "name": "Approval queues external processing without payment execution",
+      "pass": true
+    },
+    {
+      "name": "Duplicate return decision denied without duplicate refund",
+      "pass": true
+    },
+    {
+      "name": "Resolved conversations reject new sharing",
+      "pass": true
+    },
+    {
+      "name": "Suspended employee loses reads and writes",
+      "pass": true
+    },
+    {
+      "name": "Reassignment revokes previous employee and preserves attribution",
+      "pass": true
+    },
+    {
+      "name": "Recorded history includes prior/current assignees once each",
+      "pass": true
+    },
+    {
+      "name": "Ordinary employee cannot read team history",
+      "pass": true
+    },
+    {
+      "name": "Cross-store owner cannot read team history",
+      "pass": true
+    },
+    {
+      "name": "Supervisor can read retained history",
+      "pass": true
+    },
+    {
+      "name": "Inactive storefront blocks employee actions and rich reads",
+      "pass": true
+    },
+    {
+      "name": "No anonymous API grants or default PUBLIC execution",
+      "pass": true
+    },
+    {
+      "name": "Public APIs are invoker; private implementations use empty search_path",
+      "pass": true
+    },
+    {
+      "name": "Competing lifecycle lock prevents share without deadlock",
+      "pass": true
+    }
+  ],
+  "scope": "Synthetic local PostgreSQL; exact new APIs plus captured existing helpers and selected constraints. Excludes full production triggers/RLS, HTTP Auth, live Storage/provider delivery and payment pipelines."
+}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   CommerceEmpty,
@@ -113,7 +113,7 @@ export function TeamManagement({ storefrontId, canMonitor = true, canAssign = tr
         <TeamDialog onClose={() => setActivation(null)}
           title="Activation ready"
         >
-          <p>Share privately with this employee. No email or SMS has been sent. The code expires and works once.</p>
+          <p>{activation.emailStatus === 'accepted' ? 'The email provider accepted this invitation. This does not confirm inbox delivery; check provider delivery events. No SMS was sent.' : activation.emailStatus === 'failed' ? 'The invitation was created, but email delivery was not confirmed. Share these instructions privately; do not create a duplicate employee.' : 'Share privately with this employee. No email or SMS has been sent.'} The code expires and works once.</p>
           <p>
             Business login ID:{" "}
             <strong data-private>{activation.loginId}</strong>
@@ -312,6 +312,9 @@ export function TeamManagement({ storefrontId, canMonitor = true, canAssign = tr
                           >
                             Edit member & permissions
                           </Button>
+                        )}
+                        {member.status === "not_activated" && (
+                          <Button variant="secondary" disabled={busy} onClick={() => setAction({ title: 'email replacement invitation', warning: 'Requires a configured email provider. This invalidates the previous code and emails the replacement to the saved work email. No password is changed and no approval is granted.', execute: async () => setActivation({ ...(await repository.resend(member.id, storefrontId)), loginId: member.loginId }) })}>Email replacement invitation</Button>
                         )}
                         {member.status === "not_activated" && (
                           <Button
@@ -538,7 +541,7 @@ function Permissions({
           <span>
             {p.label}
             <small>{p.description}</small>
-            {['business_share_products_orders', 'business_returns_refunds'].includes(p.code) && <small className="team-permission-warning">Permission is recorded. Employee sharing / return actions are not available in Work yet.</small>}
+            {['business_share_products_orders', 'business_returns_refunds'].includes(p.code) && <small className="team-permission-warning">Requires an open assigned conversation and the operational backend contracts. Return approval queues processing; it never transfers money.</small>}
             {['business_team_manage', 'business_chat_assign', 'business_returns_refunds'].includes(p.code) && <small className="team-permission-warning">Sensitive access — grant only when needed.</small>}
           </span>
         </label>
@@ -575,6 +578,14 @@ function InviteEditor({
   });
   const [error, setError] = useState("");
   const [customDepartment, setCustomDepartment] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => requireSupabase().functions.invoke('team-invitation-email', { body: { action: 'capabilities' } })).then(({ data, error }) => {
+      if (active && !error && data?.configured === true) { setEmailAvailable(true); setDraft(v => ({ ...v, emailInvitation: true })); }
+    }).catch(() => { /* Private delivery remains available when the adapter is not deployed. */ });
+    return () => { active = false; };
+  }, []);
   const rolePermissions = roles.find(role => role.id === draft.roleId)?.permissions || [];
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -648,6 +659,7 @@ function InviteEditor({
             </select>
           </label>
           <p>Choosing a role loads its current permissions. You can adjust them for this employee.</p>
+          {emailAvailable ? <label><input type="checkbox" checked={draft.emailInvitation === true} onChange={e => setDraft({ ...draft, emailInvitation: e.target.checked })}/>Email activation instructions automatically to the work email</label> : <p className="team-help">Automatic email is not configured. Create an invitation and share the one-time instructions privately.</p>}
         </fieldset>
         <Permissions dashboard={dashboard} selected={draft.permissions ?? rolePermissions} change={permissions => setDraft({ ...draft, permissions })} disabled={busy}/>
         <p className="team-help">{draft.permissions === null ? 'Using role defaults.' : 'Using an employee-specific permission selection.'} These permissions take effect only after activation and approval.</p>

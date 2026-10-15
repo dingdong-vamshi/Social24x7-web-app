@@ -31,5 +31,6 @@ export function BusinessSharedContent({ storefrontId, conversationId, messageId 
     {content?.type === 'product' && <><strong>{content.title}</strong><p>{(content.priceMinor / 100).toLocaleString('en-IN', { style: 'currency', currency: /^[A-Z]{3}$/.test(content.currency) ? content.currency : 'INR' })}</p><small>Current company product · viewing does not place an order.</small></>}
     {content?.type === 'order' && <><strong>Order #{content.id.slice(0, 8).toUpperCase()}</strong><p>{label(content.status)}</p>{content.items.map((item, index) => <p key={index}>{item.title} · Quantity {item.quantity}</p>)}<small>Order snapshot recorded in this conversation. No payment or return action is performed.</small></>}
     {content?.type === 'post' && <><strong>Shared post</strong><p>{content.caption || 'Shared company conversation content'}</p></>}
+    {content?.type === 'detail' && <><strong>{content.title}</strong>{content.lines.map((line, index) => <p key={index}>{line}</p>)}<small>Read-only conversation content.</small></>}
   </div>
 }

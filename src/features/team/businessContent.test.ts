@@ -9,7 +9,7 @@ function fixture(payload: Record<string,unknown>, kind='image') {
   query.maybeSingle.mockResolvedValueOnce({data:{id:message,kind,payload},error:null}).mockResolvedValueOnce({data:{storage_path:`${chat}/sender/photo.png`,original_filename:'Synthetic QA image',mime_type:'image/png'},error:null})
   const inbox={eq:vi.fn().mockResolvedValue({data:[{storefront_id:store,conversation_id:chat}],error:null})}
   const signed=vi.fn().mockResolvedValue({data:{signedUrl:'https://storage.example/signed-qa'},error:null})
-  const raw={rpc:vi.fn().mockReturnValue(inbox),from:vi.fn().mockReturnValue(query),storage:{from:vi.fn().mockReturnValue({createSignedUrl:signed})}}
+  const raw={rpc:vi.fn().mockImplementation(name => name === 'get_business_shared_content' ? Promise.resolve({data:null,error:{code:'PGRST202'}}) : inbox),from:vi.fn().mockReturnValue(query),storage:{from:vi.fn().mockReturnValue({createSignedUrl:signed})}}
   return {raw,client:raw as unknown as SupabaseClient,query,inbox,signed}
 }
 describe('Business shared content uses existing RLS without widening access',()=>{

@@ -82,6 +82,8 @@ export type TeamMemberMetrics = {
   resolvedChats: number;
   lifetimeChats: number;
   waitingForReply: number;
+  recordedLifetimeChats?: number;
+  firstRecordedAt?: string | null;
 };
 
 export type TeamInvitationInput = {
@@ -95,10 +97,12 @@ export type TeamInvitationInput = {
   department: string;
   roleId: string;
   permissions?: TeamPermissionCode[] | null;
+  emailInvitation?: boolean;
 };
 
 export type TeamInvitationResult = {
   membershipId: string;
   activationCode: string;
   expiresAt: string;
+  emailStatus?: 'accepted' | 'failed';
 };
