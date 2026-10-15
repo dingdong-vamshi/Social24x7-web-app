@@ -6,9 +6,10 @@ import { BusinessWork } from '../../pages/BusinessWork'
 
 const mock = vi.hoisted(() => ({
   mediaUrl: vi.fn(),
-  repository: { getContext: vi.fn(), listInbox: vi.fn(), listMessages: vi.fn(), markRead: vi.fn(), sendMessage: vi.fn(), resolve: vi.fn(), subscribe: vi.fn() },
+  repository: { getContext: vi.fn(), listInbox: vi.fn(), listMessages: vi.fn(), markRead: vi.fn(), sendMessage: vi.fn(), resolve: vi.fn(), subscribe: vi.fn(), getCompanyFeed: vi.fn() },
 }))
 vi.mock('../../lib/supabase', () => ({ requireSupabase: () => ({}) }))
+vi.mock('./TeamManagement', () => ({ TeamManagement: ({ storefrontId, canMonitor, canAssign }: { storefrontId: string; canMonitor: boolean; canAssign: boolean }) => <div>Managed {storefrontId}; monitor {String(canMonitor)}; assign {String(canAssign)}</div> }))
 vi.mock('./companyMediaRepository', async original => ({ ...await original<object>(), companyMediaUrl: mock.mediaUrl }))
 vi.mock('../businessWorkspace/businessWorkspaceRepository', () => ({ createBusinessWorkspaceRepository: () => mock.repository }))
 vi.mock('../../auth/AuthContext', () => ({ useAuth: () => ({ user: { id: 'worker', app_metadata: { account_type: 'business_employee' } }, loading: false, signOut: vi.fn() }) }))
@@ -92,5 +93,37 @@ describe('Business Work UI authorization and retry — mocked lifecycle', () => 
     render(<MemoryRouter><BusinessWork /></MemoryRouter>)
     expect(await screen.findByText('No authorized conversations match.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Fictional Customer/ })).not.toBeInTheDocument()
+  })
+  it('exposes Team only for an effective team manager without granting monitor or assign', async () => {
+    mock.repository.getContext.mockResolvedValue({ ...context, permissions: ['business_team_manage'] })
+    render(<MemoryRouter><BusinessWork /></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button', { name: 'Team & verification' }))
+    expect(screen.getByText('Managed store; monitor false; assign false')).toBeInTheDocument()
+  })
+  it('does not give an ordinary agent Team or company-feed navigation', async () => {
+    render(<MemoryRouter><BusinessWork /></MemoryRouter>)
+    await screen.findByRole('button', { name: /Fictional Customer/ })
+    expect(screen.queryByRole('button', { name: 'Team & verification' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Company feed' })).not.toBeInTheDocument()
+  })
+  it('switches company Feed/Explore/Reels using only the authorized company response', async () => {
+    mock.repository.getContext.mockResolvedValue({ ...context, permissions: ['business_feed_view'] })
+    mock.repository.getCompanyFeed.mockResolvedValue({ storefront: { name: 'Fictional QA Store', tagline: 'from QA' }, products: [], posts: [
+      { id: 'photo', body: 'Company photo', createdAt: '2026-10-15T04:00:00Z', mediaType: 'image', mediaPaths: [] },
+      { id: 'video', body: 'Company reel', createdAt: '2026-10-15T04:00:00Z', mediaType: 'video', mediaPaths: ['qa/video.mp4'] },
+    ] })
+    render(<MemoryRouter><BusinessWork /></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button', { name: 'Company feed' }))
+    expect(await screen.findByText('Company photo')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Explore' }))
+    expect(screen.getByRole('button', { name: 'Explore' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Reels' }))
+    expect(screen.queryByText('Company photo')).not.toBeInTheDocument()
+    expect(screen.getByText('Company reel')).toBeInTheDocument()
+    expect(screen.queryByText('Company products')).not.toBeInTheDocument()
+    const video = await screen.findByLabelText('Company post video 1')
+    expect(video).toHaveAttribute('controls')
+    expect(video).not.toHaveAttribute('autoplay')
+    expect(mock.repository.getCompanyFeed).toHaveBeenCalledTimes(1)
   })
 })

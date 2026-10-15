@@ -44,4 +44,27 @@ describe('supervised customer chats', () => {
     await waitFor(()=>expect(screen.queryByText('QA business message')).not.toBeInTheDocument())
     expect(await screen.findByText('Permission revoked')).toBeInTheDocument()
   })
+  it('opens directly in a locked member view without showing another employee history', async () => {
+    mock.rows=[row,{...row,conversation_id:'other',assignee_membership_id:'member-b',customer_display_name:'Other customer'}]
+    render(<MemoryRouter><TeamChatMonitor storefrontId="store-a" members={[]} initialMemberId="member-a" lockMember/></MemoryRouter>)
+    expect(await screen.findByRole('button',{name:/QA Customer/})).toBeInTheDocument()
+    expect(screen.queryByRole('button',{name:/Other customer/})).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Employee')).not.toBeInTheDocument()
+  })
+  it('rechecks unassigned status and denies a chat assigned since the list loaded', async () => {
+    mock.rows=[{...row,assignee_membership_id:null,assignee_name:null}]
+    expect(await createTeamChatRepository(client()).messages('store-a','chat-a','unassigned')).toEqual([message])
+    mock.rows=[row]
+    await expect(createTeamChatRepository(client()).messages('store-a','chat-a','unassigned')).rejects.toThrow('no longer available')
+  })
+  it('filters unassigned conversations without granting reply access', async () => {
+    mock.rows=[row,{...row,conversation_id:'unassigned',assignee_membership_id:null,assignee_name:null,customer_display_name:'Waiting customer'}]
+    render(<MemoryRouter><TeamChatMonitor storefrontId="store-a" members={[]}/></MemoryRouter>)
+    await screen.findByRole('button',{name:/Waiting customer/})
+    fireEvent.change(screen.getByLabelText('Employee'),{target:{value:'unassigned'}})
+    expect(screen.queryByRole('button',{name:/QA Customer/})).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button',{name:/Waiting customer/}))
+    expect(await screen.findByText('QA business message')).toBeInTheDocument()
+    expect(screen.queryByRole('button',{name:'Send reply'})).not.toBeInTheDocument()
+  })
 })

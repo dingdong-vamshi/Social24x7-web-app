@@ -29,6 +29,9 @@ import {
 } from "../features/team/rules";
 import { dateTime, label } from "../repositories/commerce";
 import { CompanyMedia } from '../features/team/CompanyMedia';
+import { TeamManagement } from '../features/team/TeamManagement';
+import { RepresentativeBadge } from '../features/team/TeamPresentation';
+import { BusinessSharedContent } from '../features/team/BusinessSharedContent';
 import { companyProductMedia, isCompanyStoragePath } from '../features/team/companyMediaRepository';
 import "../features/team/team.css";
 import "../features/chat/team.css";
@@ -117,6 +120,7 @@ export function BusinessLogin({ activate = false }: { activate?: boolean }) {
         Use the business login ID from your employer. Personal email, phone and
         chats are separate.
       </p>
+      {activate && <p className="team-help">Use 10–128 characters with uppercase, lowercase, a number and a symbol. Only you choose and know this password. Activation does not approve your account.</p>}
       {done ? (
         <SectionCard title="Password created">
           <p>
@@ -325,7 +329,7 @@ function WorkSession() {
           <>
             <h2>{context.storefrontName}</h2>
             <p>
-              {context.fullName} · {context.customerTagline} ·{" "}
+              {context.fullName} {context.representativeVerified && <RepresentativeBadge/>} · {context.customerTagline} ·{" "}
               {context.roleName}{" "}
               <StatusPill>{label(context.status)}</StatusPill>
             </p>
@@ -338,8 +342,11 @@ function WorkSession() {
                   Company feed
                 </Button>
               )}
+              {context.permissions.includes('business_team_manage') && <Button variant="secondary" onClick={() => setTab('team')}>Team & verification</Button>}
             </div>
-            {tab === "feed" &&
+            {tab === 'team' && context.permissions.includes('business_team_manage') ? (
+              <TeamManagement key={context.storefrontId} storefrontId={context.storefrontId} canMonitor={context.permissions.includes('business_chat_monitor')} canAssign={context.permissions.includes('business_chat_assign')}/>
+            ) : tab === "feed" &&
             context.permissions.includes("business_feed_view") ? (
               <CompanyFeed repository={repository} revision={revision} />
             ) : (
@@ -514,9 +521,7 @@ function WorkThread({
                   <small>{m.senderTagline}</small>
                   <p>{m.body}</p>
                   {m.messageKind !== "text" && (
-                    <small>
-                      {label(m.messageKind)} — full content in the existing app
-                    </small>
+                    <BusinessSharedContent storefrontId={conversation.storefrontId} conversationId={conversation.conversationId} messageId={m.messageId}/>
                   )}
                   <time>{dateTime(m.createdAt)}</time>
                 </li>
@@ -590,6 +595,7 @@ function CompanyFeed({
 }) {
   const load = useCallback(() => { void revision; return repository.getCompanyFeed() }, [repository, revision]);
   const result = useCommerce(load);
+  const [view, setView] = useState<'feed' | 'explore' | 'reels'>('feed');
   return (
     <CommerceResult result={result}>
       {(feed) => (
@@ -598,17 +604,24 @@ function CompanyFeed({
           description={feed.storefront.tagline}
         >
           {feed.storefront.logoPath && isCompanyStoragePath(feed.storefront.logoPath) && <div className="company-feed-logo"><CompanyMedia key={feed.storefront.logoPath} reference={{ bucket: 'shop-media', path: feed.storefront.logoPath }} alt={`${feed.storefront.name} logo`} /></div>}
+          <nav className="commerce-row-actions" aria-label="Company content views">{(['feed', 'explore', 'reels'] as const).map(mode => <button type="button" key={mode} className={`button ${mode === view ? 'primary' : 'secondary'}`} aria-pressed={mode === view} onClick={() => setView(mode)}>{label(mode)}</button>)}</nav>
+          <p className="team-help">Only your company’s authorized posts and products. This does not open personal or global Social content.</p>
+          {view !== 'reels' && <>
           <h3>Company products</h3>
           <CompanyProducts products={feed.products} />
+          </>}
           <h3>Company posts</h3>
-          {feed.posts.map((p) => (
-            <article key={p.id}>
+          <div className={`company-view company-view-${view}`}>
+          {feed.posts.filter(p => view !== 'reels' || p.mediaType === 'video').map((p) => (
+            <article key={p.id} className="company-post-card">
               <p>{p.body}</p>
               <small>{dateTime(p.createdAt)}</small>
               <div className="company-post-media">{p.mediaPaths.map((path, index) => isCompanyStoragePath(path) && ['image', 'video'].includes(p.mediaType) ? <CompanyMedia key={`${path}:${index}`} reference={{ bucket: 'social-posts', path }} alt={`Company post ${p.mediaType} ${index + 1}`} video={p.mediaType === 'video'} /> : <p key={index}>This post media is unavailable.</p>)}</div>
             </article>
           ))}
+          </div>
           {!feed.posts.length && <p>No posts returned.</p>}
+          {view === 'reels' && feed.posts.length > 0 && !feed.posts.some(p => p.mediaType === 'video') && <p>No company video posts are available.</p>}
         </SectionCard>
       )}
     </CommerceResult>

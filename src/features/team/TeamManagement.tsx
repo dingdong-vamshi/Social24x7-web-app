@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   CommerceEmpty,
   CommerceResult,
@@ -15,7 +15,8 @@ import { requireSupabase } from "../../lib/supabase";
 import { dateTime, label } from "../../repositories/commerce";
 import { TeamChatMonitor } from "../chat/TeamChatMonitor";
 import { createTeamRepository } from "./repository";
-import { normalizeBusinessLoginId, validateTeamInvitation } from "./rules";
+import { validateTeamInvitation } from "./rules";
+import { CustomerIdentityPreview, MemberMetrics, TeamCounts, TeamDialog, TeamRoster, TeamSteps } from './TeamPresentation';
 import type {
   TeamDashboard,
   TeamInvitationInput,
@@ -31,7 +32,16 @@ type Action = {
   warning: string;
   execute: () => Promise<unknown>;
 };
-export function TeamManagement({ storefrontId }: { storefrontId: string }) {
+export function TeamManagement({ storefrontId, canMonitor = true, canAssign = true }: { storefrontId: string; canMonitor?: boolean; canAssign?: boolean }) {
+  const [params, setParams] = useSearchParams();
+  const selectedMember = params.get('member') || '';
+  const [memberView, setMemberView] = useState<'chats' | 'profile'>('chats');
+  function openMember(id: string) {
+    setEditor('');
+    setError('');
+    setMemberView('chats');
+    setParams(previous => { const next = new URLSearchParams(previous); if (id) next.set('member', id); else next.delete('member'); return next; });
+  }
   const repository = useMemo(() => createTeamRepository(requireSupabase()), []);
   const load = useCallback(
     async () => ({
@@ -64,12 +74,12 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
       setEditor("");
       result.refresh();
       setNotice(
-        "The service recorded your change. Reloading the current team state.",
+        "Change saved. The service recorded your update; refreshing the team.",
       );
     } catch (cause) {
       setError(
         cause instanceof Error
-          ? cause.message
+          ? friendlyTeamError(cause.message)
           : "The change could not be confirmed. Refresh before retrying.",
       );
     } finally {
@@ -82,14 +92,14 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
       <PageHeader
         title="Team & verification"
         eyebrow="Business access"
-        description="Manage separate work identities, permissions and assigned customer chats."
+        description="Your employees, their work access and customer conversations."
         actions={
           <Button variant="secondary" disabled={busy} onClick={result.refresh}>
             Refresh team
           </Button>
         }
       />
-      {error && (
+      {error && !editor && !action && (
         <p role="alert" className="form-error">
           {error}
         </p>
@@ -100,10 +110,10 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
         </p>
       )}
       {activation && (
-        <SectionCard
+        <TeamDialog onClose={() => setActivation(null)}
           title="Activation ready"
-          description="Share privately with this employee. No email or SMS delivery is implied. The code expires and works once."
         >
+          <p>Share privately with this employee. No email or SMS has been sent. The code expires and works once.</p>
           <p>
             Business login ID:{" "}
             <strong data-private>{activation.loginId}</strong>
@@ -147,11 +157,12 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
           <Button variant="ghost" onClick={() => setActivation(null)}>
             Dismiss and clear code
           </Button>
-        </SectionCard>
+        </TeamDialog>
       )}
       {action && (
-        <SectionCard title={`Confirm ${action.title}`}>
+        <TeamDialog title={`Confirm ${action.title}`} onClose={() => setAction(null)} busy={busy}>
           <p>{action.warning}</p>
+          {error && <p role="alert" className="form-error">{error}</p>}
           <div className="commerce-row-actions">
             <Button
               variant="secondary"
@@ -164,19 +175,13 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
               {busy ? "Saving…" : `Confirm ${action.title}`}
             </Button>
           </div>
-        </SectionCard>
+        </TeamDialog>
       )}
-      <CommerceResult result={result}>
+      <CommerceResult result={{ ...result, error: result.error ? friendlyTeamError(result.error) : undefined }}>
         {({ dashboard, metrics }) => (
           <>
-            <p>
-              Business verification:{" "}
-              <StatusPill>
-                {label(dashboard.storefront.verificationStatus)}
-              </StatusPill>
-              . Employee approval is separate from business and professional
-              Creator verification.
-            </p>
+            <div className="team-business-heading"><div><h2>{dashboard.storefront.name}</h2><p>Business verification: <StatusPill>{label(dashboard.storefront.verificationStatus)}</StatusPill></p></div><p>Only approved employees of a verified business can represent you in assigned customer chats.</p></div>
+            {!selectedMember && <><TeamSteps/><TeamCounts dashboard={dashboard} selected={filter} onSelect={setFilter}/></>}
             <div className="commerce-row-actions">
               <Button
                 disabled={busy || !dashboard.storefront.verified}
@@ -188,16 +193,17 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
               >
                 Invite employee
               </Button>
-              <Button
+              {!selectedMember && <Button
                 variant="secondary"
                 disabled={busy}
                 onClick={() => setEditor("role:new")}
               >
                 Create custom role
-              </Button>
+              </Button>}
               <Link to="/business-login">Employee work login</Link>
             </div>
-            {editor === "invite" && (
+            {editor === "invite" && <TeamDialog title="Invite employee" onClose={() => setEditor('')} busy={busy}>
+              {error && <p role="alert" className="form-error">{error}</p>}
               <InviteEditor
                 dashboard={dashboard}
                 busy={busy}
@@ -209,9 +215,11 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                   })
                 }
               />
-            )}
+            </TeamDialog>}
+            {!selectedMember && <>
             <h2>Team members</h2>
-            <p>Invite → employee activates → owner approves → verified work access. Suspension or removal disables work access without erasing history.</p>
+            <p>Open an employee to review their identity, access and customer chats.</p>
+            <div className="team-roster-filters">
             <label>
               Find team member
               <input type="search" value={search} placeholder="Name, Work login, employee ID or role" onChange={(event) => setSearch(event.target.value)} />
@@ -236,8 +244,14 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                 ))}
               </select>
             </label>
+            </div>
+            <TeamRoster members={dashboard.members.filter(m => matchesMember(m, filter, search))} metrics={metrics} onOpen={openMember}/>
+            {!dashboard.members.some(m => matchesMember(m, filter, search)) && <CommerceEmpty title="No matching members"/>}
+            </>}
+            {selectedMember && <Button variant="secondary" onClick={() => openMember('')}>← Back to team members</Button>}
+            {selectedMember && !dashboard.members.some(m => m.id === selectedMember) && <CommerceEmpty title="Member unavailable" description="This member is not available in the selected business. Return to the team list."/>}
             {dashboard.members
-              .filter((m) => matchesMember(m, filter, search))
+              .filter((m) => m.id === selectedMember)
               .map((member) => {
                 const metric = metrics.find(
                   (m) => m.membershipId === member.id,
@@ -254,12 +268,13 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                       {member.representativeVerified &&
                         "· Verified representative"}
                     </p>
-                    <p>
-                      {metric
-                        ? `${metric.openChats} open · ${metric.resolvedChats} resolved · ${metric.lifetimeChats} lifetime · ${metric.waitingForReply} waiting for reply`
-                        : "Chat metrics unavailable"}
-                    </p>
-                    <details>
+                    <MemberMetrics metric={metric}/>
+                    <p className="team-help">These counts cover conversations currently assigned to this member. Previous assignments remain in the activity history.</p>
+                    <nav className="commerce-row-actions" aria-label="Member sections">
+                      <button className="button secondary" type="button" aria-pressed={memberView === 'chats'} onClick={() => setMemberView('chats')}>Customer chats</button>
+                      <button className="button secondary" type="button" aria-pressed={memberView === 'profile'} onClick={() => setMemberView('profile')}>Profile & access</button>
+                    </nav>
+                    <div hidden={memberView !== 'profile'}><details open>
                       <summary>Identity and effective permissions</summary>
                       <p data-private>
                         Work login:{" "}
@@ -284,7 +299,7 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                           </li>
                         ))}
                       </ul>
-                    </details>
+                    </details><CustomerIdentityPreview name={member.fullName} tagline={member.customerTagline} company={dashboard.storefront.name} verified={member.representativeVerified}/></div>
                     {member.identityKind === "owner_personal" ? (
                       <p>The root Owner identity is protected.</p>
                     ) : (
@@ -390,7 +405,8 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                         )}
                       </div>
                     )}
-                    {editor === member.id && (
+                    {editor === member.id && <TeamDialog title={`Edit ${member.fullName}`} onClose={() => setEditor('')} busy={busy}>
+                      {error && <p role="alert" className="form-error">{error}</p>}
                       <MemberEditor
                         member={member}
                         dashboard={dashboard}
@@ -400,13 +416,12 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                           void run(() => repository.updateMember(input))
                         }
                       />
-                    )}
+                    </TeamDialog>}
+                    {memberView === 'chats' && (canMonitor ? <TeamChatMonitor key={member.id} storefrontId={storefrontId} members={dashboard.members} initialMemberId={member.id} lockMember allowAssignment={canAssign}/> : <p>Conversation monitoring is not included in your permissions.</p>)}
                   </SectionCard>
                 );
               })}
-            {!dashboard.members.some(
-              (m) => matchesMember(m, filter, search),
-            ) && <CommerceEmpty title="No matching members" />}
+            {!selectedMember && <>
             <SectionCard title="Roles & permissions">
               <div className="commerce-row-actions">
                 {dashboard.roles.map((role) => (
@@ -420,7 +435,8 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                   </Button>
                 ))}
               </div>
-              {editor.startsWith("role:") && (
+              {editor.startsWith("role:") && <TeamDialog title={editor === 'role:new' ? 'Create custom role' : 'Role & permissions'} onClose={() => setEditor('')} busy={busy}>
+                {error && <p role="alert" className="form-error">{error}</p>}
                 <RoleEditor
                   key={editor}
                   role={dashboard.roles.find((r) => `role:${r.id}` === editor)}
@@ -446,23 +462,24 @@ export function TeamManagement({ storefrontId }: { storefrontId: string }) {
                     })
                   }
                 />
-              )}
+              </TeamDialog>}
             </SectionCard>
-            <TeamChatMonitor
+            {canMonitor && <TeamChatMonitor
               storefrontId={storefrontId}
               members={dashboard.members}
-              allowAssignment
-            />
+              allowAssignment={canAssign}
+            />}
+            </>}
             <SectionCard
               title="Recent security activity"
-              description="Events returned by the existing team audit service."
+              description="Invitations, approvals, access changes and customer assignments. History stays when someone leaves."
             >
               {dashboard.auditEvents.length ? (
-                dashboard.auditEvents.map((event) => (
+                <details open><summary>View activity history</summary><div className="team-activity">{dashboard.auditEvents.filter(event => !selectedMember || event.membershipId === selectedMember).map((event) => (
                   <p key={event.id}>
                     {label(event.eventType)} · {event.membershipId ? dashboard.members.find((member) => member.id === event.membershipId)?.fullName || "Historical member" : "Storefront team"} · {dateTime(event.createdAt)}
                   </p>
-                ))
+                ))}</div></details>
               ) : (
                 <p>No activity returned.</p>
               )}
@@ -480,6 +497,14 @@ function matchesMember(member: TeamMember, status: string, search: string) {
       .some((value) => (value || "").toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
 }
 
+function friendlyTeamError(message: string) {
+  if (/permission required|permission denied|access denied|not authorized|access revoked/i.test(message)) return 'Access revoked or not permitted. Refresh the team and ask your business owner to check your access.';
+  if (/duplicate|already exists|already in use|unique constraint/i.test(message)) return 'That Work login or role name is already in use. Choose another and try again.';
+  if (/schema|function|rpc|relation|constraint|SQL|PGRST|stack/i.test(message)) return 'The team service could not complete this change. Refresh before retrying; contact support if it continues.';
+  if (/fetch|network|timeout/i.test(message)) return 'Connection interrupted. Refresh and check the team before retrying this change.';
+  return message;
+}
+
 function Permissions({
   dashboard,
   selected,
@@ -493,8 +518,11 @@ function Permissions({
 }) {
   return (
     <fieldset disabled={disabled}>
-      <legend>Effective permission override</legend>
-      {dashboard.permissionCatalog.map((p) => (
+      <legend>Employee permissions</legend>
+      {[
+        ['Customer service', ['business_chat_reply', 'business_share_products_orders', 'business_returns_refunds', 'business_team_manage']],
+        ['Supervision & company access', ['business_chat_monitor', 'business_chat_assign', 'business_feed_view', 'business_orders_view']],
+      ].map(([group, codes]) => <div className="team-permission-group" key={String(group)}><h4>{group}</h4><div className="team-permission-options">{dashboard.permissionCatalog.filter(p => codes.includes(p.code)).sort((a,b) => codes.indexOf(a.code) - codes.indexOf(b.code)).map((p) => (
         <label className="commerce-checkbox" key={p.code}>
           <input
             type="checkbox"
@@ -510,9 +538,11 @@ function Permissions({
           <span>
             {p.label}
             <small>{p.description}</small>
+            {['business_share_products_orders', 'business_returns_refunds'].includes(p.code) && <small className="team-permission-warning">Permission is recorded. Employee sharing / return actions are not available in Work yet.</small>}
+            {['business_team_manage', 'business_chat_assign', 'business_returns_refunds'].includes(p.code) && <small className="team-permission-warning">Sensitive access — grant only when needed.</small>}
           </span>
         </label>
-      ))}
+      ))}</div></div>)}
     </fieldset>
   );
 }
@@ -538,12 +568,14 @@ function InviteEditor({
     customerTagline: `from ${dashboard.storefront.name}`,
     jobTitle: "",
     employeeId: "",
-    department: "",
+    department: "Customer support",
     roleId:
       roles.find((r) => r.systemKey === "agent")?.id || roles[0]?.id || "",
     permissions: null,
   });
   const [error, setError] = useState("");
+  const [customDepartment, setCustomDepartment] = useState(false);
+  const rolePermissions = roles.find(role => role.id === draft.roleId)?.permissions || [];
   function submit(e: FormEvent) {
     e.preventDefault();
     const v = validateTeamInvitation(draft);
@@ -558,10 +590,9 @@ function InviteEditor({
     });
   }
   return (
-    <SectionCard
-      title="Invite employee"
-      description="Use the employee's authorized work email. This creates an invitation, not an approved account."
-    >
+    <>
+      <p>Create a separate Work login. The employee sets their own password; you approve access after reviewing their identity.</p>
+      <div className="team-invite-layout">
       <form className="commerce-form" onSubmit={submit}>
         <fieldset disabled={busy}>
           <div className="commerce-form-grid">
@@ -572,7 +603,6 @@ function InviteEditor({
                 ["loginId", "Business login ID"],
                 ["customerTagline", "Customer tagline"],
                 ["jobTitle", "Job title"],
-                ["department", "Department"],
                 ["employeeId", "Employee ID (optional)"],
               ] as const
             ).map(([key, title]) => (
@@ -580,28 +610,35 @@ function InviteEditor({
                 {title}
                 <input
                   required={key !== "employeeId"}
+                  aria-label={title}
                   type={key === "workEmail" ? "email" : "text"}
-                  maxLength={key === "loginId" ? 40 : 180}
+                  maxLength={key === "loginId" ? 40 : key === "fullName" ? 100 : 180}
+                  pattern={key === 'loginId' ? '[a-zA-Z0-9][a-zA-Z0-9._-]{2,39}' : undefined}
+                  autoComplete={key === 'workEmail' || key === 'loginId' ? 'off' : undefined}
                   value={draft[key]}
                   onChange={(e) =>
                     setDraft({
                       ...draft,
-                      [key]:
-                        key === "loginId"
-                          ? normalizeBusinessLoginId(e.target.value)
-                          : e.target.value,
+                      [key]: e.target.value,
                     })
                   }
                 />
+                {key === 'fullName' && <small>Use the employee’s real name or verified ID name.</small>}
+                {key === 'loginId' && <small>3–40 letters, numbers, dots, dashes or underscores. This is not an email address.</small>}
               </label>
             ))}
           </div>
+          <label>Department<select value={customDepartment ? 'custom' : draft.department} onChange={event => { setCustomDepartment(event.target.value === 'custom'); setDraft({ ...draft, department: event.target.value === 'custom' ? '' : event.target.value }); }}>
+            {['Customer support', 'Sales', 'Relationship management', 'Cards & payments', 'Logistics', 'Marketing'].map(name => <option key={name}>{name}</option>)}
+            <option value="custom">Custom department…</option>
+          </select></label>
+          {customDepartment && <label>Custom department<input required maxLength={100} value={draft.department} onChange={event => setDraft({ ...draft, department: event.target.value })}/></label>}
           <label>
             Role
             <select
               required
               value={draft.roleId}
-              onChange={(e) => setDraft({ ...draft, roleId: e.target.value })}
+              onChange={(e) => setDraft({ ...draft, roleId: e.target.value, permissions: null })}
             >
               {roles.map((role) => (
                 <option key={role.id} value={role.id}>
@@ -610,11 +647,11 @@ function InviteEditor({
               ))}
             </select>
           </label>
-          <p>
-            Uses the selected role's permissions. Overrides can be reviewed in
-            the member editor.
-          </p>
+          <p>Choosing a role loads its current permissions. You can adjust them for this employee.</p>
         </fieldset>
+        <Permissions dashboard={dashboard} selected={draft.permissions ?? rolePermissions} change={permissions => setDraft({ ...draft, permissions })} disabled={busy}/>
+        <p className="team-help">{draft.permissions === null ? 'Using role defaults.' : 'Using an employee-specific permission selection.'} These permissions take effect only after activation and approval.</p>
+        {draft.permissions !== null && <Button variant="ghost" disabled={busy} onClick={() => setDraft({ ...draft, permissions: null })}>Reset to role defaults</Button>}
         {error && <p role="alert">{error}</p>}
         <div className="commerce-row-actions">
           <Button variant="secondary" disabled={busy} onClick={onCancel}>
@@ -625,7 +662,9 @@ function InviteEditor({
           </Button>
         </div>
       </form>
-    </SectionCard>
+      <CustomerIdentityPreview name={draft.fullName} tagline={draft.customerTagline} company={dashboard.storefront.name} preview/>
+      </div>
+    </>
   );
 }
 function MemberEditor({
@@ -709,7 +748,7 @@ function MemberEditor({
       />
       <p>
         Changing role replaces the permission selection with that role's
-        permissions. Review overrides before saving.
+        permissions. Review before saving. This does not change activation or verification status.
       </p>
       <div className="commerce-row-actions">
         <Button variant="secondary" disabled={busy} onClick={onCancel}>
@@ -767,6 +806,7 @@ function RoleEditor({
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      {role && <p>Changes apply to {role.usageCount} current member{role.usageCount === 1 ? '' : 's'} using this role, except where an employee-specific permission overrides the role. Review sensitive access before saving.</p>}
       <label>
         Description
         <textarea

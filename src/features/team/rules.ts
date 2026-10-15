@@ -24,7 +24,9 @@ export function isStrongWorkPassword(value: string) {
 
 export function validateTeamInvitation(input: TeamInvitationInput) {
   const errors: string[] = [];
-  const loginId = normalizeBusinessLoginId(input.loginId);
+  // Invitation validation must not silently rename an unsupported login ID.
+  // Existing login normalization remains unchanged for already-provisioned accounts.
+  const loginId = input.loginId.trim().toLowerCase();
   if (input.fullName.trim().length < 2 || input.fullName.trim().length > 100) errors.push("Enter the employee's full name using 2–100 characters.");
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.workEmail.trim())) errors.push("Enter a valid work email.");
   if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(loginId)) errors.push("Login ID must be 3–40 letters, numbers, dots, dashes or underscores.");
